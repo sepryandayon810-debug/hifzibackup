@@ -1,0 +1,1933 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  
+  <script>
+  // Set tema sebelum halaman tampil (biar tidak flicker)
+  const themeColor = localStorage.getItem('theme_color') || 'indigo';
+  const isDark = localStorage.getItem('dark_mode') === 'true';
+  document.documentElement.setAttribute('data-theme-color', themeColor);
+  if (isDark) document.documentElement.setAttribute('data-theme', 'dark');
+</script>
+
+  <title>WebPOS - Printer & Struk</title>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tesseract.js -->
+  <script src="https://unpkg.com/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
+  <style>
+
+    /* TAMBAH INI - START - Warna Tema */
+:root { --primary: #6366f1; --primary-dark: #4f46e5; --secondary: #ec4899; }
+[data-theme-color="orange"] { --primary: #f97316; --primary-dark: #ea580c; --secondary: #f59e0b; }
+[data-theme-color="blue"] { --primary: #3b82f6; --primary-dark: #2563eb; --secondary: #06b6d4; }
+[data-theme-color="green"] { --primary: #10b981; --primary-dark: #059669; --secondary: #84cc16; }
+[data-theme-color="purple"] { --primary: #8b5cf6; --primary-dark: #7c3aed; --secondary: #d946ef; }
+[data-theme-color="red"] { --primary: #ef4444; --primary-dark: #dc2626; --secondary: #f97316; }
+[data-theme-color="pink"] { --primary: #ec4899; --primary-dark: #db2777; --secondary: #8b5cf6; }
+[data-theme-color="teal"] { --primary: #14b8a6; --primary-dark: #0d9488; --secondary: #06b6d4; }
+
+[data-theme="dark"] { --bg-primary: #0f172a; --bg-secondary: #1e293b; --bg-card: #1e293b; --text-primary: #f8fafc; --text-secondary: #cbd5e1; --text-muted: #64748b; --border-color: #334155; }
+[data-theme="light"] { --bg-primary: #f8fafc; --bg-secondary: #f1f5f9; --bg-card: #ffffff; --text-primary: #0f172a; --text-secondary: #475569; --text-muted: #94a3b8; --border-color: #e2e8f0; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { font-size: 16px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+    ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 9999px; }
+
+    /* Shadow & Radius */
+    :root {
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+      --radius-sm: 0.375rem;
+      --radius-md: 0.5rem;
+      --radius-lg: 0.75rem;
+      --radius-xl: 1rem;
+      --sidebar-width: 280px;
+      --sidebar-collapsed: 76px;
+      --header-height: 70px;
+      --bottom-nav-height: 70px;
+    }
+
+    /* Layout */
+    .app-container { display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: var(--bg-card);
+      border-right: 1px solid var(--border-color);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.25s ease;
+    }
+    .sidebar.collapsed { width: var(--sidebar-collapsed); }
+    @media (max-width: 1024px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.mobile-open { transform: translateX(0); }
+    }
+
+    .sidebar-header {
+      padding: 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      min-height: var(--header-height);
+    }
+    .logo-container { display: flex; align-items: center; gap: 0.5rem; overflow: hidden; }
+    .logo-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    .logo-text {
+      font-size: 1.35rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      white-space: nowrap;
+      transition: opacity 0.25s;
+    }
+    .sidebar.collapsed .logo-text { opacity: 0; width: 0; }
+
+    .menu-toggle {
+      position: absolute;
+      right: -14px;
+      top: 24px;
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1001;
+      font-size: 0.75rem;
+      box-shadow: var(--shadow-md);
+      transition: all 0.2s;
+    }
+    .menu-toggle:hover { background: var(--primary-dark); transform: scale(1.1); }
+    .sidebar.collapsed .menu-toggle { transform: rotate(180deg); }
+
+    .sidebar-search { padding: 1rem; border-bottom: 1px solid var(--border-color); }
+    .sidebar.collapsed .sidebar-search { display: none; }
+    .search-input-wrapper { position: relative; display: flex; align-items: center; }
+    .search-input-wrapper i { position: absolute; left: 1rem; color: var(--text-muted); font-size: 0.875rem; }
+    .search-input {
+      width: 100%;
+      padding: 0.5rem 1rem 0.5rem 2.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--primary); }
+
+    .sidebar-nav { flex: 1; overflow-y: auto; padding: 1rem; }
+    .nav-section { margin-bottom: 1.5rem; }
+    .nav-section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      margin-bottom: 0.25rem;
+    }
+    .sidebar.collapsed .nav-section-title { display: none; }
+
+    .nav-menu { list-style: none; }
+    .nav-item { margin-bottom: 2px; }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.625rem 1rem;
+      border-radius: 0.75rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.15s;
+      position: relative;
+      cursor: pointer;
+    }
+    .nav-link::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 3px;
+      background: var(--primary);
+      transform: scaleY(0);
+      transition: transform 0.15s;
+      border-radius: 0 0.25rem 0.25rem 0;
+    }
+    .nav-link:hover { background: rgba(255,255,255,0.05); color: var(--primary); }
+    [data-theme="light"] .nav-link:hover { background: rgba(0,0,0,0.05); }
+    .nav-link.active { background: var(--primary); color: white; font-weight: 600; }
+    .nav-link.active::before { transform: scaleY(1); background: var(--primary-dark); }
+    .nav-link i { width: 22px; text-align: center; font-size: 1.05rem; }
+    .nav-link span { white-space: nowrap; transition: opacity 0.25s; }
+    .sidebar.collapsed .nav-link span { display: none; }
+
+    .nav-dropdown { position: relative; }
+    .nav-dropdown-toggle { justify-content: space-between; }
+    .nav-dropdown-toggle .dropdown-arrow { transition: transform 0.2s; font-size: 0.75rem; margin-left: auto; }
+    .nav-dropdown.open .nav-dropdown-toggle .dropdown-arrow { transform: rotate(180deg); }
+    .nav-submenu { list-style: none; padding-left: 2.75rem; max-height: 0; overflow: hidden; transition: max-height 0.25s ease; }
+    .sidebar.collapsed .nav-submenu { display: none; }
+    .nav-dropdown.open .nav-submenu { max-height: 500px; }
+    .nav-submenu .nav-link { padding: 0.5rem 1rem; font-size: 0.85rem; }
+    .nav-submenu .nav-link.active { background: rgba(255,255,255,0.1); color: var(--primary); }
+
+    /* SIDEBAR FOOTER - USER PROFILE FIX */
+    .sidebar-footer {
+      padding: 1rem;
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-card);
+      margin-top: auto;
+    }
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 0.75rem;
+      transition: all 0.15s;
+    }
+    .user-profile:hover { background: var(--bg-secondary); }
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 0.875rem;
+      flex-shrink: 0;
+    }
+    .user-info { flex: 1; overflow: hidden; transition: opacity 0.25s; }
+    .sidebar.collapsed .user-info { display: none; }
+    .user-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .user-role {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: capitalize;
+    }
+
+    /* MAIN CONTENT */
+    .main-content {
+      flex: 1;
+      margin-left: var(--sidebar-width);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: margin-left 0.25s ease;
+    }
+    .sidebar.collapsed ~ .main-content { margin-left: var(--sidebar-collapsed); }
+    @media (max-width: 1024px) {
+      .main-content { margin-left: 0; }
+      .sidebar.collapsed ~ .main-content { margin-left: 0; }
+    }
+
+    .main-header {
+      height: var(--header-height);
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 1rem; }
+    .header-title { font-size: 1.35rem; font-weight: 700; color: var(--text-primary); }
+    .header-actions { display: flex; align-items: center; gap: 0.5rem; }
+
+    .page-content { flex: 1; padding: 1.5rem; overflow-y: auto; background: var(--bg-primary); }
+    @media (max-width: 768px) {
+      .page-content { padding: 1rem; padding-bottom: calc(var(--bottom-nav-height) + 1rem); }
+    }
+
+    /* COMPONENTS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      border-radius: 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: none;
+      outline: none;
+      white-space: nowrap;
+    }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--border-color); color: var(--text-secondary); }
+    .btn-outline:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); background: rgba(0,0,0,0.05); }
+    [data-theme="dark"] .btn-outline:hover { background: rgba(255,255,255,0.05); }
+    .btn-sm { padding: 0.4rem 0.875rem; font-size: 0.8rem; }
+    .btn-block { width: 100%; }
+
+    .btn-icon {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border-radius: 0.75rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 1rem;
+    }
+    .btn-icon:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: 1rem;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+      transition: all 0.25s;
+      margin-bottom: 1.5rem;
+    }
+    .card:hover { box-shadow: var(--shadow-lg); }
+    .card-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .card-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem; }
+    .card-body { padding: 1.5rem; }
+
+    .form-group { margin-bottom: 1.25rem; }
+    .form-label { display: block; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.5rem; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--border-color);
+      border-radius: 0.75rem;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      transition: all 0.15s;
+      font-family: inherit;
+      outline: none;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(249,115,22,0.1); }
+    .form-input::placeholder { color: var(--text-muted); }
+    .form-textarea { min-height: 80px; resize: vertical; }
+    .form-select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      padding-right: 2.5rem;
+    }
+
+    .printer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 1024px) { .printer-grid { grid-template-columns: 1fr; } }
+
+    .ocr-section { background: var(--bg-card); border-radius: 1rem; border: 1px solid var(--border-color); padding: 1.5rem; margin-bottom: 1.5rem; }
+    .ocr-upload-area {
+      border: 3px dashed var(--border-color);
+      border-radius: 1rem;
+      padding: 2.5rem 1rem;
+      text-align: center;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .ocr-upload-area:hover { border-color: var(--primary); background: rgba(249,115,22,0.05); }
+    [data-theme="dark"] .ocr-upload-area:hover { background: rgba(249,115,22,0.1); }
+    .ocr-upload-area.dragover { border-color: var(--primary); background: rgba(249,115,22,0.1); }
+    .ocr-upload-area i { font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem; transition: all 0.3s; }
+    .ocr-upload-area:hover i { color: var(--primary); transform: scale(1.1); }
+    .ocr-upload-area .upload-text { font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; }
+    .ocr-upload-area .upload-hint { font-size: 0.8rem; color: var(--text-muted); }
+
+    .ocr-loading { display: none; text-align: center; padding: 2rem; }
+    .ocr-loading .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid var(--border-color);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .ocr-loading .progress-text { color: var(--text-secondary); font-size: 0.9rem; }
+
+    .ocr-result { display: none; margin-top: 1.5rem; }
+    .ocr-result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    @media (max-width: 768px) { .ocr-result-grid { grid-template-columns: 1fr; } }
+    .ocr-preview-image { width: 100%; border-radius: 0.75rem; border: 2px solid var(--border-color); max-height: 250px; object-fit: contain; background: white; }
+    .ocr-parsed-data { background: var(--bg-secondary); border-radius: 0.75rem; padding: 1rem; font-size: 0.85rem; line-height: 1.6; max-height: 250px; overflow-y: auto; }
+
+    .manual-section { background: var(--bg-card); border-radius: 1rem; border: 1px solid var(--border-color); padding: 1.5rem; }
+    .receipt-type-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; background: var(--bg-secondary); padding: 0.5rem; border-radius: 0.75rem; }
+    .receipt-type-tab { flex: 1; padding: 0.75rem; border: none; background: transparent; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.15s; color: var(--text-muted); }
+    .receipt-type-tab.active { background: var(--bg-card); color: var(--primary); box-shadow: var(--shadow-sm); }
+    .receipt-type-tab:hover:not(.active) { color: var(--text-secondary); }
+
+    .form-section { background: var(--bg-secondary); border-radius: 0.75rem; padding: 1rem; margin-bottom: 1rem; border-left: 4px solid var(--primary); }
+    .form-section.receiver { border-left-color: var(--success); }
+    .form-section-title { font-weight: 700; color: var(--primary); margin-bottom: 0.75rem; font-size: 0.9rem; }
+    .form-section.receiver .form-section-title { color: var(--success); }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }
+
+    .total-box {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      border-radius: 1rem;
+      padding: 1.25rem;
+      margin: 1.5rem 0;
+      box-shadow: var(--shadow-md);
+    }
+    .total-row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.2); font-size: 0.9rem; }
+    .total-row:last-child { border-bottom: none; font-size: 1.25rem; font-weight: 700; margin-top: 0.5rem; padding-top: 0.75rem; border-top: 2px solid rgba(255,255,255,0.3); }
+
+    .receipt-preview-container { background: var(--bg-card); border-radius: 1rem; border: 1px solid var(--border-color); padding: 1.5rem; position: sticky; top: calc(var(--header-height) + 1.5rem); }
+    .receipt-preview {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 1.5rem;
+      max-width: 300px;
+      margin: 0 auto;
+      font-family: 'Courier New', monospace;
+      color: #333;
+      font-size: 12px;
+      line-height: 1.4;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    [data-theme="dark"] .receipt-preview { background: #f8fafc; color: #0f172a; }
+    .receipt-header { text-align: center; border-bottom: 1px dashed #333; padding-bottom: 1rem; margin-bottom: 1rem; }
+    .receipt-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 0.25rem; }
+    .receipt-address { font-size: 0.7rem; color: #666; }
+    .receipt-info { font-size: 0.8rem; margin-bottom: 1rem; }
+    .receipt-info-row { display: flex; justify-content: space-between; margin-bottom: 0.25rem; }
+    .receipt-items { border-bottom: 1px dashed #333; padding-bottom: 1rem; margin-bottom: 1rem; }
+    .receipt-item { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+    .receipt-total { border-bottom: 1px dashed #333; padding-bottom: 1rem; margin-bottom: 1rem; }
+    .receipt-total-row { display: flex; justify-content: space-between; font-weight: bold; }
+    .receipt-footer { text-align: center; font-size: 0.7rem; color: #666; }
+
+    .info-box { padding: 1rem; border-radius: 0.75rem; margin-bottom: 1rem; font-size: 0.9rem; border-left: 4px solid; }
+    .info-box.info { background: rgba(59,130,246,0.1); border-left-color: var(--info); color: var(--text-primary); }
+    .info-box.warning { background: rgba(245,158,11,0.1); border-left-color: var(--warning); color: var(--text-primary); }
+    .info-box.error { background: rgba(239,68,68,0.1); border-left-color: var(--danger); color: var(--text-primary); }
+    .info-box .info-title { font-weight: 700; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem; }
+
+    .status-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+    .status-badge.connected { background: rgba(16,185,129,0.1); color: var(--success); }
+    .status-badge.disconnected { background: rgba(245,158,11,0.1); color: var(--warning); }
+
+    .toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; max-width: 360px; }
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      background: var(--bg-card);
+      border-radius: 0.75rem;
+      box-shadow: var(--shadow-lg);
+      border-left: 4px solid;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .toast.success { border-left-color: var(--success); }
+    .toast.error { border-left-color: var(--danger); }
+    .toast.warning { border-left-color: var(--warning); }
+    .toast.info { border-left-color: var(--info); }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg-primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9998;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s;
+    }
+    .loading-overlay.active { opacity: 1; visibility: visible; }
+    .loading-overlay .spinner { width: 48px; height: 48px; border: 4px solid var(--border-color); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--bottom-nav-height);
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-color);
+      z-index: 999;
+      padding: 0 1rem;
+    }
+    .mobile-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; font-weight: 500; transition: all 0.15s; padding: 0.5rem; }
+    .mobile-nav-item i { font-size: 1.25rem; }
+    .mobile-nav-item.active, .mobile-nav-item:hover { color: var(--primary); }
+    @media (max-width: 768px) {
+      .mobile-nav { display: flex; }
+      .page-content { padding-bottom: calc(var(--bottom-nav-height) + 1rem); }
+    }
+
+    .d-md-none { display: none !important; }
+    @media (max-width: 1024px) { .d-md-none { display: flex !important; } }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-container">
+          <div class="logo-icon"><i class="fas fa-cash-register"></i></div>
+          <span class="logo-text">WebPOS</span>
+        </div>
+      </div>
+      
+      <button class="menu-toggle" id="menuToggle"><i class="fas fa-chevron-left"></i></button>
+      
+      <div class="sidebar-search">
+        <div class="search-input-wrapper">
+          <i class="fas fa-search"></i>
+          <input type="text" class="search-input" id="menuSearch" placeholder="Cari menu...">
+        </div>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <!-- UTAMA -->
+        <div class="nav-section">
+          <div class="nav-section-title">Utama</div>
+          <ul class="nav-menu">
+            <li class="nav-item">
+              <a href="index.html" class="nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a>
+            </li>
+            <li class="nav-item">
+              <a href="page-kasir.html" class="nav-link"><i class="fas fa-cash-register"></i><span>Kasir</span></a>
+            </li>
+            <li class="nav-item">
+              <a href="page-produk.html" class="nav-link"><i class="fas fa-box"></i><span>Produk</span></a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- TRANSAKSI -->
+        <div class="nav-section">
+          <div class="nav-section-title">Transaksi</div>
+          <ul class="nav-menu">
+            <li class="nav-item">
+              <a href="page-riwayat.html" class="nav-link"><i class="fas fa-history"></i><span>Riwayat Transaksi</span></a>
+            </li>
+            <li class="nav-item nav-dropdown" data-dropdown>
+              <div class="nav-link nav-dropdown-toggle">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <i class="fas fa-wallet"></i>
+                  <span>Kas Management</span>
+                </div>
+                <i class="fas fa-chevron-down dropdown-arrow"></i>
+              </div>
+              <ul class="nav-submenu">
+                <li><a href="page-kas.html" class="nav-link"><span>Ringkasan Kas</span></a></li>
+                <li><a href="page-modal-harian.html" class="nav-link"><span>Modal Harian</span></a></li>
+                <li><a href="page-kas-masuk.html" class="nav-link"><span>Kas Masuk</span></a></li>
+                <li><a href="page-kas-keluar.html" class="nav-link"><span>Kas Keluar</span></a></li>
+                <li><a href="page-kas-shift.html" class="nav-link"><span>Kas & Shift</span></a></li>
+                <li><a href="page-kas-topup.html" class="nav-link"><span>Top Up</span></a></li>
+                <li><a href="page-kas-tarik.html" class="nav-link"><span>Tarik Tunai</span></a></li>
+              </ul>
+            </li>
+            <li class="nav-item">
+              <a href="page-hutang.html" class="nav-link"><i class="fas fa-hand-holding-usd"></i><span>Hutang & Piutang</span></a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- LAPORAN -->
+        <div class="nav-section">
+          <div class="nav-section-title">Laporan</div>
+          <ul class="nav-menu">
+            <li class="nav-item">
+              <a href="page-laporan.html" class="nav-link"><i class="fas fa-chart-bar"></i><span>Laporan Penjualan</span></a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- INTEGRASI -->
+        <div class="nav-section">
+          <div class="nav-section-title">Integrasi</div>
+          <ul class="nav-menu">
+            <li class="nav-item">
+              <a href="page-saldo-telegram.html" class="nav-link"><i class="fab fa-telegram"></i><span>Saldo Telegram</span></a>
+            </li>
+            <li class="nav-item">
+              <a href="page-data-pelanggan.html" class="nav-link"><i class="fas fa-users"></i><span>Data Pelanggan</span></a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- SISTEM -->
+        <div class="nav-section">
+          <div class="nav-section-title">Sistem</div>
+          <ul class="nav-menu">
+            <li class="nav-item">
+              <a href="page-pengguna.html" class="nav-link"><i class="fas fa-user-cog"></i><span>Pengguna</span></a>
+            </li>
+            <li class="nav-item">
+              <a href="page-setting.html" class="nav-link"><i class="fas fa-cog"></i><span>Pengaturan</span></a>
+            </li>
+            <li class="nav-item">
+              <a href="page-backup.html" class="nav-link"><i class="fas fa-cloud-upload-alt"></i><span>Backup & Sync</span></a>
+            </li>
+            <li class="nav-item">
+              <a href="page-printer.html" class="nav-link active"><i class="fas fa-print"></i><span>Printer & Struk</span></a>
+            </li>
+            <li class="nav-item">
+              <a href="page-reset.html" class="nav-link"><i class="fas fa-trash-alt"></i><span>Reset Data</span></a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+      
+      <!-- SIDEBAR FOOTER - USER PROFILE -->
+      <div class="sidebar-footer">
+        <div class="user-profile" id="userProfile">
+          <div class="user-avatar" id="userAvatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="user-info">
+            <div class="user-name" id="userName">Loading...</div>
+            <div class="user-role" id="userRole">Kasir</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <header class="main-header">
+        <div class="header-left">
+          <button class="btn-icon d-md-none" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
+          <h1 class="header-title">Printer & Struk</h1>
+        </div>
+        <div class="header-actions">
+          <button class="btn-icon" id="btnTheme" title="Toggle Dark Mode">
+            <i class="fas fa-moon"></i>
+          </button>
+          <button class="btn-icon" id="btnLogout" title="Logout">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="printer-grid">
+          <!-- LEFT COLUMN -->
+          <div class="left-column">
+            <!-- Header Settings -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title"><i class="fas fa-cog" style="color: var(--primary)"></i> Pengaturan Header Struk</span>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Nama Toko/Konter *</label>
+                  <input type="text" class="form-input" id="receiptStoreName" placeholder="Contoh: Hifzi Cell" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Alamat *</label>
+                  <textarea class="form-textarea" id="receiptAddress" rows="2" placeholder="Alamat lengkap..." oninput="updatePreview()"></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Nomor HP</label>
+                  <input type="text" class="form-input" id="receiptPhone" placeholder="0812-3456-7890" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Catatan Footer</label>
+                  <textarea class="form-textarea" id="receiptNote" rows="2" placeholder="Terima kasih telah berbelanja..." oninput="updatePreview()"></textarea>
+                </div>
+                <button class="btn btn-primary btn-block" onclick="saveHeader()">
+                  <i class="fas fa-save"></i> Simpan Header
+                </button>
+              </div>
+            </div>
+
+            <!-- OCR Section -->
+            <div class="ocr-section">
+              <div class="card-header" style="padding: 0 0 1rem 0; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem;">
+                <span class="card-title"><i class="fas fa-camera" style="color: var(--info)"></i> Baca Bukti Transfer (OCR)</span>
+              </div>
+              
+              <div class="info-box info" id="ocrStatusBox">
+                <div class="info-title"><i class="fas fa-info-circle"></i> Status OCR</div>
+                <div id="ocrStatusText">⏳ Memeriksa library...</div>
+              </div>
+
+              <div class="ocr-upload-area" id="ocrUploadArea">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <div class="upload-text">Klik atau Drop Gambar Bukti Transfer</div>
+                <div class="upload-hint">JPG, PNG (Max 5MB)</div>
+                <input type="file" id="ocrFileInput" accept="image/*" style="display: none;">
+              </div>
+
+              <div class="ocr-loading" id="ocrLoading">
+                <div class="spinner"></div>
+                <div class="progress-text" id="ocrProgressText">Memuat OCR...</div>
+              </div>
+
+              <div class="ocr-result" id="ocrResultSection">
+                <div class="ocr-result-grid">
+                  <div>
+                    <label class="form-label">Gambar:</label>
+                    <img id="ocrPreviewImage" class="ocr-preview-image">
+                  </div>
+                  <div>
+                    <label class="form-label">Hasil Pembacaan:</label>
+                    <div id="ocrParsedData" class="ocr-parsed-data"></div>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                  <button class="btn btn-primary" onclick="applyOcrToForm()" style="flex: 1;">
+                    <i class="fas fa-check"></i> Gunakan Data
+                  </button>
+                  <button class="btn btn-outline" onclick="resetOcr()" style="flex: 1;">
+                    <i class="fas fa-redo"></i> Ulangi
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Manual Input -->
+            <div class="manual-section">
+              <div class="card-header" style="padding: 0 0 1rem 0; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem;">
+                <span class="card-title"><i class="fas fa-edit" style="color: var(--success)"></i> Input Manual</span>
+              </div>
+
+              <div class="receipt-type-tabs">
+                <button class="receipt-type-tab active" onclick="setReceiptType('transfer')" data-type="transfer">🏦 Transfer</button>
+                <button class="receipt-type-tab" onclick="setReceiptType('tarik_tunai')" data-type="tarik_tunai">🏧 Tarik Tunai</button>
+                <button class="receipt-type-tab" onclick="setReceiptType('top_up')" data-type="top_up">💰 Top Up</button>
+              </div>
+
+              <div id="manualFormContainer"></div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: Preview -->
+          <div class="right-column">
+            <div class="receipt-preview-container">
+              <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-eye" style="color: var(--success)"></i> Preview Struk
+              </h3>
+              
+              <div class="receipt-preview" id="receiptPreview">
+                <div class="receipt-header">
+                  <div class="receipt-title" id="previewStoreName">NAMA TOKO</div>
+                  <div class="receipt-address" id="previewAddress">Alamat Toko</div>
+                  <div class="receipt-address" id="previewPhone" style="margin-top: 0.25rem;">-</div>
+                </div>
+                <div class="receipt-info">
+                  <div class="receipt-info-row">
+                    <span>Tanggal:</span>
+                    <span id="previewDate">-</span>
+                  </div>
+                  <div class="receipt-info-row">
+                    <span>Jenis:</span>
+                    <span id="previewType">-</span>
+                  </div>
+                </div>
+                <div class="receipt-items" id="previewItems"></div>
+                <div class="receipt-total" id="previewTotal"></div>
+                <div class="receipt-footer" id="previewFooter">Terima kasih</div>
+              </div>
+
+              <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                <button class="btn btn-primary btn-block" onclick="printReceipt()">
+                  <i class="fas fa-print"></i> Cetak Struk
+                </button>
+                <button class="btn btn-outline" onclick="window.print()" title="Print halaman ini">
+                  <i class="fas fa-file-alt"></i>
+                </button>
+              </div>
+
+              <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+                <h4 style="font-size: 0.9rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                  Pengaturan Printer
+                </h4>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                  <span class="status-badge disconnected" id="printerStatusBadge">
+                    <i class="fas fa-times-circle"></i> Offline
+                  </span>
+                </div>
+                <button class="btn btn-outline btn-sm btn-block" onclick="togglePrinterConnection()">
+                  <i class="fas fa-plug"></i> <span id="printerConnectText">Hubungkan Printer</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Mobile Navigation -->
+    <nav class="mobile-nav">
+      <a href="index.html" class="mobile-nav-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
+      <a href="page-kasir.html" class="mobile-nav-item"><i class="fas fa-cash-register"></i><span>Kasir</span></a>
+      <a href="page-produk.html" class="mobile-nav-item"><i class="fas fa-box"></i><span>Produk</span></a>
+      <a href="page-riwayat.html" class="mobile-nav-item"><i class="fas fa-history"></i><span>Riwayat</span></a>
+      <a href="page-setting.html" class="mobile-nav-item"><i class="fas fa-cog"></i><span>Setting</span></a>
+    </nav>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <p style="margin-top: 1rem; color: var(--text-secondary);">Loading...</p>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/sidebar-filter.js"></script>
+
+  <script>
+    // ==========================================
+    // GLOBAL STATE
+    // ==========================================
+    let currentReceiptType = 'transfer';
+    let ocrWorkerReady = false;
+    let scannedData = null;
+    let isPrinterConnected = false;
+    let receiptHeader = {};
+    let currentUser = null;
+
+    // ==========================================
+    // INITIALIZATION
+    // ==========================================
+   document.addEventListener('DOMContentLoaded', async function() {
+  // TAMBAH BARIS INI:
+  syncTheme(); // <-- TAMBAH INI
+  
+  updateThemeIcon();
+      
+      // Initialize OCR
+      await initOCR();
+      
+      // Load saved header
+      await loadHeaderSettings();
+      
+      // Render initial form
+      renderManualForm();
+      
+      // Setup event listeners
+      setupEventListeners();
+      
+      // Initial preview update
+      updatePreview();
+      
+      // Setup Auth state listener
+      setupAuthListener();
+    });
+
+    // ==========================================
+    // AUTH & USER PROFILE - FIX LOADING ISSUE
+    // ==========================================
+    function setupAuthListener() {
+      // Check if Firebase Auth is available
+      if (typeof auth !== 'undefined') {
+        auth.onAuthStateChanged((user) => {
+          if (!user && !localStorage.getItem('webpos_session')) {
+            window.location.href = 'login.html';
+            return;
+          }
+          
+          if (user) {
+            currentUser = user;
+            loadUserData(user.uid);
+          } else {
+            // Try to get from session storage
+            const session = localStorage.getItem('webpos_session');
+            if (session) {
+              try {
+                const userData = JSON.parse(session);
+                updateUserProfile(userData);
+              } catch(e) {
+                updateUserProfile({ name: 'Guest', role: 'Kasir' });
+              }
+            }
+          }
+        });
+      } else {
+        // Fallback if auth not loaded yet
+        const session = localStorage.getItem('webpos_session');
+        if (session) {
+          try {
+            const userData = JSON.parse(session);
+            updateUserProfile(userData);
+          } catch(e) {
+            updateUserProfile({ name: 'Guest', role: 'Kasir' });
+          }
+        }
+      }
+    }
+
+    function loadUserData(uid) {
+      // Try to get from database or localStorage
+      if (typeof database !== 'undefined') {
+        database.ref('users/' + uid).once('value')
+          .then(snapshot => {
+            const data = snapshot.val();
+            if (data) {
+              updateUserProfile(data);
+              // Save to localStorage for offline access
+              localStorage.setItem('webpos_user', JSON.stringify(data));
+            } else {
+              // Fallback to basic info
+              updateUserProfile({ 
+                name: currentUser?.displayName || currentUser?.email || 'User',
+                role: 'Kasir'
+              });
+            }
+          })
+          .catch(err => {
+            console.error('Error loading user:', err);
+            // Try localStorage fallback
+            const cached = localStorage.getItem('webpos_user');
+            if (cached) {
+              try {
+                updateUserProfile(JSON.parse(cached));
+              } catch(e) {
+                updateUserProfile({ name: 'User', role: 'Kasir' });
+              }
+            } else {
+              updateUserProfile({ name: 'User', role: 'Kasir' });
+            }
+          });
+      } else {
+        // No database, use cached
+        const cached = localStorage.getItem('webpos_user');
+        if (cached) {
+          try {
+            updateUserProfile(JSON.parse(cached));
+          } catch(e) {
+            updateUserProfile({ name: 'User', role: 'Kasir' });
+          }
+        }
+      }
+    }
+
+    function updateUserProfile(userData) {
+      const nameEl = document.getElementById('userName');
+      const roleEl = document.getElementById('userRole');
+      
+      if (nameEl) {
+        nameEl.textContent = userData.name || userData.displayName || userData.email || 'User';
+      }
+      if (roleEl) {
+        roleEl.textContent = userData.role || 'Kasir';
+      }
+      
+      // Update avatar if photo available
+      const avatarEl = document.getElementById('userAvatar');
+      if (avatarEl && userData.photoURL) {
+        avatarEl.innerHTML = `<img src="${userData.photoURL}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+      }
+    }
+
+    // ==========================================
+    // THEME FUNCTIONS
+    // ==========================================
+    function updateThemeIcon() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const icon = document.querySelector('#btnTheme i');
+      if (icon) {
+        icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+      }
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const newTheme = isDark ? 'light' : 'dark';
+      
+      if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+      
+      localStorage.setItem('dark_mode', !isDark);
+      updateThemeIcon();
+    }
+
+    // ==========================================
+    // OCR FUNCTIONS
+    // ==========================================
+    async function initOCR() {
+      const statusBox = document.getElementById('ocrStatusBox');
+      const statusText = document.getElementById('ocrStatusText');
+      
+      if (typeof Tesseract === 'undefined') {
+        statusBox.className = 'info-box error';
+        statusText.innerHTML = '❌ Library OCR tidak ditemukan. Pastikan ada koneksi internet.';
+        return;
+      }
+
+      try {
+        statusText.innerHTML = '⏳ Memeriksa OCR...';
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        ocrWorkerReady = true;
+        statusBox.className = 'info-box info';
+        statusText.innerHTML = '✅ OCR siap! Upload gambar bukti transfer.';
+      } catch (error) {
+        statusBox.className = 'info-box error';
+        statusText.innerHTML = '❌ Error OCR: ' + error.message;
+      }
+    }
+
+    async function processImage(file) {
+      if (!ocrWorkerReady) {
+        showToast('OCR belum siap, tunggu sebentar...', 'warning');
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        showToast('File harus gambar!', 'error');
+        return;
+      }
+
+      document.getElementById('ocrUploadArea').style.display = 'none';
+      document.getElementById('ocrLoading').style.display = 'block';
+      document.getElementById('ocrResultSection').style.display = 'none';
+
+      try {
+        const imageData = await readFileAsDataURL(file);
+        document.getElementById('ocrPreviewImage').src = imageData;
+        document.getElementById('ocrProgressText').textContent = 'Membaca teks dengan OCR...';
+
+        const result = await Tesseract.recognize(
+          imageData,
+          'ind',
+          { 
+            logger: m => {
+              if (m.status === 'recognizing text') {
+                document.getElementById('ocrProgressText').textContent = 
+                  `Membaca... ${Math.round(m.progress * 100)}%`;
+              }
+            }
+          }
+        );
+        
+        const text = result.data.text;
+
+        if (!text || text.trim().length < 5) {
+          throw new Error('Teks tidak terbaca dari gambar');
+        }
+
+        const parsed = parseReceiptText(text);
+        scannedData = parsed;
+        displayOcrResult(parsed);
+
+        document.getElementById('ocrLoading').style.display = 'none';
+        document.getElementById('ocrResultSection').style.display = 'block';
+
+      } catch (error) {
+        console.error('OCR Error:', error);
+        document.getElementById('ocrLoading').style.display = 'none';
+        document.getElementById('ocrUploadArea').style.display = 'block';
+        showToast('Gagal membaca gambar: ' + error.message, 'error');
+      }
+    }
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = () => reject(new Error('Gagal membaca file'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function parseReceiptText(text) {
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      const fullText = text.toLowerCase();
+      
+      let detectedBank = '';
+      if (fullText.includes('bri') || fullText.includes('brimo')) detectedBank = 'BRI';
+      else if (fullText.includes('bca')) detectedBank = 'BCA';
+      else if (fullText.includes('bni')) detectedBank = 'BNI';
+      else if (fullText.includes('mandiri') || fullText.includes('livin')) detectedBank = 'MANDIRI';
+      else if (fullText.includes('dana')) detectedBank = 'DANA';
+      else if (fullText.includes('gopay')) detectedBank = 'GOPAY';
+      else if (fullText.includes('ovo')) detectedBank = 'OVO';
+      else if (fullText.includes('shopeepay')) detectedBank = 'SHOPEEPAY';
+      else if (fullText.includes('linkaja')) detectedBank = 'LINKAJA';
+
+      let type = 'transfer';
+      if (fullText.includes('top up') || fullText.includes('topup') || fullText.includes('isi ulang')) {
+        type = 'top_up';
+      }
+
+      let date = new Date().toISOString().split('T')[0];
+      let time = new Date().toTimeString().slice(0, 5);
+      
+      const dateMatch = text.match(/(\d{1,2})[\/\-\s](\d{1,2})[\/\-\s](\d{4})/);
+      if (dateMatch && dateMatch[3].length === 4) {
+        date = `${dateMatch[3]}-${dateMatch[2].padStart(2,'0')}-${dateMatch[1].padStart(2,'0')}`;
+      }
+      
+      const timeMatch = text.match(/(\d{1,2})[:.](\d{2})/);
+      if (timeMatch) {
+        time = `${timeMatch[1].padStart(2,'0')}:${timeMatch[2]}`;
+      }
+
+      let nominal = 0;
+      let admin = 0;
+      let total = 0;
+
+      const rpMatch = text.match(/rp[\s\.]?([\d\.,]+)/i);
+      if (rpMatch && rpMatch[1]) {
+        const cleanNum = rpMatch[1].replace(/[\.,]/g, '');
+        const num = parseInt(cleanNum);
+        if (num > 1000) {
+          total = num;
+          nominal = num;
+        }
+      }
+
+      const allNumbers = [...text.matchAll(/\b\d{5,10}\b/g)].map(m => parseInt(m[0])).filter(n => n > 10000);
+      allNumbers.sort((a,b) => b-a);
+      
+      if (allNumbers.length > 0 && total === 0) {
+        total = allNumbers[0];
+        nominal = total;
+      }
+
+      for (const num of allNumbers) {
+        if (num <= 50000 && num > 0) {
+          admin = num;
+          nominal = total - admin;
+          break;
+        }
+      }
+
+      let senderName = '';
+      let senderAccount = '';
+      let receiverName = '';
+      let receiverAccount = '';
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].toLowerCase();
+        const nextLine = lines[i+1] || '';
+        
+        if ((line.includes('dari') || line.includes('pengirim') || line.includes('sumber')) && nextLine && !senderName) {
+          senderName = nextLine.trim().substring(0, 30);
+        }
+        
+        if ((line.includes('ke') || line.includes('penerima') || line.includes('tujuan')) && nextLine && !receiverName) {
+          receiverName = nextLine.trim().substring(0, 30);
+        }
+      }
+
+      const accountMatches = [...text.matchAll(/\b\d{10,16}\b/g)];
+      const accounts = accountMatches.map(m => m[0]).filter((v, i, a) => a.indexOf(v) === i);
+      
+      if (accounts.length >= 2) {
+        senderAccount = maskAccount(accounts[0]);
+        receiverAccount = maskAccount(accounts[1]);
+      } else if (accounts.length === 1) {
+        receiverAccount = maskAccount(accounts[0]);
+      }
+
+      if (type === 'top_up' || ['DANA','GOPAY','OVO'].includes(detectedBank)) {
+        const phoneMatch = text.match(/\b(08\d{8,13})\b/);
+        if (phoneMatch) {
+          if (!receiverAccount) receiverAccount = phoneMatch[1];
+        }
+      }
+
+      if (detectedBank === 'BRI') {
+        if (!senderName) senderName = 'Nasabah BRI';
+        if (!receiverName) receiverName = 'Penerima BRI';
+      }
+
+      return {
+        type,
+        detected: nominal > 0 || detectedBank !== '',
+        provider: detectedBank,
+        senderProvider: detectedBank,
+        receiverProvider: detectedBank,
+        parsed: {
+          date, time,
+          senderName: senderName || 'Nama Pengirim',
+          senderAccount: senderAccount || '****XXXX',
+          senderBank: detectedBank,
+          receiverName: receiverName || 'Nama Penerima',
+          receiverAccount: receiverAccount || '****XXXX',
+          receiverBank: detectedBank,
+          nominal,
+          admin,
+          total: total || nominal
+        }
+      };
+    }
+
+    function maskAccount(account) {
+      if (!account || account.length < 4) return account;
+      const clean = account.replace(/\D/g, '');
+      if (clean.length < 4) return account;
+      return `****${clean.slice(-4)}`;
+    }
+
+    function displayOcrResult(data) {
+      const container = document.getElementById('ocrParsedData');
+      const p = data.parsed;
+
+      let html = `
+        <div style="margin-bottom: 0.5rem;"><strong>Jenis:</strong> ${data.receiverProvider || 'Transfer'}</div>
+        <div style="margin-bottom: 0.5rem;"><strong>Tanggal:</strong> ${p.date} ${p.time}</div>
+      `;
+
+      if (p.senderName || p.senderAccount) {
+        html += `
+          <div style="background: var(--bg-card); padding: 0.5rem; border-radius: 0.5rem; margin-bottom: 0.5rem; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Pengirim${p.senderBank ? ` (${p.senderBank})` : ''}</div>
+            <div style="font-weight: 600; color: var(--text-primary);">${p.senderName || '-'}</div>
+            ${p.senderAccount ? `<div style="font-family: monospace; font-size: 0.75rem; color: var(--text-secondary);">${p.senderAccount}</div>` : ''}
+          </div>
+        `;
+      }
+
+      if (p.receiverName || p.receiverAccount) {
+        html += `
+          <div style="background: var(--bg-card); padding: 0.5rem; border-radius: 0.5rem; margin-bottom: 0.5rem; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Penerima${p.receiverBank ? ` (${p.receiverBank})` : ''}</div>
+            <div style="font-weight: 600; color: var(--text-primary);">${p.receiverName || '-'}</div>
+            ${p.receiverAccount ? `<div style="font-family: monospace; font-size: 0.75rem; color: var(--text-secondary);">${p.receiverAccount}</div>` : ''}
+          </div>
+        `;
+      }
+
+      html += `
+        <div style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 0.75rem; border-radius: 0.5rem; text-align: center;">
+          <div style="font-size: 0.75rem; opacity: 0.9;">Total</div>
+          <div style="font-size: 1.25rem; font-weight: 700;">Rp ${formatNumber(p.total)}</div>
+        </div>
+      `;
+
+      container.innerHTML = html;
+    }
+
+    function applyOcrToForm() {
+      if (!scannedData) {
+        showToast('Tidak ada data OCR', 'warning');
+        return;
+      }
+
+      const data = scannedData;
+      const p = data.parsed;
+
+      if (data.type && data.type !== currentReceiptType) {
+        setReceiptType(data.type);
+      }
+
+      setTimeout(() => {
+        if (document.getElementById('manualDate')) document.getElementById('manualDate').value = p.date;
+        if (document.getElementById('manualTime')) document.getElementById('manualTime').value = p.time;
+        if (document.getElementById('manualNominal')) document.getElementById('manualNominal').value = p.nominal;
+        if (document.getElementById('manualAdmin')) document.getElementById('manualAdmin').value = p.admin;
+
+        if (currentReceiptType === 'transfer') {
+          if (document.getElementById('manualSender')) document.getElementById('manualSender').value = p.senderName;
+          if (document.getElementById('manualSenderAccount')) document.getElementById('manualSenderAccount').value = p.senderAccount;
+          if (document.getElementById('manualBankFrom')) document.getElementById('manualBankFrom').value = p.senderBank;
+          if (document.getElementById('manualReceiver')) document.getElementById('manualReceiver').value = p.receiverName;
+          if (document.getElementById('manualReceiverAccount')) document.getElementById('manualReceiverAccount').value = p.receiverAccount;
+          if (document.getElementById('manualBankTo')) document.getElementById('manualBankTo').value = p.receiverBank;
+        } else if (currentReceiptType === 'tarik_tunai') {
+          if (document.getElementById('manualCustomer')) document.getElementById('manualCustomer').value = p.receiverName;
+          if (document.getElementById('manualBank')) document.getElementById('manualBank').value = p.receiverBank;
+          if (document.getElementById('manualAccount')) document.getElementById('manualAccount').value = p.receiverAccount;
+        } else if (currentReceiptType === 'top_up') {
+          if (document.getElementById('manualTopUpType')) document.getElementById('manualTopUpType').value = p.receiverBank || 'DANA';
+          if (document.getElementById('manualTarget')) document.getElementById('manualTarget').value = p.receiverAccount;
+          if (document.getElementById('manualCustomer')) document.getElementById('manualCustomer').value = p.receiverName;
+        }
+
+        calcTotal();
+        updatePreview();
+        showToast('Data OCR berhasil diisi ke form', 'success');
+      }, 100);
+    }
+
+    function resetOcr() {
+      scannedData = null;
+      document.getElementById('ocrResultSection').style.display = 'none';
+      document.getElementById('ocrUploadArea').style.display = 'block';
+      document.getElementById('ocrFileInput').value = '';
+    }
+
+    // ==========================================
+    // RECEIPT FORM
+    // ==========================================
+    function setReceiptType(type) {
+      currentReceiptType = type;
+      document.querySelectorAll('.receipt-type-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.type === type);
+      });
+      renderManualForm();
+      updatePreview();
+    }
+
+    function renderManualForm() {
+      const container = document.getElementById('manualFormContainer');
+      const today = new Date().toISOString().split('T')[0];
+      const now = new Date().toTimeString().slice(0, 5);
+      const banks = ['BRI','BCA','BNI','MANDIRI','BSI','CIMB','DANAMON','PERMATA','DANA','GOPAY','OVO','SHOPEEPAY','LINKAJA'];
+      const bankOptions = banks.map(b => `<option value="${b}">${b}</option>`).join('');
+
+      if (currentReceiptType === 'transfer') {
+        container.innerHTML = `
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Tanggal</label>
+              <input type="date" class="form-input" id="manualDate" value="${today}" onchange="updatePreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Waktu</label>
+              <input type="time" class="form-input" id="manualTime" value="${now}" onchange="updatePreview()">
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">👤 Pengirim</div>
+            <div class="form-group">
+              <label class="form-label">Nama</label>
+              <input type="text" class="form-input" id="manualSender" oninput="updatePreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">No Rekening (4 digit terakhir)</label>
+              <input type="text" class="form-input" id="manualSenderAccount" placeholder="****9012" style="font-family: monospace;" oninput="updatePreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bank</label>
+              <select class="form-select" id="manualBankFrom" onchange="updatePreview()">${bankOptions}</select>
+            </div>
+          </div>
+
+          <div class="form-section receiver">
+            <div class="form-section-title">🎯 Penerima</div>
+            <div class="form-group">
+              <label class="form-label">Nama</label>
+              <input type="text" class="form-input" id="manualReceiver" oninput="updatePreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">No Rekening (4 digit terakhir)</label>
+              <input type="text" class="form-input" id="manualReceiverAccount" placeholder="****3456" style="font-family: monospace;" oninput="updatePreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bank</label>
+              <select class="form-select" id="manualBankTo" onchange="updatePreview()">${bankOptions}</select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nominal (Rp) *</label>
+              <input type="number" class="form-input" id="manualNominal" placeholder="0" oninput="calcTotal(); updatePreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Admin (Rp)</label>
+              <input type="number" class="form-input" id="manualAdmin" placeholder="0" oninput="calcTotal(); updatePreview()">
+            </div>
+          </div>
+
+          <div class="total-box">
+            <div class="total-row"><span>Nominal:</span><span id="displayNominal">Rp 0</span></div>
+            <div class="total-row"><span>Admin:</span><span id="displayAdmin">Rp 0</span></div>
+            <div class="total-row"><span>TOTAL:</span><span id="displayTotal">Rp 0</span></div>
+          </div>
+
+          <button class="btn btn-primary btn-block" onclick="printReceipt()">
+            <i class="fas fa-print"></i> Cetak Struk Transfer
+          </button>
+        `;
+      } else if (currentReceiptType === 'tarik_tunai') {
+        container.innerHTML = `
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Tanggal</label>
+              <input type="date" class="form-input" id="manualDate" value="${today}" onchange="updatePreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Waktu</label>
+              <input type="time" class="form-input" id="manualTime" value="${now}" onchange="updatePreview()">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Nama Customer</label>
+            <input type="text" class="form-input" id="manualCustomer" oninput="updatePreview()">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Bank</label>
+            <select class="form-select" id="manualBank" onchange="updatePreview()">${bankOptions}</select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">No Rekening (4 digit terakhir)</label>
+            <input type="text" class="form-input" id="manualAccount" placeholder="****5678" style="font-family: monospace;" oninput="updatePreview()">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nominal (Rp) *</label>
+              <input type="number" class="form-input" id="manualNominal" placeholder="0" oninput="calcTotal(); updatePreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Admin (Rp)</label>
+              <input type="number" class="form-input" id="manualAdmin" placeholder="0" oninput="calcTotal(); updatePreview()">
+            </div>
+          </div>
+
+          <div class="total-box">
+            <div class="total-row"><span>Nominal:</span><span id="displayNominal">Rp 0</span></div>
+            <div class="total-row"><span>Admin:</span><span id="displayAdmin">Rp 0</span></div>
+            <div class="total-row"><span>TOTAL:</span><span id="displayTotal">Rp 0</span></div>
+          </div>
+
+          <button class="btn btn-primary btn-block" onclick="printReceipt()">
+            <i class="fas fa-print"></i> Cetak Struk Tarik Tunai
+          </button>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Tanggal</label>
+              <input type="date" class="form-input" id="manualDate" value="${today}" onchange="updatePreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Waktu</label>
+              <input type="time" class="form-input" id="manualTime" value="${now}" onchange="updatePreview()">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Jenis Top Up</label>
+            <select class="form-select" id="manualTopUpType" onchange="updatePreview()">
+              <option value="DANA">DANA</option>
+              <option value="GoPay">GoPay</option>
+              <option value="OVO">OVO</option>
+              <option value="ShopeePay">ShopeePay</option>
+              <option value="LinkAja">LinkAja</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">No Tujuan (HP)</label>
+            <input type="text" class="form-input" id="manualTarget" placeholder="08xxxxxxxxxx" style="font-family: monospace;" oninput="updatePreview()">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Nama Customer</label>
+            <input type="text" class="form-input" id="manualCustomer" oninput="updatePreview()">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nominal (Rp) *</label>
+              <input type="number" class="form-input" id="manualNominal" placeholder="0" oninput="calcTotal(); updatePreview()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Admin (Rp)</label>
+              <input type="number" class="form-input" id="manualAdmin" placeholder="0" oninput="calcTotal(); updatePreview()">
+            </div>
+          </div>
+
+          <div class="total-box">
+            <div class="total-row"><span>Nominal:</span><span id="displayNominal">Rp 0</span></div>
+            <div class="total-row"><span>Admin:</span><span id="displayAdmin">Rp 0</span></div>
+            <div class="total-row"><span>TOTAL:</span><span id="displayTotal">Rp 0</span></div>
+          </div>
+
+          <button class="btn btn-primary btn-block" onclick="printReceipt()">
+            <i class="fas fa-print"></i> Cetak Struk Top Up
+          </button>
+        `;
+      }
+      calcTotal();
+    }
+
+    function calcTotal() {
+      const nominal = parseInt(document.getElementById('manualNominal')?.value) || 0;
+      const admin = parseInt(document.getElementById('manualAdmin')?.value) || 0;
+      const total = nominal + admin;
+      if (document.getElementById('displayNominal')) document.getElementById('displayNominal').textContent = 'Rp ' + formatNumber(nominal);
+      if (document.getElementById('displayAdmin')) document.getElementById('displayAdmin').textContent = 'Rp ' + formatNumber(admin);
+      if (document.getElementById('displayTotal')) document.getElementById('displayTotal').textContent = 'Rp ' + formatNumber(total);
+    }
+
+    function updatePreview() {
+      const storeName = document.getElementById('receiptStoreName')?.value || 'NAMA TOKO';
+      const address = document.getElementById('receiptAddress')?.value || 'Alamat Toko';
+      const phone = document.getElementById('receiptPhone')?.value || '';
+      const note = document.getElementById('receiptNote')?.value || 'Terima kasih';
+
+      document.getElementById('previewStoreName').textContent = storeName;
+      document.getElementById('previewAddress').textContent = address;
+      document.getElementById('previewPhone').textContent = phone ? 'HP: ' + phone : '';
+      document.getElementById('previewFooter').textContent = note;
+
+      const date = document.getElementById('manualDate')?.value || '-';
+      const time = document.getElementById('manualTime')?.value || '';
+      document.getElementById('previewDate').textContent = date + (time ? ' ' + time : '');
+
+      const typeLabels = {'transfer': 'TRANSFER', 'tarik_tunai': 'TARIK TUNAI', 'top_up': 'TOP UP'};
+      document.getElementById('previewType').textContent = typeLabels[currentReceiptType] || '-';
+
+      let itemsHtml = '';
+      const nominal = parseInt(document.getElementById('manualNominal')?.value) || 0;
+      const admin = parseInt(document.getElementById('manualAdmin')?.value) || 0;
+
+      if (currentReceiptType === 'transfer') {
+        const sender = document.getElementById('manualSender')?.value || '-';
+        const senderAcc = document.getElementById('manualSenderAccount')?.value || '-';
+        const senderBank = document.getElementById('manualBankFrom')?.value || '';
+        const receiver = document.getElementById('manualReceiver')?.value || '-';
+        const receiverAcc = document.getElementById('manualReceiverAccount')?.value || '-';
+        const receiverBank = document.getElementById('manualBankTo')?.value || '';
+        itemsHtml = `
+          <div style="margin-bottom: 1rem;">
+            <div style="font-weight: bold; margin-bottom: 0.25rem;">PENGIRIM:</div>
+            <div>${sender}</div>
+            <div style="font-family: monospace; font-size: 0.75rem;">${senderAcc} ${senderBank}</div>
+          </div>
+          <div style="margin-bottom: 1rem;">
+            <div style="font-weight: bold; margin-bottom: 0.25rem;">PENERIMA:</div>
+            <div>${receiver}</div>
+            <div style="font-family: monospace; font-size: 0.75rem;">${receiverAcc} ${receiverBank}</div>
+          </div>
+        `;
+      } else if (currentReceiptType === 'tarik_tunai') {
+        const customer = document.getElementById('manualCustomer')?.value || '-';
+        const bank = document.getElementById('manualBank')?.value || '';
+        const account = document.getElementById('manualAccount')?.value || '-';
+        itemsHtml = `
+          <div style="margin-bottom: 1rem;">
+            <div style="font-weight: bold; margin-bottom: 0.25rem;">CUSTOMER:</div>
+            <div>${customer}</div>
+          </div>
+          <div style="margin-bottom: 1rem;">
+            <div style="font-weight: bold; margin-bottom: 0.25rem;">BANK:</div>
+            <div>${bank}</div>
+            <div style="font-family: monospace; font-size: 0.75rem;">${account}</div>
+          </div>
+        `;
+      } else {
+        const type = document.getElementById('manualTopUpType')?.value || '';
+        const target = document.getElementById('manualTarget')?.value || '-';
+        const customer = document.getElementById('manualCustomer')?.value || '-';
+        itemsHtml = `
+          <div style="margin-bottom: 1rem;">
+            <div style="font-weight: bold; margin-bottom: 0.25rem;">JENIS:</div>
+            <div>${type}</div>
+          </div>
+          <div style="margin-bottom: 1rem;">
+            <div style="font-weight: bold; margin-bottom: 0.25rem;">NO TUJUAN:</div>
+            <div style="font-family: monospace;">${target}</div>
+          </div>
+          <div style="margin-bottom: 1rem;">
+            <div style="font-weight: bold; margin-bottom: 0.25rem;">CUSTOMER:</div>
+            <div>${customer}</div>
+          </div>
+        `;
+      }
+
+      itemsHtml += `
+        <div style="border-top: 1px dashed #333; padding-top: 0.5rem; margin-top: 0.5rem;">
+          <div style="display: flex; justify-content: space-between;"><span>Nominal</span><span>${formatNumber(nominal)}</span></div>
+          <div style="display: flex; justify-content: space-between;"><span>Admin</span><span>${formatNumber(admin)}</span></div>
+        </div>
+      `;
+
+      document.getElementById('previewItems').innerHTML = itemsHtml;
+      document.getElementById('previewTotal').innerHTML = `
+        <div style="display: flex; justify-content: space-between; font-size: 1.1rem;">
+          <span>TOTAL</span>
+          <span>Rp ${formatNumber(nominal + admin)}</span>
+        </div>
+      `;
+    }
+
+    function printReceipt() {
+      const storeName = document.getElementById('receiptStoreName')?.value || 'NAMA TOKO';
+      const address = document.getElementById('receiptAddress')?.value || '';
+      const phone = document.getElementById('receiptPhone')?.value || '';
+      const note = document.getElementById('receiptNote')?.value || 'Terima kasih';
+      const date = document.getElementById('manualDate')?.value || '';
+      const time = document.getElementById('manualTime')?.value || '';
+      const nominal = parseInt(document.getElementById('manualNominal')?.value) || 0;
+      const admin = parseInt(document.getElementById('manualAdmin')?.value) || 0;
+      const total = nominal + admin;
+
+      if (nominal <= 0) {
+        showToast('Nominal harus diisi!', 'warning');
+        return;
+      }
+
+      let content = '';
+      const trxId = currentReceiptType.substring(0,2).toUpperCase() + '-' + Date.now().toString().slice(-6);
+
+      if (currentReceiptType === 'transfer') {
+        const sender = document.getElementById('manualSender')?.value || '-';
+        const senderAcc = document.getElementById('manualSenderAccount')?.value || '-';
+        const senderBank = document.getElementById('manualBankFrom')?.value || '';
+        const receiver = document.getElementById('manualReceiver')?.value || '-';
+        const receiverAcc = document.getElementById('manualReceiverAccount')?.value || '-';
+        const receiverBank = document.getElementById('manualBankTo')?.value || '';
+        content = `================================\n    ${storeName.toUpperCase()}\n${address}\n${phone ? 'HP: ' + phone : ''}\n================================\nBUKTI TRANSFER\nNo: ${trxId}\nTgl: ${date} ${time}\n--------------------------------\nPENGIRIM:\n${sender}\n${senderAcc} ${senderBank}\n--------------------------------\nPENERIMA:\n${receiver}\n${receiverAcc} ${receiverBank}\n--------------------------------\nNominal: Rp ${formatNumber(nominal)}\nAdmin: Rp ${formatNumber(admin)}\n--------------------------------\nTOTAL: Rp ${formatNumber(total)}\n================================\n${note}\n================================`;
+      } else if (currentReceiptType === 'tarik_tunai') {
+        const customer = document.getElementById('manualCustomer')?.value || '-';
+        const bank = document.getElementById('manualBank')?.value || '';
+        const account = document.getElementById('manualAccount')?.value || '-';
+        content = `================================\n    ${storeName.toUpperCase()}\n${address}\n${phone ? 'HP: ' + phone : ''}\n================================\nBUKTI TARIK TUNAI\nNo: ${trxId}\nTgl: ${date} ${time}\n--------------------------------\nCustomer: ${customer}\nBank: ${bank}\nNo Rek: ${account}\n--------------------------------\nNominal: Rp ${formatNumber(nominal)}\nAdmin: Rp ${formatNumber(admin)}\n--------------------------------\nTOTAL: Rp ${formatNumber(total)}\n================================\n${note}\n================================`;
+      } else {
+        const type = document.getElementById('manualTopUpType')?.value || '';
+        const target = document.getElementById('manualTarget')?.value || '-';
+        const customer = document.getElementById('manualCustomer')?.value || '-';
+        content = `================================\n    ${storeName.toUpperCase()}\n${address}\n${phone ? 'HP: ' + phone : ''}\n================================\nBUKTI TOP UP ${type.toUpperCase()}\nNo: ${trxId}\nTgl: ${date} ${time}\n--------------------------------\nCustomer: ${customer}\nNo Tujuan: ${target}\n--------------------------------\nNominal: Rp ${formatNumber(nominal)}\nAdmin: Rp ${formatNumber(admin)}\n--------------------------------\nTOTAL: Rp ${formatNumber(total)}\n================================\n${note}\n================================`;
+      }
+
+      const w = window.open('', '_blank');
+      w.document.write(`<html><head><title>Struk ${currentReceiptType}</title><style>body{font-family: 'Courier New', monospace; padding: 20px; white-space: pre-wrap; font-size: 12px; line-height: 1.4;}</style></head><body>${content}</body></html>`);
+      w.document.close();
+      w.print();
+      showToast('Struk berhasil dicetak!', 'success');
+    }
+
+    // ==========================================
+    // HEADER SETTINGS
+    // ==========================================
+    async function loadHeaderSettings() {
+      try {
+        if (typeof database !== 'undefined') {
+          const snapshot = await database.ref('settings/receiptHeader').once('value');
+          const data = snapshot.val() || {};
+          receiptHeader = data;
+          
+          if (data.storeName) document.getElementById('receiptStoreName').value = data.storeName;
+          if (data.address) document.getElementById('receiptAddress').value = data.address;
+          if (data.phone) document.getElementById('receiptPhone').value = data.phone;
+          if (data.note) document.getElementById('receiptNote').value = data.note;
+          
+          updatePreview();
+        }
+      } catch (error) {
+        console.error('Error loading header:', error);
+      }
+    }
+
+    async function saveHeader() {
+      const storeName = document.getElementById('receiptStoreName')?.value?.trim();
+      const address = document.getElementById('receiptAddress')?.value?.trim();
+
+      if (!storeName || !address) {
+        showToast('Nama dan alamat wajib diisi!', 'warning');
+        return;
+      }
+
+      try {
+        if (typeof database !== 'undefined') {
+          const headerData = {
+            storeName,
+            address,
+            phone: document.getElementById('receiptPhone')?.value?.trim() || '',
+            note: document.getElementById('receiptNote')?.value?.trim() || 'Terima kasih',
+            updatedAt: Date.now()
+          };
+
+          await database.ref('settings/receiptHeader').set(headerData);
+          receiptHeader = headerData;
+          
+          showToast('Header struk berhasil disimpan!', 'success');
+          updatePreview();
+        }
+      } catch (error) {
+        console.error('Error saving header:', error);
+        showToast('Gagal menyimpan header', 'error');
+      }
+    }
+
+    // ==========================================
+    // PRINTER CONNECTION
+    // ==========================================
+    function togglePrinterConnection() {
+      isPrinterConnected = !isPrinterConnected;
+      const badge = document.getElementById('printerStatusBadge');
+      const btnText = document.getElementById('printerConnectText');
+      
+      if (isPrinterConnected) {
+        badge.className = 'status-badge connected';
+        badge.innerHTML = '<i class="fas fa-check-circle"></i> Online';
+        btnText.innerHTML = 'Putuskan Printer';
+        showToast('Printer berhasil terhubung!', 'success');
+      } else {
+        badge.className = 'status-badge disconnected';
+        badge.innerHTML = '<i class="fas fa-times-circle"></i> Offline';
+        btnText.innerHTML = 'Hubungkan Printer';
+        showToast('Printer terputus', 'info');
+      }
+    }
+
+    // ==========================================
+    // EVENT LISTENERS
+    // ==========================================
+    function setupEventListeners() {
+      // Sidebar toggle
+      // Sidebar toggle - Desktop (collapse/expand)
+document.getElementById('menuToggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+});
+
+// Sidebar toggle - Mobile (burger menu) - VERSI BARU
+const mobileToggle = document.getElementById('mobileMenuToggle');
+const sidebar = document.getElementById('sidebar');
+
+if (mobileToggle) {
+  mobileToggle.removeAttribute('style');
+  mobileToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sidebar.classList.toggle('mobile-open');
+  });
+}
+
+// Tutup sidebar saat klik link di mobile
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', () => {
+    if (window.innerWidth <= 1024) {
+      sidebar.classList.remove('mobile-open');
+    }
+  });
+});
+
+// Tutup sidebar saat klik overlay (area gelap di luar sidebar)
+document.addEventListener('click', (e) => {
+  if (window.innerWidth <= 1024 && 
+      sidebar.classList.contains('mobile-open') &&
+      !sidebar.contains(e.target) && 
+      e.target !== mobileToggle) {
+    sidebar.classList.remove('mobile-open');
+  }
+});
+
+      // Dropdowns
+      document.querySelectorAll('[data-dropdown]').forEach(dropdown => {
+        const toggle = dropdown.querySelector('.nav-dropdown-toggle');
+        if (toggle) {
+          toggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            dropdown.classList.toggle('open');
+          });
+        }
+      });
+
+      // Theme toggle
+      document.getElementById('btnTheme')?.addEventListener('click', toggleTheme);
+
+      // Logout
+      document.getElementById('btnLogout')?.addEventListener('click', () => {
+        if (confirm('Yakin ingin logout?')) {
+          if (typeof auth !== 'undefined') {
+            auth.signOut();
+          }
+          localStorage.removeItem('webpos_session');
+          localStorage.removeItem('webpos_user');
+          window.location.href = 'login.html';
+        }
+      });
+
+      // User profile click
+      document.getElementById('userProfile')?.addEventListener('click', () => {
+        window.location.href = 'page-pengguna.html';
+      });
+
+      // OCR Upload
+      const uploadArea = document.getElementById('ocrUploadArea');
+      const fileInput = document.getElementById('ocrFileInput');
+
+      uploadArea?.addEventListener('click', () => fileInput?.click());
+      
+      fileInput?.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) processImage(e.target.files[0]);
+      });
+
+      // Drag & Drop
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadArea?.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        });
+      });
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        uploadArea?.addEventListener(eventName, () => uploadArea.classList.add('dragover'));
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        uploadArea?.addEventListener(eventName, () => uploadArea.classList.remove('dragover'));
+      });
+
+      uploadArea?.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) processImage(files[0]);
+      });
+
+      // Menu search
+      document.getElementById('menuSearch')?.addEventListener('input', function() {
+        const q = this.value.toLowerCase();
+        document.querySelectorAll('.nav-link span').forEach(span => {
+          const li = span.closest('.nav-item');
+          if (li) li.style.display = span.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+      });
+    }
+
+    // ==========================================
+    // UTILITIES
+    // ==========================================
+    function formatNumber(num) {
+      return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    function showToast(message, type = 'success') {
+      const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-times-circle',
+        warning: 'fa-exclamation-circle',
+        info: 'fa-info-circle'
+      };
+      
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.innerHTML = `<i class="fas ${icons[type]}"></i><span>${message}</span>`;
+      
+      document.getElementById('toastContainer').appendChild(el);
+      
+      setTimeout(() => {
+        el.remove();
+      }, 3000);
+    }
+
+    // TAMBAH FUNGSI INI - START
+function syncTheme() {
+  if (typeof Utils !== 'undefined' && Utils.Theme) {
+    document.documentElement.setAttribute('data-theme-color', Utils.Theme.getColor());
+    if (Utils.Theme.isDarkMode()) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  }
+}
+
+// Dengar perubahan dari tab lain (Setting/Dashboard)
+window.addEventListener('storage', (e) => {
+  if (e.key === 'theme_color' || e.key === 'dark_mode') {
+    location.reload();
+  }
+});
+// TAMBAH FUNGSI INI - END
+    
+  </script>
+</body>
+</html>
