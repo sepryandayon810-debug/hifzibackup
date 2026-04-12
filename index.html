@@ -1555,6 +1555,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
         }
       }
 
+      
       // Toggle sidebar
       menuToggle.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
@@ -1646,7 +1647,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
               }
               todayStats.transaksiCount++;
             }
-          });
+          });        
 
           // Load modal
           const modalSnapshot = await database.ref('modal/' + today + '/' + user.uid).once('value');
@@ -1683,7 +1684,6 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           document.getElementById('kasGlobal').textContent = Utils.formatRupiah(uangGlobal);
 
           // Check shift status
-          listenShiftStatus();
         
 
         } catch (error) {
@@ -1698,14 +1698,19 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
      function listenShiftStatus() {
         const today = Utils.getTodayString();
         const user = Auth.getCurrentUser();
+
+       console.log('Attaching shift listener for:', today, user.uid);
         
         database.ref('shifts/' + today + '/' + user.uid).on('value', (snapshot) => {
           const shift = snapshot.val();
+          console.log('Shift data received:', shift);
           isShiftOpen = shift && shift.status === 'open';
-          updateShiftUI();
+          updateShiftUI(); // ⭐ PINDAHKAN KE SINI
+        }, (error) => {
+          console.error('Shift listener error:', error);
         });
       }
-
+        
             // Update shift UI
       function updateShiftUI() {
         const shiftStatus = document.getElementById('shiftStatus');
@@ -1824,12 +1829,25 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       });
       observer.observe(document.body, { childList: true, subtree: true });
 
-      // Initialize
+            // Initialize
       loadUserData();
       loadDashboardData();
-      listenShiftStatus();
-      }
-    });
+      listenShiftStatus();  // ✅ Hanya 1 kali di sini
+      
+      // Re-check shift status saat halaman kembali visible (hanya 1 kali di sini)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          console.log('Page visible, re-checking shift status...');
+          const today = Utils.getTodayString();
+          const user = Auth.getCurrentUser();
+          database.ref('shifts/' + today + '/' + user.uid).once('value').then((snapshot) => {
+            const shift = snapshot.val();
+            isShiftOpen = shift && shift.status === 'open';
+            console.log('Shift status checked:', isShiftOpen, shift);
+            updateShiftUI();
+          });
+        }
+      });
   </script>
 </body>
 </html>
