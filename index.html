@@ -1840,7 +1840,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       loadDashboardData();
       listenShiftStatus();  // ✅ Hanya 1 kali di sini
       
-      // Re-check shift status saat halaman kembali visible (hanya 1 kali di sini)
+            // Re-check shift status saat halaman kembali visible (hanya 1 kali di sini)
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           console.log('Page visible, re-checking shift status...');
@@ -1854,7 +1854,10 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           });
         }
       });
-        }
+    }  
+  </script>
+</body>
+</html>
   </script>
 </body>
 </html>
