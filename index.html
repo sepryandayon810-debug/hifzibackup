@@ -1648,13 +1648,15 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
         
       case 'kas_keluar':
         todayStats.kasKeluar += trans.amount || 0;
-        // ❌ Jangan todayStats.transaksiCount++
-        // Ini termasuk Kas Keluar biasa + Piutang (yang dicentang)
+      
+      case 'hutang':
+      case 'piutang':
+        // Tidak menambah transaksiCount, hanya log untuk debug
+        console.log('Transaksi hutang/piutang ditemukan (tidak dihitung):', trans);
         break;
     }
   }
-});       
-
+});
           // Load modal
           const modalSnapshot = await database.ref('modal/' + today + '/' + user.uid).once('value');
           const modalData = modalSnapshot.val();
