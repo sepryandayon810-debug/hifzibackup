@@ -1620,34 +1620,40 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           
           // Calculate stats
           Object.values(transactions).forEach(trans => {
-            if (trans.status !== 'cancelled' && trans.status !== 'voided') {
-              switch (trans.type) {
-                case 'penjualan':
-                  todayStats.penjualan += trans.total || 0;
-                  todayStats.laba += trans.profit || 0;
-                  break;
-                case 'topup':
-                  todayStats.topup += trans.amount || 0;
-                  todayStats.topupAdminFee += trans.adminFee || 0;
-                  // Admin fee dari top up masuk ke laba
-                  todayStats.laba += trans.adminFee || 0;
-                  break;
-                case 'tarik':
-                  todayStats.tarik += trans.amount || 0;
-                  todayStats.tarikAdminFee += trans.adminFee || 0;
-                  // Admin fee dari tarik masuk ke laba
-                  todayStats.laba += trans.adminFee || 0;
-                  break;
-                case 'kas_masuk':
-                  todayStats.kasMasuk += trans.amount || 0;
-                  break;
-                case 'kas_keluar':
-                  todayStats.kasKeluar += trans.amount || 0;
-                  break;
-              }
-              todayStats.transaksiCount++;
-            }
-          });        
+  if (trans.status !== 'cancelled' && trans.status !== 'voided') {
+    switch (trans.type) {
+      case 'penjualan':
+        todayStats.penjualan += trans.total || 0;
+        todayStats.laba += trans.profit || 0;
+        todayStats.transaksiCount++; // ✅ Transaksi bisnis dihitung
+        break;
+        
+      case 'topup':
+        todayStats.topup += trans.amount || 0;
+        todayStats.laba += trans.adminFee || 0;
+        todayStats.transaksiCount++; // ✅ Transaksi bisnis dihitung
+        break;
+        
+      case 'tarik':
+        todayStats.tarik += trans.amount || 0;
+        todayStats.laba += trans.adminFee || 0;
+        todayStats.transaksiCount++; // ✅ Transaksi bisnis dihitung
+        break;
+        
+      case 'kas_masuk':
+        todayStats.kasMasuk += trans.amount || 0;
+        // ❌ Jangan todayStats.transaksiCount++
+        // Ini termasuk Kas Masuk biasa + Hutang (yang dicentang)
+        break;
+        
+      case 'kas_keluar':
+        todayStats.kasKeluar += trans.amount || 0;
+        // ❌ Jangan todayStats.transaksiCount++
+        // Ini termasuk Kas Keluar biasa + Piutang (yang dicentang)
+        break;
+    }
+  }
+});       
 
           // Load modal
           const modalSnapshot = await database.ref('modal/' + today + '/' + user.uid).once('value');
