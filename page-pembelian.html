@@ -250,9 +250,8 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 .w-full{width:100%!important}
 
 /* Pembelian Specific Styles */
-.pembelian-layout{display:grid;grid-template-columns:380px 1fr;gap:1.5rem;height:calc(100vh - 180px)}
+.pembelian-layout{display:grid;grid-template-columns:380px 1fr;gap:1.5rem;height:auto;min-height:calc(100vh - 250px)}
 @media(max-width:1024px){.pembelian-layout{grid-template-columns:1fr;height:auto}}
-
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 @media(max-width:640px){.form-grid{grid-template-columns:1fr}}
 
@@ -574,7 +573,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     var database = firebase.database();
     var auth = firebase.auth();
   </script>
-<base target="_blank">
+
 </head>
 <body>
   <div class="app-container">
@@ -799,7 +798,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
   </div>
   <div class="card-body" style="padding:0;max-height:400px;overflow-y:auto">
     <div style="overflow-x:auto;">
-      <table class="pembelian-table" style="min-width:unset; width:100%;">
+<table class="pembelian-table" style="width:100%;">
                 <thead>
           <tr>
             <th>Tanggal</th>
