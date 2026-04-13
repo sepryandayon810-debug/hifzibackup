@@ -20,7 +20,7 @@
       'pink': {p: '#ec4899', pd: '#db2777', s: '#8b5cf6'},
       'teal': {p: '#14b8a6', pd: '#0d9488', s: '#06b6d4'}
     };
-    const c = colorMap[themeColor] || colorMap['orange'];
+    const c = colorMap[themeColor] || colorMap['indigo'];
     document.documentElement.style.setProperty('--primary', c.p);
     document.documentElement.style.setProperty('--primary-dark', c.pd);
     document.documentElement.style.setProperty('--secondary', c.s);
@@ -43,6 +43,7 @@
 [data-theme-color="red"]{--primary:#ef4444;--primary-dark:#dc2626;--secondary:#f97316}
 [data-theme-color="pink"]{--primary:#ec4899;--primary-dark:#db2777;--secondary:#8b5cf6}
 [data-theme-color="teal"]{--primary:#14b8a6;--primary-dark:#0d9488;--secondary:#06b6d4}
+[data-theme-color="indigo"]{--primary:#6366f1;--primary-dark:#4f46e5;--secondary:#ec4899}
 
 :root{--bg-primary:#f8fafc;--bg-secondary:#f1f5f9;--bg-card:#fff;--text-primary:#0f172a;--text-secondary:#475569;--text-muted:#94a3b8;--border-color:#e2e8f0;--shadow-sm:0 1px 2px rgba(0,0,0,0.05);--shadow-md:0 4px 6px rgba(0,0,0,0.1);--shadow-lg:0 10px 15px rgba(0,0,0,0.1);--radius-sm:0.375rem;--radius-md:0.5rem;--radius-lg:0.75rem;--radius-xl:1rem;--sidebar-width:280px;--sidebar-collapsed:76px;--header-height:70px;--bottom-nav-height:70px}
 
@@ -270,34 +271,190 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
   #mobileMenuToggle i{font-size:1.25rem;color:var(--text-primary)}
 }
 
-    /* Fix scroll horizontal mobile */
+        /* Fix scroll horizontal mobile - PERBAIKAN LENGKAP */
 @media(max-width:768px){
   html, body {
     overflow-x: hidden;
     max-width: 100vw;
+    width: 100%;
   }
   
-  .pembelian-layout {
-    grid-template-columns: 1fr !important;
-    padding: 0.5rem;
+  /* Page content full width */
+  .page-content {
+    padding: 0.5rem !important;
+    width: 100% !important;
+    max-width: 100vw !important;
   }
   
-  /* Tabel riwayat bisa scroll di dalam container */
-  .card-body {
+  /* Card full width tanpa margin */
+  .card {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-radius: 0.75rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .card-header {
+    padding: 1rem !important;
+  }
+  
+  /* Container tabel bisa scroll tapi full width */
+  .card-body[style*="padding:0"] {
+    width: 100% !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
   }
   
-  .pembelian-table {
-    min-width: unset !important;
-    font-size: 0.8rem;
+  /* Tabel riwayat pembelian - perkecil ukuran */
+  #tbodyRiwayat,
+  #tbodyRiwayat ~ * {
+    font-size: 0.75rem;
   }
   
-  /* Filter buttons jangan overflow */
+  .pembelian-table {
+    min-width: unset !important;
+    width: 100% !important;
+    font-size: 0.75rem !important;
+    table-layout: fixed !important; /* Penting: memaksa kolom mengikuti lebar */
+  }
+  
+  .pembelian-table th,
+  .pembelian-table td {
+    padding: 0.5rem 0.25rem !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Atur lebar kolom spesifik untuk mobile */
+  .pembelian-table th:nth-child(1), /* Tanggal */
+  .pembelian-table td:nth-child(1) {
+    width: 70px !important;
+    font-size: 0.7rem !important;
+  }
+  
+  .pembelian-table th:nth-child(2), /* Waktu */
+  .pembelian-table td:nth-child(2) {
+    width: 45px !important;
+    font-size: 0.7rem !important;
+  }
+  
+  .pembelian-table th:nth-child(3), /* Supplier */
+  .pembelian-table td:nth-child(3) {
+    width: 80px !important;
+    max-width: 80px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .pembelian-table th:nth-child(4), /* Item */
+  .pembelian-table td:nth-child(4) {
+    width: 50px !important;
+    text-align: center !important;
+  }
+  
+  .pembelian-table th:nth-child(5), /* Total */
+  .pembelian-table td:nth-child(5) {
+    width: 80px !important;
+    font-weight: 600 !important;
+  }
+  
+  /* Sembunyikan kolom User di mobile untuk menghemat space */
+  .pembelian-table th:nth-child(6), 
+  .pembelian-table td:nth-child(6) {
+    display: none !important;
+  }
+  
+  .pembelian-table th:nth-child(7), /* Aksi */
+  .pembelian-table td:nth-child(7) {
+    width: 40px !important;
+    text-align: center !important;
+  }
+  
+  /* Filter buttons area */
+  .card-header[style*="flex-direction:column"] {
+    padding: 1rem 0.5rem !important;
+  }
+  
+  .card-header > div[style*="overflow-x:auto"] {
+    width: 100% !important;
+    padding: 0.25rem 0 !important;
+  }
+  
   .filter-btn {
     padding: 0.375rem 0.75rem !important;
     font-size: 0.7rem !important;
+    white-space: nowrap;
   }
+  
+  /* Form card di atas */
+  #formCard {
+    margin-bottom: 1rem !important;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+  /* GANTI selector yang ada menjadi lebih spesifik untuk Riwayat saja */
+#tbodyRiwayat .pembelian-table {
+  table-layout: fixed !important;
+}
+
+#tbodyRiwayat .pembelian-table th:nth-child(1),
+#tbodyRiwayat .pembelian-table td:nth-child(1) {
+  width: 70px !important;
+  font-size: 0.7rem !important;
+}
+
+#tbodyRiwayat .pembelian-table th:nth-child(2),
+#tbodyRiwayat .pembelian-table td:nth-child(2) {
+  width: 45px !important;
+  font-size: 0.7rem !important;
+}
+
+#tbodyRiwayat .pembelian-table th:nth-child(3),
+#tbodyRiwayat .pembelian-table td:nth-child(3) {
+  width: 80px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#tbodyRiwayat .pembelian-table th:nth-child(4),
+#tbodyRiwayat .pembelian-table td:nth-child(4) {
+  width: 50px !important;
+  text-align: center !important;
+}
+
+#tbodyRiwayat .pembelian-table th:nth-child(5),
+#tbodyRiwayat .pembelian-table td:nth-child(5) {
+  width: 80px !important;
+  font-weight: 600 !important;
+}
+
+/* Sembunyikan kolom User (ke-6) di tabel Riwayat */
+#tbodyRiwayat .pembelian-table th:nth-child(6), 
+#tbodyRiwayat .pembelian-table td:nth-child(6) {
+  display: none !important;
+}
+
+#tbodyRiwayat .pembelian-table th:nth-child(7),
+#tbodyRiwayat .pembelian-table td:nth-child(7) {
+  width: 40px !important;
+  text-align: center !important;
+}
+
+/* Untuk tabel Daftar Item (tbodyPembelian) - biarkan auto layout atau atur beda */
+#tbodyPembelian .pembelian-table {
+  table-layout: auto !important;
+}
+
+#tbodyPembelian .pembelian-table th,
+#tbodyPembelian .pembelian-table td {
+  padding: 0.625rem 0.5rem !important;
 }
     
   </style>
@@ -507,16 +664,14 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             <div class="card-body" style="padding:0;max-height:calc(100vh - 250px);overflow-y:auto">
               <table class="pembelian-table">
                 <thead>
-          <tr>
-            <th>Tanggal</th>
-            <th>Waktu</th>
-            <th>Supplier</th>
-            <th>Item</th>
-            <th>Total</th>
-            <th>User</th>
-            <th style="width:80px">Aksi</th>
-          </tr>
-        </thead>
+  <tr>
+    <th>Produk</th>
+    <th>Qty</th>
+    <th>Harga/pcs</th>
+    <th>Total</th>
+    <th style="width:50px">Aksi</th>
+  </tr>
+</thead>
                 <tbody id="tbodyPembelian">
                   <tr>
                     <td colspan="5" class="empty-state" style="padding:3rem 1rem">
