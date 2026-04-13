@@ -10,14 +10,23 @@
   (function() {
     // Coba ambil dari Utils.Theme (jika sudah load utils.js) atau fallback ke localStorage
     const getTheme = function() {
-      // Utils.Theme biasanya pakai key 'webpos_theme_color' dan 'webpos_theme_mode'
-      // atau bisa juga 'theme_color' dan 'webpos_theme'
+      // Utils.Theme bisa pakai berbagai key untuk dark mode
+      let mode = localStorage.getItem('webpos_theme_mode');
+      
+      // Jika tidak ada, cek key lain untuk dark mode
+      if(!mode) {
+        const darkMode = localStorage.getItem('webpos_dark_mode') || 
+                         localStorage.getItem('dark_mode');
+        if(darkMode === 'true' || darkMode === '1') {
+          mode = 'dark';
+        } else {
+          mode = localStorage.getItem('webpos_theme') || 'light';
+        }
+      }
+      
       const color = localStorage.getItem('webpos_theme_color') || 
                     localStorage.getItem('theme_color') || 
                     'indigo';
-      const mode = localStorage.getItem('webpos_theme_mode') || 
-                   localStorage.getItem('webpos_theme') || 
-                   'light';
       return { color, mode };
     };
     
@@ -962,6 +971,17 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         }
       });
 
+      // Fix: Pastikan link tidak buka tab baru
+      document.querySelectorAll('.nav-link[href]').forEach(function(link){
+        link.removeAttribute('target');
+        link.addEventListener('click', function(e){
+          // Biarkan navigasi normal berjalan
+          if(window.innerWidth <= 1024){
+            sidebar.classList.remove('mobile-open');
+          }
+        });
+      });
+
       // Theme Toggle - Sinkron dengan Utils.Theme
       const btnTheme = document.getElementById("btnTheme");
       
@@ -978,7 +998,9 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         document.documentElement.setAttribute('data-theme', newTheme);
         
         // Simpan dengan key yang sama seperti Utils.Theme
+        // Utils.Theme biasanya pakai webpos_theme_mode atau webpos_dark_mode
         localStorage.setItem('webpos_theme_mode', newTheme);
+        localStorage.setItem('webpos_dark_mode', newTheme === 'dark' ? 'true' : 'false');
         localStorage.setItem('webpos_theme', newTheme); // fallback
         
         btnTheme.innerHTML = newTheme === 'dark' 
@@ -1105,10 +1127,21 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 
     // Theme Sync - Sinkron dengan Utils.Theme
     function syncGlobalTheme(){
-      // Support Utils.Theme keys dan fallback keys
-      const savedTheme = localStorage.getItem('webpos_theme_mode') || 
-                         localStorage.getItem('webpos_theme') || 
-                         'light';
+      // Cek semua kemungkinan key untuk dark mode
+      // Utils.Theme bisa pakai: webpos_theme_mode, webpos_dark_mode, dark_mode, webpos_theme
+      let savedTheme = localStorage.getItem('webpos_theme_mode');
+      
+      // Jika tidak ada, cek key lain
+      if(!savedTheme) {
+        const darkMode = localStorage.getItem('webpos_dark_mode') || 
+                         localStorage.getItem('dark_mode');
+        if(darkMode === 'true' || darkMode === '1') {
+          savedTheme = 'dark';
+        } else {
+          savedTheme = localStorage.getItem('webpos_theme') || 'light';
+        }
+      }
+      
       const savedColor = localStorage.getItem('webpos_theme_color') || 
                          localStorage.getItem('theme_color') || 
                          'indigo';
@@ -1154,15 +1187,26 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     window.addEventListener('storage', function(e) {
       // Utils.Theme keys: webpos_theme_mode, webpos_theme_color, webpos_theme_broadcast
       // Fallback keys: webpos_theme, theme_color
+      // Dark mode keys: webpos_dark_mode, dark_mode
       const themeKeys = [
         'webpos_theme_mode', 'webpos_theme_color', 
         'webpos_theme', 'theme_color', 
+        'webpos_dark_mode', 'dark_mode',
         'webpos_theme_broadcast'
       ];
       
       if(themeKeys.includes(e.key)) {
         console.log('Theme changed from other page:', e.key, e.newValue);
         syncGlobalTheme();
+        
+        // Update icon tema juga
+        const btnTheme = document.getElementById('btnTheme');
+        if(btnTheme) {
+          const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+          btnTheme.innerHTML = isDark 
+            ? '<i class="fas fa-sun" style="color:var(--warning)"></i>' 
+            : '<i class="fas fa-moon"></i>';
+        }
       }
     });
     
