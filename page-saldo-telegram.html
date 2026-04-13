@@ -555,6 +555,13 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       opacity: 0.5;
     }
 
+    /* Tambahan untuk fitur baru */
+    .gas-config {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+    }
+
     .transaction-panel {
       background: var(--bg-card);
       border-radius: var(--radius-xl);
@@ -966,24 +973,21 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
                   </small>
                 </div>
 
-                <!-- Konfigurasi n8n (WAJIB DIISI) -->
-                <div class="gas-config" style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem;">
+                <!-- GAS Config (Baru) -->
+                <div class="gas-config">
                   <div class="form-group">
-                    <label class="form-label" style="color: var(--primary); font-weight: 600;">
-                      n8n Webhook URL (WAJIB)
-                      <span style="color: var(--danger);">*</span>
-                    </label>
-                    <input type="text" class="form-input" id="n8nUrl" placeholder="https://n8n.yourdomain.com/webhook/telegram-saldo" required>
+                    <label class="form-label">Google Apps Script URL (Optional)</label>
+                     <input type="text" class="form-input" id="gasUrl" placeholder="Biarkan kosong untuk pakai Firebase">
                     <small style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; display: block;">
-                      URL webhook n8n untuk jembatan ke Google Sheets (sama dengan alur Telegram Bot)
+                      URL deployment GAS untuk koneksi langsung tanpa n8n
                     </small>
                   </div>
-                  
-                  <div class="form-group" style="margin-top: 1rem;">
-                    <label class="form-label">Google Apps Script URL (Opsional)</label>
-                    <input type="text" class="form-input" id="gasUrl" placeholder="Biarkan kosong jika pakai n8n">
+
+                  <div class="form-group">
+                    <label class="form-label">n8n Webhook URL (Optional)</label>
+                    <input type="text" class="form-input" id="n8nUrl" placeholder="https://n8n.yourdomain.com/webhook/...">
                     <small style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; display: block;">
-                      URL deployment GAS (fallback jika n8n error)
+                      URL webhook n8n untuk integrasi dengan workflow otomatis
                     </small>
                   </div>
                 </div>
@@ -1065,6 +1069,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
         
         if (user) {
           Auth.loadUserData(user.uid);
+          // Baca langsung dari Firebase database
           if (typeof database !== 'undefined') {
             database.ref('users/' + user.uid).once('value').then(function(snap) {
               var ud = snap.val();
@@ -1085,6 +1090,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
         let isConnected = false;
         let config = {};
         let selectedSaldoType = null;
+        let currentTransaction = null;
 
         // Load config
         loadConfig();
@@ -1111,21 +1117,41 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           });
         });
 
-        // Sidebar toggle - Desktop
-        document.getElementById('menuToggle').addEventListener('click', () => {
-          document.getElementById('sidebar').classList.toggle('collapsed');
-        });
+        // Sidebar toggle - Desktop (collapse/expand)
+document.getElementById('menuToggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+});
 
-        // Sidebar toggle - Mobile
-        const mobileToggle = document.getElementById('mobileMenuToggle');
-        const sidebar = document.getElementById('sidebar');
-        if (mobileToggle) {
-          mobileToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            sidebar.classList.toggle('mobile-open');
-          });
-        }
+// Sidebar toggle - Mobile (burger menu) - VERSI BARU
+const mobileToggle = document.getElementById('mobileMenuToggle');
+const sidebar = document.getElementById('sidebar');
 
+if (mobileToggle) {
+  mobileToggle.removeAttribute('style');
+  mobileToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sidebar.classList.toggle('mobile-open');
+  });
+}
+
+// Tutup sidebar saat klik link di mobile
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', () => {
+    if (window.innerWidth <= 1024) {
+      sidebar.classList.remove('mobile-open');
+    }
+  });
+});
+
+// Tutup sidebar saat klik overlay (area gelap di luar sidebar)
+document.addEventListener('click', (e) => {
+  if (window.innerWidth <= 1024 && 
+      sidebar.classList.contains('mobile-open') &&
+      !sidebar.contains(e.target) && 
+      e.target !== mobileToggle) {
+    sidebar.classList.remove('mobile-open');
+  }
+});
         // Dropdown menus
         document.querySelectorAll('[data-dropdown]').forEach(dropdown => {
           const toggle = dropdown.querySelector('.nav-dropdown-toggle');
@@ -1152,6 +1178,10 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           });
         });
 
+        // ============================================
+        // FUNGSI BARU: Integrasi n8n & Google Apps Script
+        // ============================================
+
         // Handler untuk tombol jenis saldo
         document.querySelectorAll('.btn-saldo').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -1163,7 +1193,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           });
         });
 
-        // Handler submit saldo - VERSI BARU LANGSUNG KE N8N
+        // Handler submit saldo
         document.getElementById('btnSubmitSaldo').addEventListener('click', submitSaldoTransaction);
 
         // Enter key handler untuk nominal
@@ -1173,103 +1203,164 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           }
         });
 
-        // ============================================
-        // FUNGSI SUBMIT SALDO - VERSI N8N (BUKAN FIREBASE)
-        // ============================================
         async function submitSaldoTransaction() {
-          const nominal = parseInt(document.getElementById('nominalInput').value);
-          
-          if (!selectedSaldoType) {
-            Utils.showToast('Pilih jenis saldo terlebih dahulu', 'error');
-            return;
-          }
-          
-          if (!nominal || nominal <= 0) {
-            Utils.showToast('Masukkan nominal yang valid', 'error');
-            return;
-          }
+  const nominal = parseInt(document.getElementById('nominalInput').value);
+  
+  if (!selectedSaldoType) {
+    Utils.showToast('Pilih jenis saldo terlebih dahulu', 'error');
+    return;
+  }
+  
+  if (!nominal || nominal <= 0) {
+    Utils.showToast('Masukkan nominal yang valid', 'error');
+    return;
+  }
 
-          // Validasi n8n URL
-          if (!config.n8nUrl) {
-            Utils.showToast('URL n8n belum dikonfigurasi di pengaturan', 'error');
-            return;
-          }
+  Utils.showLoading();
 
-          Utils.showLoading();
+  try {
+    // LANGSUNG SIMPAN KE FIREBASE SAJA (tanpa GAS)
+    const now = new Date();
+    const bulanIndo = ["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI","JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
+    
+    const topupData = {
+      BULAN: bulanIndo[now.getMonth()],
+      TANGGAL: `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`,
+      'NAMA ITEM': selectedSaldoType,
+      'SALDO TOP UP': nominal,
+      timestamp: Date.now()
+    };
 
-          try {
-            const now = new Date();
-            const transaksiId = `WEB_${now.getTime()}_${Math.random().toString(36).substr(2, 9)}`;
-            
-            // Format payload SAMA PERSIS seperti Telegram callback_query
-            // Supaya n8n tidak perlu bedain sumbernya (Telegram vs WebPOS)
-            const payload = {
-              callback_query: {
-                id: `web_${Date.now()}`,
-                from: { 
-                  id: config.chatId || 'web_user', 
-                  first_name: 'WebPOS',
-                  username: 'webpos_user'
-                },
-                message: {
-                  message_id: Math.floor(Math.random() * 100000),
-                  chat: { 
-                    id: config.chatId || 'web_user', 
-                    type: 'private',
-                    first_name: 'WebPOS'
-                  },
-                  date: Math.floor(Date.now() / 1000)
-                },
-                data: selectedSaldoType,  // "DANA", "DIGIPOS", atau "MASTERLOAD"
-                chat_instance: 'web_instance_' + Date.now()
-              },
-              // Extra fields untuk n8n (optional)
-              webpos_data: {
-                nominal: nominal,
-                source: 'webpos_html',
-                timestamp: now.getTime(),
-                transaksi_id: transaksiId,
-                sheet_id: config.sheetId || null
-              }
-            };
+    // Simpan ke Firebase
+    await database.ref('telegram_topup_history').push(topupData);
+    
+    Utils.showToast('Transaksi saldo berhasil disimpan!', 'success');
+    addSyncLog(`Sukses: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, 'success');
+    
+    // Reset form
+    document.getElementById('nominalInput').value = '';
+    document.querySelectorAll('.btn-saldo').forEach(b => b.classList.remove('active'));
+    document.getElementById('nominalGroup').style.display = 'none';
+    selectedSaldoType = null;
+    
+  } catch (error) {
+    console.error('Error:', error);
+    Utils.showToast('Error: ' + error.message, 'error');
+    addSyncLog(`Error: ${error.message}`, 'error');
+  }
 
-            // Kirim ke n8n webhook
-            const response = await fetch(config.n8nUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-              throw new Error(`Gagal: ${response.status} ${response.statusText}`);
-            }
-
-            const result = await response.json();
-            console.log('n8n response:', result);
-            
-            Utils.showToast('Data berhasil dikirim ke Google Sheets via n8n!', 'success');
-            addSyncLog(`Sukses: ${selectedSaldoType} ${Utils.formatRupiah(nominal)} → n8n`, 'success');
-            
-            // Reset form
-            document.getElementById('nominalInput').value = '';
-            document.querySelectorAll('.btn-saldo').forEach(b => b.classList.remove('active'));
-            document.getElementById('nominalGroup').style.display = 'none';
-            selectedSaldoType = null;
-            
-          } catch (error) {
-            console.error('Error:', error);
-            Utils.showToast('Error koneksi ke n8n: ' + error.message, 'error');
-            addSyncLog(`Error n8n: ${error.message}`, 'error');
-            
-            // Optional: Fallback ke GAS kalau ada
-            if (config.gasUrl) {
-              Utils.showToast('Mencoba fallback ke GAS...', 'warning');
-              // ... fallback logic here
+  Utils.hideLoading();
+}
+        // Fungsi untuk inisialisasi saldo (mimic GAS initSaldo)
+        async function initSaldoSheet(namaItem, nominal) {
+          // Jika ada GAS URL, gunakan GAS
+          if (config.gasUrl) {
+            try {
+              const response = await fetch(config.gasUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  action: 'initSaldo',
+                  sheetId: config.sheetId,
+                  chatId: config.chatId || 'HTML_' + Date.now(),
+                  namaItem: namaItem
+                })
+              });
+              return await response.json();
+            } catch (e) {
+              console.log('GAS Error, fallback ke Firebase:', e);
             }
           }
 
-          Utils.hideLoading();
+          // Fallback: Simpan ke Firebase Database (simulasi STEP sheet)
+          const transaksiId = `HTML_${Date.now()}`;
+          const matchKey = `${config.chatId || 'HTML'}_waiting_${Date.now()}`;
+          
+          const stepData = {
+            TRANSAKSI_ID: transaksiId,
+            CHAT_ID: config.chatId || 'HTML_USER',
+            resumeUrl: '',
+            'SALDO TOP UP': '',
+            STATUS: 'waiting',
+            MATCH_KEY: matchKey,
+            'NAMA ITEM': namaItem,
+            timestamp: Date.now()
+          };
+
+          // Simpan ke Firebase di path telegram_steps
+          await database.ref(`telegram_steps/${matchKey}`).set(stepData);
+          
+          return {
+            success: true,
+            transaksiId: transaksiId,
+            matchKey: matchKey,
+            row: Date.now(), // simulated row number
+            message: 'Silahkan input nominal'
+          };
         }
+
+        // Fungsi untuk complete saldo (mimic GAS completeSaldo)
+        async function completeSaldoSheet(matchKey, nominal) {
+  // Jika ada GAS URL, gunakan GAS - TAPI KALAU KOSONG LANGSUNG SKIP
+  if (config.gasUrl && config.gasUrl.trim() !== '') {
+    try {
+      const response = await fetch(config.gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'completeSaldo',
+          sheetId: config.sheetId,
+          matchKey: matchKey,
+          nominal: nominal
+        })
+      });
+      return await response.json();
+    } catch (e) {
+      console.log('GAS Error, fallback ke Firebase:', e);
+      // Lanjut ke Firebase fallback di bawah
+    }
+  }
+
+  // Fallback: Update Firebase dan tambah ke riwayat topup
+  const now = new Date();
+  const bulanIndo = ["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI","JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
+  
+  // Update status di steps
+  await database.ref(`telegram_steps/${matchKey}`).update({
+    STATUS: 'DONE',
+    'SALDO TOP UP': nominal,
+    completedAt: Date.now()
+  });
+
+  // Tambah ke riwayat topup
+  const topupData = {
+    BULAN: bulanIndo[now.getMonth()],
+    TANGGAL: `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`,
+    'NAMA ITEM': currentTransaction?.namaItem || selectedSaldoType,
+    'SALDO TOP UP': nominal,
+    timestamp: Date.now()
+  };
+
+  await database.ref('telegram_topup_history').push(topupData);
+
+  return {
+    success: true,
+    message: 'Transaksi selesai!',
+    data: topupData
+  };
+}
+        
+        function updateBalanceDisplay(lastNominal) {
+          // Simulasi update balance display
+          const currentBalance = parseInt(document.getElementById('telegramBalance').dataset.raw || '0');
+          const newBalance = currentBalance + lastNominal;
+          document.getElementById('telegramBalance').dataset.raw = newBalance;
+          document.getElementById('telegramBalance').textContent = Utils.formatRupiah(newBalance);
+        }
+
+        // ============================================
+        // END FUNGSI BARU
+        // ============================================
 
         async function loadConfig() {
           try {
@@ -1293,6 +1384,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
               sheetStatus.innerHTML = '<i class="fas fa-check-circle"></i><span>Google Sheets ID terkonfigurasi</span>';
               sheetStatus.classList.add('connected');
               
+              // Show transaction panel jika sudah terhubung
               if (isConnected) {
                 document.getElementById('transactionPanel').style.display = 'block';
               }
@@ -1334,6 +1426,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
             Utils.showToast('Konfigurasi berhasil disimpan', 'success');
             addSyncLog('Konfigurasi diperbarui', 'success');
 
+            // Refresh UI
             if (sheetId) {
               const sheetStatus = document.getElementById('sheetStatus');
               sheetStatus.innerHTML = '<i class="fas fa-check-circle"></i><span>Google Sheets ID terkonfigurasi</span>';
@@ -1356,11 +1449,13 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           
           Utils.showLoading();
           
+          // Simulate connection test
           setTimeout(() => {
             isConnected = true;
             updateStatusUI(true);
             addSyncLog('Terhubung ke Telegram', 'success');
             
+            // Show transaction panel jika ada sheetId
             if (config.sheetId) {
               document.getElementById('transactionPanel').style.display = 'block';
             }
@@ -1392,6 +1487,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
             balanceDisplay.style.display = 'block';
             btnConnect.innerHTML = '<i class="fas fa-unlink"></i> Putuskan Koneksi';
             
+            // Load balance (simulated)
             loadTelegramBalance();
           } else {
             statusCard.classList.add('disconnected');
@@ -1403,6 +1499,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
         }
 
         function loadTelegramBalance() {
+          // Simulated balance - in real implementation, this would fetch from Telegram API
           const balance = Math.floor(Math.random() * 1000000) + 500000;
           document.getElementById('telegramBalance').dataset.raw = balance;
           document.getElementById('telegramBalance').textContent = Utils.formatRupiah(balance);
@@ -1416,6 +1513,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
             time: Date.now()
           });
           
+          // Keep only last 50 logs
           if (logs.length > 50) logs.pop();
           
           localStorage.setItem('telegram_sync_log', JSON.stringify(logs));
