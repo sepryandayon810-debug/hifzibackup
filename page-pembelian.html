@@ -456,6 +456,31 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 #tbodyPembelian .pembelian-table td {
   padding: 0.625rem 0.5rem !important;
 }
+
+  .filter-btn {
+  padding: .5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 2rem;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: .8rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.filter-btn.active {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+
+[data-theme="dark"] .filter-btn:not(.active) {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
     
   </style>
 
@@ -692,11 +717,12 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     <h3 class="card-title"><i class="fas fa-history" style="color:var(--success)"></i> Riwayat Pembelian</h3>
     
     <div style="display:flex;gap:.5rem;overflow-x:auto;width:100%;padding:0;background:none;border:none;">
-      <button class="filter-btn active" data-filter="today" style="padding:.5rem 1rem;border:1px solid var(--border-color);border-radius:2rem;background:var(--primary);color:white;font-size:.8rem;font-weight:500;cursor:pointer;white-space:nowrap;">Hari Ini</button>
-      <button class="filter-btn" data-filter="yesterday" style="padding:.5rem 1rem;border:1px solid var(--border-color);border-radius:2rem;background:var(--bg-card);color:var(--text-secondary);font-size:.8rem;font-weight:500;cursor:pointer;white-space:nowrap;">Kemarin</button>
-      <button class="filter-btn" data-filter="week" style="padding:.5rem 1rem;border:1px solid var(--border-color);border-radius:2rem;background:var(--bg-card);color:var(--text-secondary);font-size:.8rem;font-weight:500;cursor:pointer;white-space:nowrap;">Minggu Ini</button>
-      <button class="filter-btn" data-filter="month" style="padding:.5rem 1rem;border:1px solid var(--border-color);border-radius:2rem;background:var(--bg-card);color:var(--text-secondary);font-size:.8rem;font-weight:500;cursor:pointer;white-space:nowrap;">Bulan Ini</button>
-      <button class="filter-btn" data-filter="last-month" style="padding:.5rem 1rem;border:1px solid var(--border-color);border-radius:2rem;background:var(--bg-card);color:var(--text-secondary);font-size:.8rem;font-weight:500;cursor:pointer;white-space:nowrap;">Bulan Lalu</button>
+      <button class="filter-btn active" data-filter="today">Hari Ini</button>
+<button class="filter-btn" data-filter="yesterday">Kemarin</button>
+<button class="filter-btn" data-filter="week">Minggu Ini</button>
+<button class="filter-btn" data-filter="month">Bulan Ini</button>
+<button class="filter-btn" data-filter="year">Tahun ini</button>
+<button class="filter-btn" data-filter="costum">Costum</button>
     </div>
   </div>
   <div class="card-body" style="padding:0;max-height:400px;overflow-y:auto">
@@ -933,20 +959,18 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         document.getElementById("supplierName").focus();
       });
 
-      // Filter buttons
-      document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          document.querySelectorAll('.filter-btn').forEach(b => {
-            b.classList.remove('active');
-            b.style.background = 'var(--bg-card)';
-            b.style.color = 'var(--text-secondary)';
-          });
-          this.classList.add('active');
-          this.style.background = 'var(--primary)';
-          this.style.color = 'white';
-          loadRiwayat(this.dataset.filter);
-        });
-      });
+      // Filter buttons - PAKE CLASS SAJA, NO INLINE STYLE
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    // Hapus semua active class
+    document.querySelectorAll('.filter-btn').forEach(b => {
+      b.classList.remove('active');
+    });
+    // Tambah active ke yang diklik
+    this.classList.add('active');
+    loadRiwayat(this.dataset.filter);
+  });
+});
 
       // Set tanggal
       const today = new Date();
@@ -959,13 +983,29 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       document.getElementById("totalHarga").value = qty * harga;
     }
 
-        // ⭐⭐⭐ THEME SYNC - TAMBAHAN INI ⭐⭐⭐
+           // ⭐⭐⭐ THEME SYNC - TAMBAHAN INI ⭐⭐⭐
     function syncGlobalTheme(){
       const savedTheme = localStorage.getItem('webpos_theme') || 'light';
       const savedColor = localStorage.getItem('theme_color') || 'indigo';
       
       document.documentElement.setAttribute('data-theme', savedTheme);
       document.documentElement.setAttribute('data-theme-color', savedColor);
+      
+      // Apply CSS variables langsung (penting!)
+      const colorMap = {
+        'indigo': {p: '#6366f1', pd: '#4f46e5', s: '#ec4899'},
+        'orange': {p: '#f97316', pd: '#ea580c', s: '#f59e0b'},
+        'blue': {p: '#3b82f6', pd: '#2563eb', s: '#06b6d4'},
+        'green': {p: '#10b981', pd: '#059669', s: '#84cc16'},
+        'purple': {p: '#8b5cf6', pd: '#7c3aed', s: '#d946ef'},
+        'red': {p: '#ef4444', pd: '#dc2626', s: '#f97316'},
+        'pink': {p: '#ec4899', pd: '#db2777', s: '#8b5cf6'},
+        'teal': {p: '#14b8a6', pd: '#0d9488', s: '#06b6d4'}
+      };
+      const c = colorMap[savedColor] || colorMap['indigo'];
+      document.documentElement.style.setProperty('--primary', c.p);
+      document.documentElement.style.setProperty('--primary-dark', c.pd);
+      document.documentElement.style.setProperty('--secondary', c.s);
       
       const btnTheme = document.getElementById('btnTheme');
       if(btnTheme) {
@@ -981,11 +1021,21 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           btn.style.color = 'white';
         }
       });
+      
+      console.log('✅ Theme synced:', savedColor, savedTheme);
     }
     
     // Panggil sebelum init
     syncGlobalTheme();
 
+    //⭐⭐⭐ TAMBAHAN: Listen perubahan dari tab lain (Setting/Kasir) ⭐⭐⭐
+    window.addEventListener('storage', function(e) {
+      if(e.key === 'webpos_theme' || e.key === 'theme_color') {
+        console.log('🎨 Theme changed from other page:', e.key, e.newValue);
+        syncGlobalTheme(); // Re-sync tema
+      }
+    });
+    
     function loadProducts(){
       Utils.showLoading();
       database.ref("products").once("value").then(function(snapshot){
@@ -1238,6 +1288,17 @@ function getDatesByFilter(filter) {
         dates.push(formatDate(d));
       }
       break;
+      case 'year':
+    for(let i=0; i<365; i++) {
+      const d = new Date(today); d.setDate(d.getDate()-i);
+      dates.push(formatDate(d));
+    }
+    break;
+      case 'costum': // atau 'custom'
+    // Untuk custom, biasanya perlu input date picker
+    // Untuk sekarang, default ke hari ini dulu
+    dates.push(formatDate(today));
+    break;
   }
   return dates;
 }
