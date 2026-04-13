@@ -35,7 +35,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
-:root{--primary:#f97316;--primary-dark:#ea580c;--secondary:#f59e0b;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--info:#3b82f6}
+:root{--primary:#6366f1;--primary-dark:#4f46e5;--secondary:#ec4899;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--info:#3b82f6}
 [data-theme-color="blue"]{--primary:#3b82f6;--primary-dark:#2563eb;--secondary:#06b6d4}
 [data-theme-color="green"]{--primary:#10b981;--primary-dark:#059669;--secondary:#84cc16}
 [data-theme-color="orange"]{--primary:#f97316;--primary-dark:#ea580c;--secondary:#f59e0b}
@@ -850,13 +850,23 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         btnTheme.innerHTML = '<i class="fas fa-sun" style="color:var(--warning)"></i>';
       }
       
-      btnTheme.addEventListener("click", function(){
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        const newTheme = isDark ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('webpos_theme', newTheme);
-        btnTheme.innerHTML = isDark ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun" style="color:var(--warning)"></i>';
-      });
+      // ⭐ PERBAIKAN: Dark Mode Toggle yang benar
+btnTheme.addEventListener("click", function(){
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('webpos_theme', newTheme);
+  
+  // Update icon dengan warna yang sesuai
+  if(newTheme === 'dark') {
+    btnTheme.innerHTML = '<i class="fas fa-sun" style="color:var(--warning)"></i>';
+  } else {
+    btnTheme.innerHTML = '<i class="fas fa-moon"></i>';
+  }
+  
+  console.log('Theme changed to:', newTheme);
+});
 
       // Product search
       const searchInput = document.getElementById("searchProduct");
