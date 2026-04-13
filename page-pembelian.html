@@ -843,31 +843,18 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         }
       });
 
-            // Theme - Seragamkan dengan head script
+                 // Theme Toggle
       const btnTheme = document.getElementById("btnTheme");
-      const currentTheme = localStorage.getItem('webpos_theme') || 'light';
-      if(currentTheme === 'dark'){
-        btnTheme.innerHTML = '<i class="fas fa-sun" style="color:var(--warning)"></i>';
-      }
+      btnTheme.addEventListener("click", function(){
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const newTheme = isDark ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('webpos_theme', newTheme);
+        btnTheme.innerHTML = newTheme === 'dark' 
+          ? '<i class="fas fa-sun" style="color:var(--warning)"></i>' 
+          : '<i class="fas fa-moon"></i>';
+      });
       
-      // ⭐ PERBAIKAN: Dark Mode Toggle yang benar
-btnTheme.addEventListener("click", function(){
-  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  
-  document.documentElement.setAttribute('data-theme', newTheme);
-  localStorage.setItem('webpos_theme', newTheme);
-  
-  // Update icon dengan warna yang sesuai
-  if(newTheme === 'dark') {
-    btnTheme.innerHTML = '<i class="fas fa-sun" style="color:var(--warning)"></i>';
-  } else {
-    btnTheme.innerHTML = '<i class="fas fa-moon"></i>';
-  }
-  
-  console.log('Theme changed to:', newTheme);
-});
-
       // Product search
       const searchInput = document.getElementById("searchProduct");
       const productList = document.getElementById("productList");
@@ -971,6 +958,33 @@ btnTheme.addEventListener("click", function(){
       const harga = parseInt(document.getElementById("hargaBeli").value) || 0;
       document.getElementById("totalHarga").value = qty * harga;
     }
+
+        // ⭐⭐⭐ THEME SYNC - TAMBAHAN INI ⭐⭐⭐
+    function syncGlobalTheme(){
+      const savedTheme = localStorage.getItem('webpos_theme') || 'light';
+      const savedColor = localStorage.getItem('theme_color') || 'indigo';
+      
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      document.documentElement.setAttribute('data-theme-color', savedColor);
+      
+      const btnTheme = document.getElementById('btnTheme');
+      if(btnTheme) {
+        btnTheme.innerHTML = savedTheme === 'dark' 
+          ? '<i class="fas fa-sun" style="color:var(--warning)"></i>' 
+          : '<i class="fas fa-moon"></i>';
+      }
+      
+      // Fix filter buttons
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if(btn.classList.contains('active')) {
+          btn.style.background = 'var(--primary)';
+          btn.style.color = 'white';
+        }
+      });
+    }
+    
+    // Panggil sebelum init
+    syncGlobalTheme();
 
     function loadProducts(){
       Utils.showLoading();
