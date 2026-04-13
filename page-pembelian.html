@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="light">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -267,6 +267,16 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 @media(max-width:1024px){
   #mobileMenuToggle{display:flex!important;width:44px;height:44px;background:var(--bg-card);border:2px solid var(--border-color);border-radius:.75rem;align-items:center;justify-content:center}
   #mobileMenuToggle i{font-size:1.25rem;color:var(--text-primary)}
+}
+
+    [data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b; 
+  --bg-card: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --border-color: #334155;
 }
   </style>
 
@@ -609,7 +619,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 
         initPage();
         loadProducts();
-        loadRiwayat();
+        loadRiwayat('today');
       });
     }
 
@@ -653,18 +663,18 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         }
       });
 
-      // Theme
+            // Theme - Seragamkan dengan head script
       const btnTheme = document.getElementById("btnTheme");
-      const isDark = localStorage.getItem('webpos_dark_mode') === 'true';
-      if(isDark){
-        document.documentElement.setAttribute('data-theme', 'dark');
+      const currentTheme = localStorage.getItem('webpos_theme') || 'light';
+      if(currentTheme === 'dark'){
         btnTheme.innerHTML = '<i class="fas fa-sun" style="color:var(--warning)"></i>';
       }
       
       btnTheme.addEventListener("click", function(){
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-        localStorage.setItem('webpos_dark_mode', !isDark);
+        const newTheme = isDark ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('webpos_theme', newTheme);
         btnTheme.innerHTML = isDark ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun" style="color:var(--warning)"></i>';
       });
 
@@ -1046,6 +1056,12 @@ function renderRiwayatTable(purchases) {
     </tr>
   `).join("");
 }
+
+    // Hide loading overlay jika ada error saat init
+      setTimeout(function(){
+        Utils.hideLoading();
+      }, 1000);
+    init();
   })();
   </script>
 </body>
