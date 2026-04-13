@@ -6,11 +6,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#6366f1">
   <script>
+  // Theme System - Sinkron dengan Utils.Theme di halaman Setting
   (function() {
-    const themeColor = localStorage.getItem('theme_color') || 'indigo';
-    const themeMode = localStorage.getItem('webpos_theme') || 'light';
-    document.documentElement.setAttribute('data-theme', themeMode);
-    document.documentElement.setAttribute('data-theme-color', themeColor);
+    // Coba ambil dari Utils.Theme (jika sudah load utils.js) atau fallback ke localStorage
+    const getTheme = function() {
+      // Utils.Theme biasanya pakai key 'webpos_theme_color' dan 'webpos_theme_mode'
+      // atau bisa juga 'theme_color' dan 'webpos_theme'
+      const color = localStorage.getItem('webpos_theme_color') || 
+                    localStorage.getItem('theme_color') || 
+                    'indigo';
+      const mode = localStorage.getItem('webpos_theme_mode') || 
+                   localStorage.getItem('webpos_theme') || 
+                   'light';
+      return { color, mode };
+    };
+    
+    const theme = getTheme();
+    document.documentElement.setAttribute('data-theme', theme.mode);
+    document.documentElement.setAttribute('data-theme-color', theme.color);
+    
     const colorMap = {
       'indigo': {p: '#6366f1', pd: '#4f46e5', s: '#ec4899'},
       'orange': {p: '#f97316', pd: '#ea580c', s: '#f59e0b'},
@@ -21,11 +35,14 @@
       'pink': {p: '#ec4899', pd: '#db2777', s: '#8b5cf6'},
       'teal': {p: '#14b8a6', pd: '#0d9488', s: '#06b6d4'}
     };
-    const c = colorMap[themeColor] || colorMap['indigo'];
+    
+    const c = colorMap[theme.color] || colorMap['indigo'];
     document.documentElement.style.setProperty('--primary', c.p);
     document.documentElement.style.setProperty('--primary-dark', c.pd);
     document.documentElement.style.setProperty('--secondary', c.s);
-    document.querySelector('meta[name="theme-color"]').setAttribute('content', c.p);
+    
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if(metaTheme) metaTheme.setAttribute('content', c.p);
   })();
   </script>
   <title>WebPOS - Pembelian</title>
@@ -945,18 +962,30 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         }
       });
 
-      // Theme Toggle
+      // Theme Toggle - Sinkron dengan Utils.Theme
       const btnTheme = document.getElementById("btnTheme");
+      
+      // Set initial icon
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      btnTheme.innerHTML = currentTheme === 'dark' 
+        ? '<i class="fas fa-sun" style="color:var(--warning)"></i>' 
+        : '<i class="fas fa-moon"></i>';
+      
       btnTheme.addEventListener("click", function(){
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         const newTheme = isDark ? 'light' : 'dark';
+        
         document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('webpos_theme', newTheme);
+        
+        // Simpan dengan key yang sama seperti Utils.Theme
+        localStorage.setItem('webpos_theme_mode', newTheme);
+        localStorage.setItem('webpos_theme', newTheme); // fallback
+        
         btnTheme.innerHTML = newTheme === 'dark' 
           ? '<i class="fas fa-sun" style="color:var(--warning)"></i>' 
           : '<i class="fas fa-moon"></i>';
         
-        // Broadcast ke tab lain
+        // Broadcast ke tab lain (Utils.Theme biasanya pakai timestamp)
         localStorage.setItem('webpos_theme_broadcast', Date.now().toString());
       });
       
@@ -1074,10 +1103,15 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       document.getElementById("totalHarga").value = qty * harga;
     }
 
-    // Theme Sync - DIPERBAIKI
+    // Theme Sync - Sinkron dengan Utils.Theme
     function syncGlobalTheme(){
-      const savedTheme = localStorage.getItem('webpos_theme') || 'light';
-      const savedColor = localStorage.getItem('theme_color') || 'indigo';
+      // Support Utils.Theme keys dan fallback keys
+      const savedTheme = localStorage.getItem('webpos_theme_mode') || 
+                         localStorage.getItem('webpos_theme') || 
+                         'light';
+      const savedColor = localStorage.getItem('webpos_theme_color') || 
+                         localStorage.getItem('theme_color') || 
+                         'indigo';
       
       document.documentElement.setAttribute('data-theme', savedTheme);
       document.documentElement.setAttribute('data-theme-color', savedColor);
@@ -1116,10 +1150,18 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     // Panggil sync theme saat load
     syncGlobalTheme();
 
-    // Listen perubahan dari tab lain (Setting/Kasir)
+    // Listen perubahan dari tab lain (Setting/Kasir/Utils.Theme)
     window.addEventListener('storage', function(e) {
-      if(e.key === 'webpos_theme' || e.key === 'theme_color' || e.key === 'webpos_theme_broadcast') {
-        console.log('Theme changed from other page:', e.key);
+      // Utils.Theme keys: webpos_theme_mode, webpos_theme_color, webpos_theme_broadcast
+      // Fallback keys: webpos_theme, theme_color
+      const themeKeys = [
+        'webpos_theme_mode', 'webpos_theme_color', 
+        'webpos_theme', 'theme_color', 
+        'webpos_theme_broadcast'
+      ];
+      
+      if(themeKeys.includes(e.key)) {
+        console.log('Theme changed from other page:', e.key, e.newValue);
         syncGlobalTheme();
       }
     });
