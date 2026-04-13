@@ -268,15 +268,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
   #mobileMenuToggle{display:flex!important;width:44px;height:44px;background:var(--bg-card);border:2px solid var(--border-color);border-radius:.75rem;align-items:center;justify-content:center}
   #mobileMenuToggle i{font-size:1.25rem;color:var(--text-primary)}
 }
-
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b; 
-  --bg-card: #1e293b;
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #64748b;
-  --border-color: #334155;
-}
   </style>
 
   <!-- Firebase SDK -->
@@ -484,14 +475,16 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             <div class="card-body" style="padding:0;max-height:calc(100vh - 250px);overflow-y:auto">
               <table class="pembelian-table">
                 <thead>
-                  <tr>
-                    <th>Produk</th>
-                    <th>Qty</th>
-                    <th>Harga</th>
-                    <th>Total</th>
-                    <th style="width:50px"></th>
-                  </tr>
-                </thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Waktu</th>
+            <th>Supplier</th>
+            <th>Item</th>
+            <th>Total</th>
+            <th>User</th>
+            <th style="width:80px">Aksi</th>
+          </tr>
+        </thead>
                 <tbody id="tbodyPembelian">
                   <tr>
                     <td colspan="5" class="empty-state" style="padding:3rem 1rem">
@@ -522,7 +515,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
   <div class="card-body" style="padding:0;max-height:400px;overflow-y:auto">
     <div style="overflow-x:auto;">
       <table class="pembelian-table" style="min-width:600px">
-        <thead>
+                <thead>
           <tr>
             <th>Tanggal</th>
             <th>Waktu</th>
@@ -530,11 +523,12 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             <th>Item</th>
             <th>Total</th>
             <th>User</th>
+            <th style="width:80px">Aksi</th>
           </tr>
         </thead>
         <tbody id="tbodyRiwayat">
           <tr>
-            <td colspan="6" class="empty-state" style="padding:2rem">
+            <td colspan="7" class="empty-state" style="padding:2rem">
               <i class="fas fa-inbox"></i>
               <p>Belum ada pembelian</p>
             </td>
@@ -974,7 +968,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 function loadRiwayat(filter = 'today') {
   currentFilter = filter;
   const tbody = document.getElementById("tbodyRiwayat");
-  tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Memuat...</p></td></tr>';
+  tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Memuat...</p></td></tr>';
   
   const dates = getDatesByFilter(filter);
   let allPurchases = [];
@@ -1037,31 +1031,153 @@ function getDatesByFilter(filter) {
   return dates;
 }
 
+function showPurchaseDetail(index) {
+  const p = window.purchasesData[index];
+  if(!p) return;
+  
+  document.getElementById("detailTitle").textContent = "Pembelian " + (p.id || "");
+  document.getElementById("detailSubtitle").textContent = "ID: " + (p.id || "-");
+  document.getElementById("detailSupplier").textContent = p.supplier || "-";
+  document.getElementById("detailUser").textContent = p.userName || "-";
+  document.getElementById("detailDate").textContent = p.dateStr || "-";
+  document.getElementById("detailTime").textContent = new Date(p.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  document.getElementById("detailGrandTotal").textContent = Utils.formatRupiah(p.grandTotal);
+  
+  const itemsTbody = document.getElementById("detailItems");
+  if(p.items && p.items.length > 0) {
+    itemsTbody.innerHTML = p.items.map(item => `
+      <tr>
+        <td style="padding:0.625rem">
+          <div style="font-weight:500">${item.productName}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted)">ID: ${item.productId ? item.productId.substr(-6) : '-'}</div>
+        </td>
+        <td style="text-align:center;padding:0.625rem">${item.qty}</td>
+        <td style="text-align:right;padding:0.625rem">${Utils.formatRupiah(item.harga)}</td>
+        <td style="text-align:right;padding:0.625rem;font-weight:500">${Utils.formatRupiah(item.total)}</td>
+      </tr>
+    `).join("");
+  } else {
+    itemsTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:1rem;color:var(--text-muted)">Tidak ada detail item</td></tr>';
+  }
+  
+  const catatanDiv = document.getElementById("detailCatatan");
+  if(p.catatan && p.catatan.trim() !== "") {
+    document.getElementById("detailCatatanText").textContent = p.catatan;
+    catatanDiv.style.display = "block";
+  } else {
+    catatanDiv.style.display = "none";
+  }
+  
+  document.getElementById("detailModal").classList.add("active");
+}
+
+function closeDetailModal() {
+  document.getElementById("detailModal").classList.remove("active");
+}
+
+// Close modal ketika klik di luar
+document.addEventListener("click", function(e) {
+  const modal = document.getElementById("detailModal");
+  if(e.target === modal) {
+    closeDetailModal();
+  }
+});
+
+    // Expose fungsi ke global scope agar bisa dipanggil dari HTML onclick
+window.showPurchaseDetail = showPurchaseDetail;
+window.closeDetailModal = closeDetailModal;
+
 function renderRiwayatTable(purchases) {
   const tbody = document.getElementById("tbodyRiwayat");
   if(purchases.length === 0){
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state" style="padding:2rem"><i class="fas fa-inbox"></i><p>Belum ada pembelian untuk periode ini</p></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state" style="padding:2rem"><i class="fas fa-inbox"></i><p>Belum ada pembelian untuk periode ini</p></td></tr>';
     return;
   }
   
-  tbody.innerHTML = purchases.map(p => `
-    <tr>
+  tbody.innerHTML = purchases.map((p, index) => `
+    <tr style="cursor:pointer" onclick="showPurchaseDetail(${index})">
       <td>${p.dateStr}</td>
       <td>${new Date(p.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</td>
       <td>${p.supplier}</td>
       <td>${p.totalItem} item</td>
       <td style="font-weight:600">${Utils.formatRupiah(p.grandTotal)}</td>
       <td>${p.userName}</td>
+      <td>
+        <button class="btn-icon btn-sm" style="width:32px;height:32px" onclick="event.stopPropagation();showPurchaseDetail(${index})" title="Lihat Detail">
+          <i class="fas fa-eye" style="color:var(--info)"></i>
+        </button>
+      </td>
     </tr>
   `).join("");
+  
+  window.purchasesData = purchases;
 }
-
-    // Hide loading overlay jika ada error saat init
-      setTimeout(function(){
-        Utils.hideLoading();
-      }, 1000);
+  setTimeout(function(){
+      Utils.hideLoading();
+    }, 1000);
     init();
   })();
   </script>
+
+  <!-- Detail Pembelian Modal -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal" style="max-width:600px">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" id="detailTitle">Detail Pembelian</h3>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin-top:0.25rem" id="detailSubtitle">ID: -</p>
+        </div>
+        <button class="modal-close" onclick="closeDetailModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" style="max-height:60vh;overflow-y:auto">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;padding:1rem;background:var(--bg-secondary);border-radius:0.75rem">
+          <div>
+            <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase">Supplier</div>
+            <div style="font-weight:600" id="detailSupplier">-</div>
+          </div>
+          <div>
+            <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase">User</div>
+            <div style="font-weight:600" id="detailUser">-</div>
+          </div>
+          <div>
+            <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase">Tanggal</div>
+            <div style="font-weight:600" id="detailDate">-</div>
+          </div>
+          <div>
+            <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase">Waktu</div>
+            <div style="font-weight:600" id="detailTime">-</div>
+          </div>
+        </div>
+        
+        <h4 style="margin-bottom:1rem;font-size:1rem">Daftar Item</h4>
+        <table class="pembelian-table" style="font-size:0.9rem">
+          <thead>
+            <tr>
+              <th>Produk</th>
+              <th style="text-align:center">Qty</th>
+              <th style="text-align:right">Harga/pcs</th>
+              <th style="text-align:right">Total</th>
+            </tr>
+          </thead>
+          <tbody id="detailItems"></tbody>
+          <tfoot style="border-top:2px solid var(--border-color)">
+            <tr>
+              <td colspan="3" style="text-align:right;font-weight:700;padding:0.75rem">Grand Total:</td>
+              <td style="text-align:right;font-weight:700;padding:0.75rem;color:var(--primary)" id="detailGrandTotal">-</td>
+            </tr>
+          </tfoot>
+        </table>
+        
+        <div id="detailCatatan" style="margin-top:1.5rem;padding:1rem;background:rgba(255,193,7,0.1);border-left:3px solid var(--warning);border-radius:0.5rem;display:none">
+          <div style="font-size:0.75rem;color:var(--warning);font-weight:600;margin-bottom:0.25rem"><i class="fas fa-sticky-note"></i> Catatan</div>
+          <div style="font-size:0.9rem" id="detailCatatanText">-</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeDetailModal()">Tutup</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
