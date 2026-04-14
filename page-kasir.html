@@ -431,6 +431,39 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
   color: white;
 }
 
+    /* ===== TOMBOL EDIT SELALU TAMPIL DI MOBILE ===== */
+@media (max-width: 1024px) {
+  .cart-item-edit {
+    opacity: 1 !important;
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+    top: 0.5rem;
+    left: 0.5rem;
+  }
+  
+  /* Geser konten cart item agar tidak tertutup tombol edit */
+  .cart-item {
+    padding-left: 2.5rem !important;
+  }
+  
+  .cart-item-image {
+    margin-left: 0.5rem;
+  }
+}
+
+/* ===== TOMBOL EDIT SELALU TAMPIL (ALL DEVICES) ===== */
+/* Hapus opacity hover effect, selalu tampil */
+.cart-item-edit {
+  opacity: 1;
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.cart-item-edit:hover {
+  background: var(--primary);
+  color: white;
+}
+
 /* Mobile Cart Toggle */
 .cart-toggle{position:fixed;bottom:90px;right:1rem;width:56px;height:56px;background:var(--primary);color:white;border:none;border-radius:50%;box-shadow:var(--shadow-lg);display:none;align-items:center;justify-content:center;font-size:1.25rem;z-index:101;cursor:pointer}
 @media(max-width:1024px){.cart-toggle{display:flex}}
