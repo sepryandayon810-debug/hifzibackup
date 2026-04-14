@@ -402,33 +402,46 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
   font-weight: 600;
 }
 
-/* Tombol edit di cart item */
+/* ===== TOMBOL EDIT DI CART ITEM ===== */
 .cart-item-edit {
   position: absolute;
   top: 0.5rem;
   left: 0.5rem;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border: none;
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(99, 102, 241, 0.15);
   color: var(--primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 0.75rem;
-  opacity: 0;
-  transition: all 0.15s;
-}
-
-.cart-item:hover .cart-item-edit {
+  font-size: 0.8rem;
   opacity: 1;
+  z-index: 10;
+  transition: all 0.15s;
 }
 
 .cart-item-edit:hover {
   background: var(--primary);
   color: white;
+  transform: scale(1.1);
+}
+
+/* Mobile: padding lebih besar untuk memberi ruang tombol */
+@media (max-width: 1024px) {
+  .cart-item {
+    padding-left: 2.5rem !important;
+  }
+  
+  .cart-item-edit {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+    top: 0.75rem;
+    left: 0.5rem;
+  }
 }
 
     /* ===== TOMBOL EDIT SELALU TAMPIL DI MOBILE ===== */
@@ -2479,10 +2492,6 @@ function goToTarik() {
   window.location.href = 'page-kas-tarik.html';
 }
 
-// Tutup modal saat klik overlay
-manualModal.addEventListener('click', (e) => {
-  if (e.target === manualModal) closeManualModal();
-});
 
     // ===== LOGOUT =====
     document.getElementById('btnLogout').addEventListener('click', () => {
