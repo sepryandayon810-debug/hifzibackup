@@ -511,17 +511,47 @@ const Utils = {
 };
 
 // Auto-update store name in sidebar for all pages
-document.addEventListener('DOMContentLoaded', () => {
+function updateStoreDisplay() {
   const storeName = localStorage.getItem('webpos_store_name');
+  const storeAddress = localStorage.getItem('webpos_store_address');
+  const storePhone = localStorage.getItem('webpos_store_phone');
+  
+  // Update logo nama toko
   if (storeName) {
     const logoText = document.querySelector('.logo-text');
-    if (logoText) {
-      logoText.textContent = storeName;
-    }
-    // Update document title jika mengandung WebPOS
+    if (logoText) logoText.textContent = storeName;
     if (document.title.includes('WebPOS')) {
       document.title = document.title.replace('WebPOS', storeName);
     }
+  }
+  
+  // Update alamat & telepon di header (jika elemen ada)
+  const addressEl = document.getElementById('headerStoreAddress');
+  const phoneEl = document.getElementById('headerStorePhone');
+  if (addressEl) addressEl.textContent = storeAddress || '-';
+  if (phoneEl) phoneEl.textContent = storePhone || '-';
+  
+  // Update di sidebar (jika ada elemennya)
+  const sidebarAddr = document.getElementById('sidebarStoreAddress');
+  const sidebarPhone = document.getElementById('sidebarStorePhone');
+  if (sidebarAddr) sidebarAddr.textContent = storeAddress || '';
+  if (sidebarPhone) sidebarPhone.textContent = storePhone || '';
+}
+
+// Jalankan saat load
+document.addEventListener('DOMContentLoaded', updateStoreDisplay);
+
+// Listen untuk perubahan localStorage (sync antar tab/page)
+window.addEventListener('storage', (e) => {
+  if (e.key === 'webpos_store_name' || e.key === 'webpos_store_address' || e.key === 'webpos_store_phone') {
+    updateStoreDisplay();
+  }
+});
+
+// Update juga saat user kembali ke tab ini (visibilitychange)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    updateStoreDisplay();
   }
 });
 
