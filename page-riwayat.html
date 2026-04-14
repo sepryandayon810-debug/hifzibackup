@@ -1283,14 +1283,22 @@ document.addEventListener('click', (e) => {
           <table class="detail-items-table">
             <thead><tr><th>Produk</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr></thead>
             <tbody>
-              ${t.items.map(item => `
-                <tr>
-                  <td>${item.name || '-'}</td>
-                  <td>${item.qty || 0}</td>
-                  <td>${formatRupiah(item.price || (item.subtotal / item.qty))}</td>
-                  <td>${formatRupiah(item.subtotal)}</td>
-                </tr>
-              `).join('')}
+              ${t.items.map(item => {
+  // Cek field nama yang tersedia (bisa name, nama, productName, product, title)
+  const productName = item.name || item.nama || item.productName || item.product || item.title || 'Produk';
+  const qty = item.qty || item.quantity || 0;
+  const price = item.price || item.harga || item.buyPrice || item.purchasePrice || 0;
+  const subtotal = item.subtotal || (qty * price) || 0;
+  
+  return `
+    <tr>
+      <td>${productName}</td>
+      <td>${qty}</td>
+      <td>${formatRupiah(price)}</td>
+      <td>${formatRupiah(subtotal)}</td>
+    </tr>
+  `;
+}).join('')}
               <tr>
                 <td colspan="3"><strong>TOTAL</strong></td>
                 <td><strong>${formatRupiah(t.total)}</strong></td>
