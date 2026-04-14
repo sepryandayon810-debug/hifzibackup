@@ -1655,7 +1655,9 @@ window.saveEditItem = function() {
       const tbody = document.getElementById("tbodyRiwayat");
       tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Memuat...</p></td></tr>';
       
-      const dates = getDatesByFilter(filter);
+       const dates = getDatesByFilter(filter);
+  console.log('Filter:', filter, 'Dates:', dates); // DEBUG
+
       let allPurchases = [];
       
       // Load per tanggal
@@ -1663,8 +1665,10 @@ window.saveEditItem = function() {
         database.ref("purchases/" + date).once("value")
           .then(snapshot => {
             const data = snapshot.val();
+            console.log('Date:', date, 'Data:', data); // DEBUG: cek apa data ada
             if (data) {
               Object.values(data).forEach(p => {
+                console.log('Push purchase:', p.id, p.timestamp); // DEBUG
                 p.dateStr = date;
                 allPurchases.push(p);
               });
@@ -1674,6 +1678,7 @@ window.saveEditItem = function() {
       );
       
       Promise.all(promises).then(() => {
+            console.log('Total purchases loaded:', allPurchases.length); // DEBUG
         allPurchases.sort((a, b) => b.timestamp - a.timestamp);
         renderRiwayatTable(allPurchases);
       });
