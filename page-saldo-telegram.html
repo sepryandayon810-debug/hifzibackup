@@ -1198,7 +1198,22 @@ document.addEventListener('click', (e) => {
         // EVENT LISTENERS & FUNGSI UTAMA
         // ============================================
 
-        
+        // Handler untuk tombol jenis saldo (DANA, DIGIPOS, MASTERLOAD)
+        document.querySelectorAll('.btn-saldo').forEach(btn => {
+          btn.addEventListener('click', () => {
+            // Hapus class active dari semua tombol
+            document.querySelectorAll('.btn-saldo').forEach(b => b.classList.remove('active'));
+            // Tambah class active ke tombol yang diklik
+            btn.classList.add('active');
+            // Simpan nilai yang dipilih
+            selectedSaldoType = btn.dataset.value;
+            // Tampilkan input nominal
+            document.getElementById('nominalGroup').style.display = 'block';
+            // Focus ke input nominal
+            document.getElementById('nominalInput').focus();
+          });
+        });
+       
         // Handler submit saldo
         document.getElementById('btnSubmitSaldo').addEventListener('click', submitSaldoTransaction);
 
