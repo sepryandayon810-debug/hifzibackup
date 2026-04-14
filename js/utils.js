@@ -510,6 +510,21 @@ const Utils = {
   }
 };
 
+// Auto-update store name in sidebar for all pages
+document.addEventListener('DOMContentLoaded', () => {
+  const storeName = localStorage.getItem('webpos_store_name');
+  if (storeName) {
+    const logoText = document.querySelector('.logo-text');
+    if (logoText) {
+      logoText.textContent = storeName;
+    }
+    // Update document title jika mengandung WebPOS
+    if (document.title.includes('WebPOS')) {
+      document.title = document.title.replace('WebPOS', storeName);
+    }
+  }
+});
+
 // Initialize theme on load
 document.addEventListener('DOMContentLoaded', () => {
   Utils.Theme.init();
