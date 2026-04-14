@@ -272,6 +272,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 .transaction-type.tarik{background:rgba(239,68,68,.1);color:var(--danger)}
 .transaction-type.kas_masuk{background:rgba(16,185,129,.15);color:var(--success)}
 .transaction-type.kas_keluar{background:rgba(239,68,68,.15);color:var(--danger)}
+.transaction-type.pembelian{background:rgba(245,158,11,.15);color:var(--warning);}
 
 /* ===== MODALS ===== */
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:2000;opacity:0;visibility:hidden;transition:all .25s;padding:1rem;backdrop-filter:blur(4px)}
@@ -706,6 +707,8 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           <button class="category-tab" data-category="penjualan">Produk</button>
           <button class="category-tab" data-category="kas">Kas Masuk/Keluar</button>
           <button class="category-tab" data-category="topup_tarik">Top Up & Tarik</button>
+          <button class="category-tab" data-category="pembelian">Pembelian ⭐</button>
+
         </div>
 
         <!-- Summary Cards - Redesign -->
@@ -837,7 +840,8 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       topup: 'Top Up',
       tarik: 'Tarik Tunai',
       kas_masuk: 'Kas Masuk',
-      kas_keluar: 'Kas Keluar'
+      kas_keluar: 'Kas Keluar',
+      pembelian: 'Pembelian',
     };
 
     const TYPE_ICONS = {
@@ -845,7 +849,8 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       topup: 'fa-arrow-circle-up',
       tarik: 'fa-arrow-circle-down',
       kas_masuk: 'fa-plus-circle',
-      kas_keluar: 'fa-minus-circle'
+      kas_keluar: 'fa-minus-circle',
+      pembelian: 'fa-truck-loading',
     };
 
     // ========== THEME LOADER (ikuti pengaturan global) ==========
@@ -1064,10 +1069,29 @@ document.addEventListener('click', (e) => {
           );
 
           snapshots.forEach((snap, idx) => {
-            const trans = snap.val() || {};
-            Object.entries(trans).forEach(([id, data]) => {
-              if (data.status !== 'cancelled' && data.status !== 'returned') {
-                allTransactions.push({ id, dateKey: chunk[idx], ...data });
+  const trans = snap.val() || {};
+  Object.entries(trans).forEach(([id, data]) => {
+    if (data.status !== 'cancelled' && data.status !== 'returned') {
+      allTransactions.push({ id, dateKey: chunk[idx], ...data });
+    }
+  });
+});
+
+                    // Load dari purchases juga (pembelian barang)
+          const purchaseSnapshots = await Promise.all(
+            chunk.map(dateStr => database.ref(`purchases/${dateStr}`).once('value'))
+          );
+
+          purchaseSnapshots.forEach((snap, idx) => {
+            const purchases = snap.val() || {};
+            Object.entries(purchases).forEach(([id, data]) => {
+              if (data.status !== 'cancelled') {
+                allTransactions.push({ 
+                  id, 
+                  dateKey: chunk[idx], 
+                  type: 'pembelian',  // Force type
+                  ...data 
+                });
               }
             });
           });
@@ -1100,6 +1124,8 @@ document.addEventListener('click', (e) => {
             case 'penjualan':    return t.type === 'penjualan';
             case 'kas':          return t.type === 'kas_masuk' || t.type === 'kas_keluar';
             case 'topup_tarik':  return t.type === 'topup' || t.type === 'tarik';
+            case 'pembelian':    return t.type === 'pembelian';
+
             default:             return true;
           }
         });
@@ -1120,7 +1146,12 @@ document.addEventListener('click', (e) => {
       if (t.type === 'tarik') return 'Tarik Tunai' + (t.targetName ? ' - ' + t.targetName : '');
       if (t.type === 'kas_masuk') return t.description || t.note || 'Kas Masuk';
       if (t.type === 'kas_keluar') return t.description || t.note || 'Kas Keluar';
+      if (t.type === 'pembelian') {
+      return 'Pembelian' + (t.supplierName ? ' dari ' + t.supplierName : '') + 
+               (t.items && t.items.length > 0 ? ' (' + t.items.length + ' item)' : '');
+        }
       return t.note || TYPE_LABELS[t.type] || t.type || '-';
+       
     }
 
     function renderTable(transactions) {
