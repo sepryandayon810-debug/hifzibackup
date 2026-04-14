@@ -587,6 +587,35 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
   background: rgba(99, 102, 241, 0.1) !important;
   border-color: var(--primary) !important;
 }
+
+    /* Edit button animation */
+.btn-icon[onclick^="openEditModal"]:hover {
+  background: rgba(99, 102, 241, 0.1) !important;
+  border-color: var(--primary) !important;
+}
+
+/* Scrollbar lebih tebal & berwarna untuk mobile */
+@media(max-width:768px){
+  .card-body::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .card-body::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+  }
+  .card-body::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 3px;
+  }
+  /* Scrollbar khusus untuk tabel riwayat */
+  #tbodyRiwayat::-webkit-scrollbar {
+    width: 6px;
+  }
+  #tbodyRiwayat::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 3px;
+  }
+}
     
   </style>
 
