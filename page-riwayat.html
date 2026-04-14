@@ -1135,23 +1135,42 @@ document.addEventListener('click', (e) => {
     }
 
     // Ambil deskripsi singkat transaksi (produk pertama / keterangan)
-    function getTransactionDesc(t) {
+        function getTransactionDesc(t) {
       if (t.type === 'penjualan' && t.items && t.items.length > 0) {
         const names = t.items.map(i => i.name).filter(Boolean);
         if (names.length === 0) return 'Penjualan Produk';
         if (names.length === 1) return names[0];
         return names[0] + ' +' + (names.length - 1) + ' lainnya';
       }
+      
+      // ✅ UPDATE BAGIAN INI untuk pembelian
+      if (t.type === 'pembelian') {
+        const supplier = t.supplierName ? ' dari ' + t.supplierName : '';
+        
+        // Ambil nama produk pertama jika ada items
+        if (t.items && t.items.length > 0) {
+          // Cek field name (bisa "name", "nama", "productName", atau "product")
+          const firstItem = t.items[0];
+          const productName = firstItem.name || firstItem.nama || firstItem.productName || firstItem.product || firstItem.title;
+          
+          if (productName) {
+            if (t.items.length === 1) {
+              return 'Pembelian ' + productName + supplier;
+            } else {
+              return 'Pembelian ' + productName + ' +' + (t.items.length - 1) + ' lainnya' + supplier;
+            }
+          }
+        }
+        
+        return 'Pembelian' + supplier;
+      }
+      
       if (t.type === 'topup') return 'Top Up' + (t.targetName ? ' - ' + t.targetName : '');
       if (t.type === 'tarik') return 'Tarik Tunai' + (t.targetName ? ' - ' + t.targetName : '');
       if (t.type === 'kas_masuk') return t.description || t.note || 'Kas Masuk';
       if (t.type === 'kas_keluar') return t.description || t.note || 'Kas Keluar';
-      if (t.type === 'pembelian') {
-      return 'Pembelian' + (t.supplierName ? ' dari ' + t.supplierName : '') + 
-               (t.items && t.items.length > 0 ? ' (' + t.items.length + ' item)' : '');
-        }
+      
       return t.note || TYPE_LABELS[t.type] || t.type || '-';
-       
     }
 
     function renderTable(transactions) {
