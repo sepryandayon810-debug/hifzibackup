@@ -1307,50 +1307,56 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   <script src="js/sidebar-filter.js"></script>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const database = firebase.database();
-      const auth = firebase.auth();
-      
-      // ✅ FALLBACK Utils & Auth
-      if (typeof Utils === 'undefined') {
-        window.Utils = {
-          formatRupiah: (num) => 'Rp ' + Math.round(num || 0).toLocaleString('id-ID'),
-          showToast: (msg, type) => alert(msg),
-          showLoading: () => document.getElementById('loadingOverlay')?.classList.add('active'),
-          hideLoading: () => document.getElementById('loadingOverlay')?.classList.remove('active'),
-          getStorage: (key) => localStorage.getItem(key),
-          confirm: (msg, callback) => { if(confirm(msg)) callback(); }
-        };
-      }
-      
-      // ✅ FALLBACK Auth (WAJIB!)
-      if (typeof Auth === 'undefined') {
-        window.Auth = {
-          loadUserData: (uid) => {
-            database.ref('users/' + uid).once('value').then(snap => {
-              const data = snap.val() || {};
-              document.getElementById('userName').textContent = data.name || 'Admin';
-              document.getElementById('userRole').textContent = data.role || 'Admin';
-            });
-          },
-          logout: () => {
-            auth.signOut().then(() => window.location.href = 'login.html');
-          }
-        };
-      }
-      
-      auth.onAuthStateChanged((user) => {
-        if (!user && !Utils.getStorage('webpos_session')) {
-          window.location.href = 'login.html';
-          return;
-        }
-        
-        if (user) {
-          Auth.loadUserData(user.uid);
-        }
-        
-        initLaporan();
-      });
+  document.addEventListener('DOMContentLoaded', () => {
+    const database = firebase.database();
+    const auth = firebase.auth();
+    
+    // ✅ FALLBACK Utils & Auth
+    if (typeof Utils === 'undefined') {
+      window.Utils = {
+        formatRupiah: (num) => 'Rp ' + Math.round(num || 0).toLocaleString('id-ID'),
+        showToast: (msg, type) => alert(msg),
+        showLoading: () => document.getElementById('loadingOverlay')?.classList.add('active'),
+        hideLoading: () => document.getElementById('loadingOverlay')?.classList.remove('active'),
+        getStorage: (key) => localStorage.getItem(key),
+        confirm: (msg, callback) => { if(confirm(msg)) callback(); }
+      };
+    }
+    
+    // ✅ VERSI SIMPLIFIED (sama persis dengan Kasir)
+function loadUserData(user) {  // Terima user sebagai parameter
+  if (!user) return;
+  
+  database.ref('users/' + user.uid).once('value').then(snap => {
+    const data = snap.val() || {};
+    const name = data.name || user.email || 'Admin';
+    const role = data.role || 'admin';
+    document.getElementById('userName').textContent = name;
+    document.getElementById('userRole').textContent = role;
+    const avatar = document.getElementById('userAvatar');
+    if (avatar) avatar.textContent = name.charAt(0).toUpperCase();
+  }).catch(err => {
+    console.error('Error load user:', err);
+    document.getElementById('userName').textContent = 'Admin';
+  });
+}
+
+// Panggil dengan:
+auth.onAuthStateChanged((user) => {
+  if (!user && !Utils.getStorage('webpos_session')) {
+    window.location.href = 'login.html';
+    return;
+  }
+  
+  if (user) {
+    loadUserData(user);  // ✅ Pass user object langsung
+  } else {
+    document.getElementById('userName').textContent = 'Admin';
+    document.getElementById('userRole').textContent = 'User';
+  }
+  
+  initLaporan();
+});
 
       function initLaporan() {
         let currentReport = 'penjualan';
@@ -1478,9 +1484,6 @@ window.changeChartType = function(type) {
   }
 };
 
-        // Generate report
-        document.getElementById('btnGenerate').addEventListener('click', generateReport);
-
         // Reset
         document.getElementById('btnReset').addEventListener('click', () => {
           document.getElementById('dateFrom').value = today;
@@ -1548,10 +1551,15 @@ document.addEventListener('click', (e) => {
 
         // Logout
         document.getElementById('btnLogout').addEventListener('click', () => {
-          Utils.confirm('Apakah Anda yakin ingin logout?', () => {
-            Auth.logout();
-          });
-        });
+  Utils.confirm('Apakah Anda yakin ingin logout?', () => {
+    // Langsung pakai Firebase auth, tidak perlu Auth object
+    auth.signOut().then(() => {
+      window.location.href = 'login.html';
+    }).catch(() => {
+      window.location.href = 'login.html';
+    });
+  });
+});
 
         function updateReportTitle() {
           const titles = {
