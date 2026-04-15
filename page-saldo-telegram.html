@@ -914,15 +914,31 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   <h3 class="card-title">
     <i class="fas fa-history" style="color: var(--danger);"></i>
     Riwayat Input (Bisa Dihapus)
-    <button class="btn btn-sm btn-outline" id="btnRefreshHistory" style="margin-left: auto;">
-      <i class="fas fa-sync"></i> Refresh
-    </button>
+    <div style="margin-left: auto; display: flex; gap: 0.5rem;">
+      <button class="btn btn-sm btn-primary" id="btnSyncToSheet" title="Sinkronkan data Firebase yang belum masuk ke Sheet">
+        <i class="fas fa-cloud-upload-alt"></i> Sync ke Sheet
+      </button>
+      <button class="btn btn-sm btn-outline" id="btnRefreshHistory">
+        <i class="fas fa-sync"></i> Refresh
+      </button>
+    </div>
   </h3>
   <div id="historyList" style="max-height: 300px; overflow-y: auto;">
     <div class="empty-state" style="padding: 2rem;">
       <i class="fas fa-inbox"></i>
       <p>Belum ada riwayat input</p>
     </div>
+  </div>
+  <!-- Progress sync -->
+  <div id="syncProgress" style="display: none; padding: 1rem; background: var(--bg-secondary); border-radius: 0.5rem; margin-top: 0.5rem;">
+    <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+      Menyinkronkan: <span id="syncProgressText">0/0</span>
+    </div>
+    <div style="width: 100%; height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden;">
+      <div id="syncProgressBar" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.3s;"></div>
+    </div>
+  </div>
+</div>
   </div>
 </div>
             <div class="info-card">
@@ -1388,7 +1404,7 @@ document.addEventListener('click', (e) => {
         // FUNGSI: Load History dari Firebase
         // ============================================
 
-        async function loadHistory() {
+                async function loadHistory() {
           const historyList = document.getElementById('historyList');
           if (!historyList) return;
           
@@ -1437,7 +1453,13 @@ document.addEventListener('click', (e) => {
               
               const sourceIcon = item.source === 'webpos' ? '🌐' : 
                                 item.source === 'telegram' ? '✈️' : '💾';
+
+              // ✅ POSISI SYNC ICON (BENAR)
+              const syncIcon = item.synced === true 
+                ? '<i class="fas fa-check-circle" style="color: var(--success); font-size: 0.7rem;" title="Sudah sync ke Sheet"></i>' 
+                : '<i class="fas fa-clock" style="color: var(--warning); font-size: 0.7rem;" title="Belum sync ke Sheet"></i>';
               
+              // ✅ HANYA SATU RENDER INI (hapus yang duplikat!)
               html += `
                 <div class="sync-item" style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; border-bottom: 1px solid var(--border-color); background: ${index % 2 === 0 ? 'var(--bg-secondary)' : 'transparent'}; border-radius: 0.5rem; margin-bottom: 0.5rem;">
                   <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.75rem; flex-shrink: 0;">
@@ -1446,6 +1468,7 @@ document.addEventListener('click', (e) => {
                   <div style="flex: 1; min-width: 0;">
                     <div style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
                       ${item['NAMA ITEM'] || 'Unknown'}
+                      ${syncIcon}
                       <span style="font-size: 0.7rem; opacity: 0.6;">${sourceIcon}</span>
                     </div>
                     <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem;">
@@ -1479,7 +1502,7 @@ document.addEventListener('click', (e) => {
           }
         }
 
-                // ============================================
+        // ============================================
         // FUNGSI: Hapus Item dari History (GET Method)
         // ============================================
         window.deleteHistoryItem = async function(key, namaItem, nominal) {
