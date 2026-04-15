@@ -1076,31 +1076,58 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   <script src="js/sidebar-filter.js"></script>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      auth.onAuthStateChanged((user) => {
-        if (!user && !Utils.getStorage('webpos_session')) {
-          window.location.href = 'login.html';
-          return;
-        }
-        
-        if (user) {
-          Auth.loadUserData(user.uid);
-          // Baca langsung dari Firebase database
-          if (typeof database !== 'undefined') {
-            database.ref('users/' + user.uid).once('value').then(function(snap) {
-              var ud = snap.val();
-              if (ud) {
-                var nameEl = document.getElementById('userName');
-                var roleEl = document.getElementById('userRole');
-                if (nameEl && ud.name) nameEl.textContent = ud.name;
-                if (roleEl && ud.role) roleEl.textContent = ud.role.charAt(0).toUpperCase() + ud.role.slice(1);
-              }
-            }).catch(function(){});
-          }
-        }
-        
-        initTelegram();
-      });
+   document.addEventListener('DOMContentLoaded', () => {
+  // ✅ DEFINISIKAN FIREBASE DULU (Tambahkan ini)
+  const database = firebase.database();
+  const auth = firebase.auth();
+  
+  // ✅ FALLBACK UTILS (Tambahkan ini - penting!)
+  if (typeof Utils === 'undefined') {
+    window.Utils = {
+      formatRupiah: (num) => 'Rp ' + Math.round(num || 0).toLocaleString('id-ID'),
+      showToast: (msg, type) => alert(msg),
+      showLoading: () => document.getElementById('loadingOverlay')?.classList.add('active'),
+      hideLoading: () => document.getElementById('loadingOverlay')?.classList.remove('active'),
+      getStorage: (key) => localStorage.getItem(key),
+      confirm: (msg, callback) => { if(confirm(msg)) callback(); }
+    };
+  }
+  
+  // ✅ FALLBACK AUTH (Tambahkan ini)
+  if (typeof Auth === 'undefined') {
+    window.Auth = {
+      loadUserData: (uid) => {
+        database.ref('users/' + uid).once('value').then(snap => {
+          const data = snap.val() || {};
+          const nameEl = document.getElementById('userName');
+          const roleEl = document.getElementById('userRole');
+          const avatarEl = document.getElementById('userAvatar');
+          if (nameEl) nameEl.textContent = data.name || 'Admin';
+          if (roleEl) roleEl.textContent = (data.role || 'admin').charAt(0).toUpperCase() + (data.role || 'admin').slice(1);
+          if (avatarEl && data.name) avatarEl.textContent = data.name.charAt(0).toUpperCase();
+        }).catch(err => console.error('Auth fallback error:', err));
+      },
+      logout: () => {
+        auth.signOut().then(() => window.location.href = 'login.html');
+      }
+    };
+  }
+
+    auth.onAuthStateChanged((user) => {
+    if (!user && !Utils.getStorage('webpos_session')) {
+      window.location.href = 'login.html';
+      return;
+    }
+    
+    if (user) {
+      Auth.loadUserData(user.uid);
+    } else {
+      document.getElementById('userName').textContent = 'Admin';
+      document.getElementById('userRole').textContent = 'User';
+    }
+    
+    initTelegram();
+  });
 
       function initTelegram() {
         let isConnected = false;
@@ -1189,11 +1216,14 @@ document.addEventListener('click', (e) => {
 
         // Logout
         document.getElementById('btnLogout').addEventListener('click', () => {
-          Utils.confirm('Apakah Anda yakin ingin logout?', () => {
-            Auth.logout();
-          });
-        });
-
+  Utils.confirm('Apakah Anda yakin ingin logout?', () => {
+    if (typeof Auth !== 'undefined' && Auth.logout) {
+      Auth.logout();
+    } else {
+      firebase.auth().signOut().then(() => window.location.href = 'login.html');
+    }
+  });
+});
                 // ============================================
         // EVENT LISTENERS & FUNGSI UTAMA
         // ============================================
@@ -1235,6 +1265,10 @@ document.addEventListener('click', (e) => {
         // ============================================
 
                 async function submitSaldoTransaction() {
+                   if (typeof database === 'undefined') {
+    Utils.showToast('Error: Database belum siap', 'error');
+    return;
+  }
           const nominal = parseInt(document.getElementById('nominalInput').value);
           
           if (!selectedSaldoType) {
