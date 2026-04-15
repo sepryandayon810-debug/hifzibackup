@@ -1234,7 +1234,7 @@ document.addEventListener('click', (e) => {
         // FUNGSI UTAMA: Kirim ke GAS → Sheet TOP UP
         // ============================================
 
-        async function submitSaldoTransaction() {
+                async function submitSaldoTransaction() {
           const nominal = parseInt(document.getElementById('nominalInput').value);
           
           if (!selectedSaldoType) {
@@ -1253,35 +1253,67 @@ document.addEventListener('click', (e) => {
             const now = new Date();
             const bulanIndo = ["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI","JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
             
+            // Data lengkap untuk dikirim
             const topupData = {
-              action: 'topup_webpos',
               BULAN: bulanIndo[now.getMonth()],
               TANGGAL: `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`,
               'NAMA ITEM': selectedSaldoType,
               'SALDO TOP UP': nominal,
-              chat_id: config.chatId || '',
-              bot_token: config.botToken || '',
               source: 'webpos',
               timestamp: Date.now(),
-              deleted: false
+              chat_id: config.chatId || 'webpos_user',
+              // Tambahan untuk kompatibilitas n8n
+              transaksi_id: 'webpos_' + Date.now(),
+              status: 'done'  // Langsung done karena dari WebPOS
             };
 
-            let gasSuccess = false;
-            let firebaseKey = null;
+            let success = false;
             
-            // 🚀 PRIORITAS 1: Kirim ke GAS
-            if (config.gasUrl && config.gasUrl.trim() !== '') {
+            // 🚀 PRIORITAS 1: Kirim ke n8n Webhook (jika ada)
+            if (config.n8nUrl && config.n8nUrl.trim() !== '') {
+              try {
+                const response = await fetch(config.n8nUrl, {
+                  method: 'POST',
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                  },
+                  body: JSON.stringify(topupData)
+                });
+                
+                const result = await response.json();
+                console.log('n8n response:', result);
+                
+                // Anggap sukses kalau HTTP 200-299
+                if (response.ok) {
+                  success = true;
+                  Utils.showToast(`✅ ${selectedSaldoType} - ${Utils.formatRupiah(nominal)} terkirim ke n8n!`, 'success');
+                  addSyncLog(`n8n: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, 'success');
+                } else {
+                  throw new Error('n8n webhook error: ' + JSON.stringify(result));
+                }
+              } catch (n8nError) {
+                console.error('n8n Error:', n8nError);
+                Utils.showToast('n8n gagal, mencoba GAS...', 'warning');
+              }
+            }
+            
+            // 🚀 PRIORITAS 2: Kalau n8n gagal/tidak ada, coba GAS
+            if (!success && config.gasUrl && config.gasUrl.trim() !== '') {
               try {
                 const response = await fetch(config.gasUrl, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(topupData)
+                  body: JSON.stringify({
+                    action: 'topup_webpos',
+                    ...topupData
+                  })
                 });
                 
                 const result = await response.json();
                 
                 if (result.success) {
-                  gasSuccess = true;
+                  success = true;
                   Utils.showToast(`✅ ${selectedSaldoType} - ${Utils.formatRupiah(nominal)} masuk ke Sheet!`, 'success');
                   addSyncLog(`Sheet: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, 'success');
                 } else {
@@ -1292,14 +1324,16 @@ document.addEventListener('click', (e) => {
               }
             }
             
-            // 🔄 FALLBACK: Simpan ke Firebase
+            // 🔄 FALLBACK: Simpan ke Firebase (backup lokal)
             const firebaseRef = database.ref('telegram_topup_history').push();
-            firebaseKey = firebaseRef.key;
-            await firebaseRef.set(topupData);
+            await firebaseRef.set({
+              ...topupData,
+              deleted: false
+            });
             
-            if (!gasSuccess) {
-              Utils.showToast('Tersimpan ke Firebase (backup)', 'success');
-              addSyncLog(`Firebase: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, 'success');
+            if (!success) {
+              Utils.showToast('Tersimpan ke Firebase (backup)', 'warning');
+              addSyncLog(`Firebase Backup: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, 'pending');
             } else {
               addSyncLog(`Firebase Backup: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, 'success');
             }
@@ -1321,7 +1355,6 @@ document.addEventListener('click', (e) => {
 
           Utils.hideLoading();
         }
-
         // ============================================
         // FUNGSI: Load History dari Firebase
         // ============================================
