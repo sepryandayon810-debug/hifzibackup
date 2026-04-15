@@ -1332,45 +1332,16 @@ document.addEventListener('click', (e) => {
                 Utils.showToast('n8n gagal, mencoba GAS...', 'warning');
               }
             }
-            
-            // 🚀 PRIORITAS 2: Kalau n8n gagal/tidak ada, coba GAS
-            if (!success && config.gasUrl && config.gasUrl.trim() !== '') {
-              try {
-                const response = await fetch(config.gasUrl, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    action: 'topup_webpos',
-    ...topupData
-  })
+            // ✅ HANYA SIMPAN KE FIREBASE (Tidak panggil GAS langsung)
+const firebaseRef = database.ref('telegram_topup_history').push();
+await firebaseRef.set({
+  ...topupData,
+  synced: false,  // Flag belum masuk sheet
+  deleted: false
 });
-                const result = await response.json();
-                
-                if (result.success) {
-                  success = true;
-                  Utils.showToast(`✅ ${selectedSaldoType} - ${Utils.formatRupiah(nominal)} masuk ke Sheet!`, 'success');
-                  addSyncLog(`Sheet: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, 'success');
-                } else {
-                  throw new Error(result.error || 'GAS Error');
-                }
-              } catch (gasError) {
-                console.error('GAS Error:', gasError);
-              }
-            }
-            
-            // 🔄 FALLBACK: Simpan ke Firebase (backup lokal)
-            const firebaseRef = database.ref('telegram_topup_history').push();
-            await firebaseRef.set({
-              ...topupData,
-              deleted: false
-            });
-            
-            if (!success) {
-              Utils.showToast('Tersimpan ke Firebase (backup)', 'warning');
-              addSyncLog(`Firebase Backup: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, 'pending');
-            } else {
-              addSyncLog(`Firebase Backup: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, 'success');
-            }
+
+Utils.showToast(`✅ ${selectedSaldoType} - ${Utils.formatRupiah(nominal)} berhasil!`, 'success');
+addSyncLog(`Input: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, success ? 'success' : 'pending');
 
             // Refresh history panel
             await loadHistory();
@@ -1488,12 +1459,8 @@ document.addEventListener('click', (e) => {
         // FUNGSI: Hapus Item dari History
         // ============================================
 
-        window.deleteHistoryItem = async function(key, namaItem, nominal) {
-  if (!config || !config.gasUrl) {
-    console.error('Config tidak tersedia:', config);
-    Utils.showToast('Error: Konfigurasi GAS tidak tersedia. Refresh halaman.', 'error');
-    return;
-  }
+                window.deleteHistoryItem = async function(key, namaItem, nominal) {
+
           
           const confirmed = confirm(
             `⚠️ HAPUS DATA?\n\n` +
