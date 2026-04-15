@@ -1765,7 +1765,7 @@ document.addEventListener('click', (e) => {
           loadSyncLog();
         }
 
-        function loadSyncLog() {
+                function loadSyncLog() {
           const logs = JSON.parse(localStorage.getItem('telegram_sync_log') || '[]');
           const list = document.getElementById('syncList');
           
@@ -1792,7 +1792,7 @@ document.addEventListener('click', (e) => {
             `;
           }).join('');
         }
-      }
+      } // <-- TAMBAHKAN INI: Tutup initTelegram()
     });
   </script>
 </body>
