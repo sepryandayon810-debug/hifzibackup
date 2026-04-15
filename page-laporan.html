@@ -1495,6 +1495,9 @@ window.changeChartType = function(type) {
         // Export
         document.getElementById('btnExport').addEventListener('click', exportReport);
 
+        // Generate Report
+        document.getElementById('btnGenerate').addEventListener('click', generateReport);
+
         // Sidebar toggle - Desktop (collapse/expand)
 document.getElementById('menuToggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('collapsed');
