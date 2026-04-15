@@ -1261,14 +1261,14 @@ document.addEventListener('click', (e) => {
         });
 
         // ============================================
-        // FUNGSI UTAMA: Kirim ke GAS → Sheet TOP UP
+        // FUNGSI UTAMA: Kirim ke GAS via GET → Sheet TOP UP
         // ============================================
-
-                async function submitSaldoTransaction() {
-                   if (typeof database === 'undefined') {
-    Utils.showToast('Error: Database belum siap', 'error');
-    return;
-  }
+        async function submitSaldoTransaction() {
+          if (typeof database === 'undefined') {
+            Utils.showToast('Error: Database belum siap', 'error');
+            return;
+          }
+          
           const nominal = parseInt(document.getElementById('nominalInput').value);
           
           if (!selectedSaldoType) {
@@ -1281,71 +1281,94 @@ document.addEventListener('click', (e) => {
             return;
           }
 
+          // Validasi GAS Config
+          if (!config.gasUrl || !config.sheetId) {
+            Utils.showToast('Error: URL GAS dan Sheet ID harus diisi di konfigurasi!', 'error');
+            return;
+          }
+
           Utils.showLoading();
 
           try {
             const now = new Date();
             const bulanIndo = ["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI","JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
             
-            // Data lengkap untuk dikirim
+            // Siapkan data
             const topupData = {
-  BULAN: bulanIndo[now.getMonth()],
-  TANGGAL: `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`,
-  'NAMA ITEM': selectedSaldoType,
-  'SALDO TOP UP': nominal,
-  source: 'webpos',
-  timestamp: Date.now(),
-  chat_id: config.chatId || 'webpos_user',
-  transaksi_id: 'webpos_' + Date.now(),
-  status: 'done',
-  // ✅ TAMBAHKAN INI:
-  bot_token: config.botToken || null
-};
+              BULAN: bulanIndo[now.getMonth()],
+              TANGGAL: `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`,
+              'NAMA ITEM': selectedSaldoType,
+              'SALDO TOP UP': nominal,
+              source: 'webpos',
+              timestamp: Date.now(),
+              chat_id: config.chatId || 'webpos_user',
+              transaksi_id: 'webpos_' + Date.now(),
+              status: 'done',
+              bot_token: config.botToken || null
+            };
 
             let success = false;
+            let gasResult = null;
             
-            // 🚀 PRIORITAS 1: Kirim ke n8n Webhook (jika ada)
-            if (config.n8nUrl && config.n8nUrl.trim() !== '') {
-              try {
-                const response = await fetch(config.n8nUrl, {
-                  method: 'POST',
-                  headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                  },
-                  body: JSON.stringify(topupData)
-                });
-                
-                const result = await response.json();
-                console.log('n8n response:', result);
-                
-                // Anggap sukses kalau HTTP 200-299
-                if (response.ok) {
-                  success = true;
-                  Utils.showToast(`✅ ${selectedSaldoType} - ${Utils.formatRupiah(nominal)} terkirim ke n8n!`, 'success');
-                  addSyncLog(`n8n: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, 'success');
-                } else {
-                  throw new Error('n8n webhook error: ' + JSON.stringify(result));
-                }
-              } catch (n8nError) {
-                console.error('n8n Error:', n8nError);
-                Utils.showToast('n8n gagal, mencoba GAS...', 'warning');
+            // 🚀 KIRIM KE GAS VIA GET (sama persis Data Pelanggan)
+            try {
+              const params = {
+                action: 'topup_webpos',
+                sheetId: config.sheetId,
+                BULAN: topupData.BULAN,
+                TANGGAL: topupData.TANGGAL,
+                NAMA_ITEM: encodeURIComponent(topupData['NAMA ITEM']), // Encode untuk URL
+                SALDO_TOP_UP: nominal,
+                bot_token: config.botToken || '',
+                chat_id: config.chatId || ''
+              };
+              
+              // Build query string (sama seperti Data Pelanggan)
+              const qs = new URLSearchParams(params).toString();
+              const url = `${config.gasUrl}?${qs}`;
+              
+              console.log('Fetching GAS:', url);
+              
+              const response = await fetch(url, {
+                method: 'GET',
+                // GET tidak perlu headers Content-Type, tidak kena CORS preflight
+              });
+              
+              if (!response.ok) {
+                throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
               }
+              
+              gasResult = await response.json();
+              console.log('GAS Response:', gasResult);
+              
+              if (gasResult.success) {
+                success = true;
+                Utils.showToast(`✅ ${selectedSaldoType} - ${Utils.formatRupiah(nominal)} masuk ke Sheet!`, 'success');
+                addSyncLog(`Sheet: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, 'success');
+              } else {
+                throw new Error(gasResult.error || 'GAS returned error');
+              }
+              
+            } catch (gasError) {
+              console.error('GAS Error:', gasError);
+              Utils.showToast(`⚠️ GAS Error: ${gasError.message}. Tersimpan ke Firebase saja.`, 'warning');
+              addSyncLog(`GAS Failed: ${gasError.message}`, 'error');
             }
-            // ✅ HANYA SIMPAN KE FIREBASE (Tidak panggil GAS langsung)
-const firebaseRef = database.ref('telegram_topup_history').push();
-await firebaseRef.set({
-  ...topupData,
-  synced: false,  // Flag belum masuk sheet
-  deleted: false
-});
+            
+            // ✅ SELALU SIMPAN KE FIREBASE (backup & history)
+            await database.ref('telegram_topup_history').push({
+              ...topupData,
+              synced: success,  // true kalau GAS sukses, false kalau hanya Firebase
+              deleted: false
+            });
+            
+            if (!success) {
+              addSyncLog(`Firebase Backup: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, 'pending');
+            }
 
-Utils.showToast(`✅ ${selectedSaldoType} - ${Utils.formatRupiah(nominal)} berhasil!`, 'success');
-addSyncLog(`Input: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, success ? 'success' : 'pending');
-
-            // Refresh history panel
+            // Refresh UI
             await loadHistory();
-
+            
             // Reset form
             document.getElementById('nominalInput').value = '';
             document.querySelectorAll('.btn-saldo').forEach(b => b.classList.remove('active'));
@@ -1360,6 +1383,7 @@ addSyncLog(`Input: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, succe
 
           Utils.hideLoading();
         }
+        
         // ============================================
         // FUNGSI: Load History dari Firebase
         // ============================================
@@ -1455,20 +1479,14 @@ addSyncLog(`Input: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, succe
           }
         }
 
+                // ============================================
+        // FUNGSI: Hapus Item dari History (GET Method)
         // ============================================
-        // FUNGSI: Hapus Item dari History
-        // ============================================
-
-                window.deleteHistoryItem = async function(key, namaItem, nominal) {
-
-          
+        window.deleteHistoryItem = async function(key, namaItem, nominal) {
           const confirmed = confirm(
             `⚠️ HAPUS DATA?\n\n` +
             `Jenis: ${namaItem}\n` +
             `Nominal: ${Utils.formatRupiah(nominal || 0)}\n\n` +
-            `Data akan dihapus dari:\n` +
-            `✓ Firebase Database\n` +
-            `${config.gasUrl ? '✓ Google Sheets (via GAS)\n' : '✗ Google Sheets (GAS tidak diatur)\n\n'}` +
             `Yakin ingin menghapus?`
           );
           
@@ -1479,51 +1497,61 @@ addSyncLog(`Input: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, succe
           try {
             let deletedFromSheet = false;
             
-            // 1. Hapus dari GAS/Sheet (kalau ada GAS URL)
-            if (config.gasUrl && config.gasUrl.trim() !== '') {
+            // 1. HAPUS DARI GAS/Sheet pakai GET (sama seperti Data Pelanggan)
+            if (config.gasUrl && config.sheetId) {
               try {
-                const response = await fetch(config.gasUrl, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    action: 'delete_topup',
-                    firebaseKey: key,
-                    namaItem: namaItem,
-                    nominal: nominal,
-                    sheetId: config.sheetId
-                  })
+                const params = {
+                  action: 'delete_topup',
+                  sheetId: config.sheetId,
+                  namaItem: encodeURIComponent(namaItem), // Encode untuk URL
+                  nominal: nominal
+                };
+                
+                const qs = new URLSearchParams(params).toString();
+                const url = `${config.gasUrl}?${qs}`;
+                
+                console.log('Delete GAS:', url);
+                
+                const response = await fetch(url, {
+                  method: 'GET'
                 });
                 
+                if (!response.ok) {
+                  throw new Error(`HTTP ${response.status}`);
+                }
+                
                 const result = await response.json();
-                if (result.success) {
+                console.log('Delete GAS Result:', result);
+                
+                if (result.success && result.deleted) {
                   deletedFromSheet = true;
-                  console.log('[Delete] Berhasil hapus dari Sheet:', result);
                 }
               } catch (gasError) {
-                console.error('[Delete] GAS Error:', gasError);
+                console.error('GAS Delete Error:', gasError);
+                // Continue to Firebase delete even if GAS fails
               }
             }
             
-            // 2. Soft delete dari Firebase
+            // 2. SOFT DELETE DARI FIREBASE
             await database.ref(`telegram_topup_history/${key}`).update({
               deleted: true,
               deletedAt: Date.now(),
               deletedBy: 'webpos_user'
             });
             
-            // 3. Hapus dari sync log local
+            // 3. HAPUS DARI SYNC LOG LOCAL
             removeFromSyncLog(namaItem, nominal);
             
-            // Notifikasi
+            // NOTIFIKASI HASIL
             if (deletedFromSheet) {
               Utils.showToast(`✅ ${namaItem} dihapus dari Sheet & Firebase`, 'success');
-              addSyncLog(`Hapus Sheet+Firebase: ${namaItem} - ${Utils.formatRupiah(nominal)}`, 'success');
+              addSyncLog(`Hapus Sheet+Firebase: ${namaItem}`, 'success');
             } else {
-              Utils.showToast(`⚠️ ${namaItem} dihapus dari Firebase (Sheet tidak terhubung)`, 'warning');
-              addSyncLog(`Hapus Firebase: ${namaItem} - ${Utils.formatRupiah(nominal)}`, 'success');
+              Utils.showToast(`✅ ${namaItem} dihapus dari Firebase`, 'success');
+              addSyncLog(`Hapus Firebase: ${namaItem}`, 'warning');
             }
             
-            // Refresh history
+            // Refresh history panel
             await loadHistory();
             
           } catch (error) {
@@ -1535,23 +1563,23 @@ addSyncLog(`Input: ${selectedSaldoType} - ${Utils.formatRupiah(nominal)}`, succe
           Utils.hideLoading();
         };
 
-        // ============================================
+                // ============================================
         // HELPER: Remove dari Sync Log (Local)
         // ============================================
-
         function removeFromSyncLog(namaItem, nominal) {
           try {
             const logs = JSON.parse(localStorage.getItem('telegram_sync_log') || '[]');
+            const formattedNominal = Utils.formatRupiah(nominal || 0);
             const filtered = logs.filter(log => 
-              !(log.message.includes(namaItem) && log.message.includes(Utils.formatRupiah(nominal)))
+              !(log.message && log.message.includes(namaItem) && log.message.includes(formattedNominal))
             );
             localStorage.setItem('telegram_sync_log', JSON.stringify(filtered));
-            loadSyncLog();
+            loadSyncLog(); // Refresh tampilan log
           } catch (e) {
             console.error('Error removing from sync log:', e);
           }
         }
-
+        
         // ============================================
         // HELPER: Simpan ke Firebase (Backup)
         // ============================================
