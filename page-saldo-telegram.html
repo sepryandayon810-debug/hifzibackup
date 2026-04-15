@@ -1342,9 +1342,8 @@ document.addEventListener('click', (e) => {
   body: JSON.stringify({
     action: 'topup_webpos',
     ...topupData
-  }),
-  mode: 'no-cors'  // Tambahkan ini sementara untuk test
-});                
+  })
+});
                 const result = await response.json();
                 
                 if (result.success) {
