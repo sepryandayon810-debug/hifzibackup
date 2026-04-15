@@ -1337,14 +1337,14 @@ document.addEventListener('click', (e) => {
             if (!success && config.gasUrl && config.gasUrl.trim() !== '') {
               try {
                 const response = await fetch(config.gasUrl, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    action: 'topup_webpos',
-                    ...topupData
-                  })
-                });
-                
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    action: 'topup_webpos',
+    ...topupData
+  }),
+  mode: 'no-cors'  // Tambahkan ini sementara untuk test
+});                
                 const result = await response.json();
                 
                 if (result.success) {
@@ -1490,10 +1490,11 @@ document.addEventListener('click', (e) => {
         // ============================================
 
         window.deleteHistoryItem = async function(key, namaItem, nominal) {
-          if (!key) {
-            Utils.showToast('Error: ID data tidak valid', 'error');
-            return;
-          }
+  if (!config || !config.gasUrl) {
+    console.error('Config tidak tersedia:', config);
+    Utils.showToast('Error: Konfigurasi GAS tidak tersedia. Refresh halaman.', 'error');
+    return;
+  }
           
           const confirmed = confirm(
             `⚠️ HAPUS DATA?\n\n` +
