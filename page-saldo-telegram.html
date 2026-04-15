@@ -939,8 +939,6 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     </div>
   </div>
 </div>
-  </div>
-</div>
             <div class="info-card">
               <h3 class="card-title">
                 <i class="fas fa-info-circle" style="color: #0088cc;"></i>
@@ -1268,6 +1266,9 @@ document.addEventListener('click', (e) => {
           Utils.showToast('🔄 Memuat riwayat...', 'info');
           loadHistory();
         });
+
+        // ✅ TAMBAHKAN INI: Event listener untuk tombol Sync
+document.getElementById('btnSyncToSheet')?.addEventListener('click', syncUnsyncedData);
 
         // Enter key handler untuk nominal
         document.getElementById('nominalInput').addEventListener('keypress', (e) => {
@@ -1809,6 +1810,129 @@ document.addEventListener('click', (e) => {
             `;
           }).join('');
         }
+
+                // ============================================
+        // FUNGSI: Sinkronkan Data Firebase Lama ke Sheet
+        // ============================================
+        async function syncUnsyncedData() {
+          if (!config.gasUrl || !config.sheetId) {
+            Utils.showToast('GAS URL dan Sheet ID harus diisi!', 'error');
+            return;
+          }
+
+          Utils.showLoading();
+          const progressDiv = document.getElementById('syncProgress');
+          const progressText = document.getElementById('syncProgressText');
+          const progressBar = document.getElementById('syncProgressBar');
+          
+          try {
+            // Ambil semua data dari Firebase yang belum sync
+            const snapshot = await database.ref('telegram_topup_history')
+              .orderByChild('timestamp')
+              .once('value');
+            
+            const allData = snapshot.val();
+            if (!allData) {
+              Utils.showToast('Tidak ada data di Firebase', 'warning');
+              Utils.hideLoading();
+              return;
+            }
+
+            // Filter data yang belum sync ke Sheet (synced !== true)
+            const unsyncedEntries = Object.entries(allData).filter(([key, value]) => {
+              return !value.deleted && (value.synced === false || value.synced === undefined);
+            });
+
+            if (unsyncedEntries.length === 0) {
+              Utils.showToast('✅ Semua data sudah tersinkron ke Sheet', 'success');
+              Utils.hideLoading();
+              return;
+            }
+
+            // Konfirmasi user
+            const confirmed = confirm(`Ada ${unsyncedEntries.length} data yang belum masuk ke Sheet.\n\nSinkronkan sekarang?`);
+            if (!confirmed) {
+              Utils.hideLoading();
+              return;
+            }
+
+            // Tampilkan progress bar
+            progressDiv.style.display = 'block';
+            let successCount = 0;
+            let failCount = 0;
+
+            // Proses satu per satu
+            for (let i = 0; i < unsyncedEntries.length; i++) {
+              const [key, item] = unsyncedEntries[i];
+              
+              // Update progress UI
+              progressText.textContent = `${i + 1}/${unsyncedEntries.length}`;
+              progressBar.style.width = `${((i + 1) / unsyncedEntries.length) * 100}%`;
+              
+              try {
+                // Kirim ke GAS via GET
+                const params = {
+                  action: 'topup_webpos',
+                  sheetId: config.sheetId,
+                  BULAN: item.BULAN || '',
+                  TANGGAL: item.TANGGAL || '',
+                  NAMA_ITEM: encodeURIComponent(item['NAMA ITEM'] || 'Unknown'),
+                  SALDO_TOP_UP: item['SALDO TOP UP'] || 0,
+                  bot_token: config.botToken || '',
+                  chat_id: config.chatId || ''
+                };
+                
+                const qs = new URLSearchParams(params).toString();
+                const response = await fetch(`${config.gasUrl}?${qs}`);
+                
+                if (response.ok) {
+                  const result = await response.json();
+                  if (result.success) {
+                    // Update Firebase: tandai sudah sync
+                    await database.ref(`telegram_topup_history/${key}`).update({
+                      synced: true,
+                      syncedAt: Date.now()
+                    });
+                    successCount++;
+                  } else {
+                    failCount++;
+                  }
+                } else {
+                  failCount++;
+                }
+                
+                // Delay 200ms antar request biar tidak kecepatan
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+              } catch (err) {
+                console.error('Sync error for item:', key, err);
+                failCount++;
+              }
+            }
+
+            // Hide progress
+            progressDiv.style.display = 'none';
+            
+            // Notifikasi hasil
+            if (successCount > 0) {
+              Utils.showToast(`✅ ${successCount} data berhasil disinkronkan!${failCount > 0 ? ` (${failCount} gagal)` : ''}`, 'success');
+              addSyncLog(`Sync massal: ${successCount} data ke Sheet`, 'success');
+            } else {
+              Utils.showToast('Gagal menyinkronkan semua data', 'error');
+            }
+            
+            // Refresh tampilan history untuk update icon
+            await loadHistory();
+            
+          } catch (error) {
+            console.error('Sync error:', error);
+            Utils.showToast('Error sinkronisasi: ' + error.message, 'error');
+            progressDiv.style.display = 'none';
+          }
+          
+          Utils.hideLoading();
+        }
+        
       } // <-- TAMBAHKAN INI: Tutup initTelegram()
     });
   </script>
