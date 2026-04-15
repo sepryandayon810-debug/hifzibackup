@@ -1308,6 +1308,8 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      const database = firebase.database();
+  const auth = firebase.auth();
       auth.onAuthStateChanged((user) => {
         if (!user && !Utils.getStorage('webpos_session')) {
           window.location.href = 'login.html';
@@ -1371,23 +1373,26 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 
         function renderChart(transactions) {
   const container = document.getElementById('chartContainer');
-  if (!container) {
-    console.error('Chart container not found');
-    return;
-  }
+  if (!container) return;
   
-  // Cek apakah canvas ada, jika tidak recreate
-  let canvas = document.getElementById('reportChart');
-  if (!canvas) {
-    container.innerHTML = '<canvas id="reportChart"></canvas>';
-    canvas = document.getElementById('reportChart');
-  }
-  
+  // ✅ SELALU recreate canvas untuk menghindari error Chart.js
+  container.innerHTML = '<canvas id="reportChart"></canvas>';
+  const canvas = document.getElementById('reportChart');
   const ctx = canvas.getContext('2d');
   
   // Destroy existing chart if any
   if (chartInstance) {
     chartInstance.destroy();
+  }
+  
+  if (transactions.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding-top: 100px;">
+        <i class="fas fa-chart-bar" style="font-size: 3rem; color: var(--text-muted);"></i>
+        <p style="margin-top: 1rem; color: var(--text-muted);">Tidak ada data untuk ditampilkan</p>
+      </div>
+    `;
+    return;
   }
   
   // Group data by date
@@ -1434,8 +1439,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       }
     }
   });
-}
-  
+}  
 
 // Global function for chart type buttons
 window.changeChartType = function(type) {
