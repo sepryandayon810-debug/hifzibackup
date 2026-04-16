@@ -624,25 +624,35 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     });
 
     // Preload data dari Firebase
-    function preloadData() {
+        function preloadData() {
       return Promise.all([
-        // Load produk
+        // Load produk dengan data lengkap
         database.ref('products').once('value').then(snap => {
           const data = snap.val() || {};
-          cachedProducts = Object.values(data);
+          // Pastikan semua field ada
+          cachedProducts = Object.entries(data).map(([key, val]) => ({
+            ...val,
+            id: val.id || key // Pastikan ID ada
+          }));
           Utils.setStorage('webpos_products', cachedProducts);
           console.log('💾 Produk cached:', cachedProducts.length);
-        }).catch(() => {
+          console.log('📋 Sample:', cachedProducts[0]); // Debug struktur
+        }).catch(err => {
+          console.error('Error load products:', err);
           cachedProducts = Utils.getStorage('webpos_products') || [];
         }),
         
         // Load kategori
         database.ref('categories').once('value').then(snap => {
           const data = snap.val() || {};
-          cachedCategories = Object.values(data);
+          cachedCategories = Object.entries(data).map(([key, val]) => ({
+            ...val,
+            id: val.id || key
+          }));
           Utils.setStorage('webpos_categories', cachedCategories);
           console.log('💾 Kategori cached:', cachedCategories.length);
-        }).catch(() => {
+        }).catch(err => {
+          console.error('Error load categories:', err);
           cachedCategories = Utils.getStorage('webpos_categories') || [];
         })
       ]);
@@ -885,7 +895,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       console.log('📂 Kategori dari produk:', cats.length);
     }
 
-           function loadReport() {
+               function loadReport() {
       Utils.showLoading();
       
       try {
@@ -895,9 +905,11 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         
         console.log('🔍 Filter kategori dipilih:', category);
         console.log('📦 Cached products:', cachedProducts.length);
+        console.log('📋 Sample cached product:', cachedProducts[0]); // Lihat struktur
         
-        // Cari nama kategori yang dipilih untuk fallback
-        const selectedCatName = cachedCategories.find(c => c.id === category)?.name?.toLowerCase() || category.toLowerCase();
+        // Cari nama kategori yang dipilih
+        const selectedCatObj = cachedCategories.find(c => c.id === category);
+        const selectedCatName = selectedCatObj?.name?.toLowerCase() || category.toLowerCase();
         console.log('🏷️ Selected category name:', selectedCatName);
         
         const now = new Date();
@@ -924,8 +936,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           dates.push(d.toISOString().split('T')[0]);
         }
         
-        console.log('📅 Mengambil data dari', dates.length, 'hari');
-        
         Promise.all(
           dates.map(dateStr => database.ref(`transactions/${dateStr}`).once('value'))
         ).then(snapshots => {
@@ -940,11 +950,12 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             });
           });
           
-          console.log('📊 Total transaksi penjualan:', allTransactions.length);
+          console.log('📊 Total transaksi:', allTransactions.length);
           
           const productSales = {};
           let totalSold = 0;
           let totalRevenue = 0;
+          let debugCount = 0;
           
           allTransactions.forEach((t, tIndex) => {
             const items = t.items || [];
@@ -956,56 +967,80 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
               
               // Filter kategori
               if (category !== 'all') {
-                // 1. Cari produk di cache
-                const product = cachedProducts.find(p => p.id === id);
+                // Cari produk di cache dengan berbagai cara
+                let product = cachedProducts.find(p => p.id === id);
                 
-                // Debug
-                if (tIndex < 2 && iIndex < 2) {
-                  console.log('🔎 Debug item:', {
+                // Kalau tidak ketemu, coba cari by code/kode
+                if (!product && item.code) {
+                  product = cachedProducts.find(p => p.code === item.code || p.kode === item.code);
+                }
+                
+                // Kalau masih tidak ketemu, coba cari by name
+                if (!product && item.name) {
+                  product = cachedProducts.find(p => 
+                    p.name?.toLowerCase() === item.name?.toLowerCase()
+                  );
+                }
+                
+                // Debug pertama kali
+                if (debugCount < 5) {
+                  debugCount++;
+                  console.log(`🔎 Debug #${debugCount}:`, {
                     itemId: id,
                     itemName: item.name,
+                    itemCode: item.code,
                     productFound: product ? 'YES' : 'NO',
-                    productCatId: product ? product.categoryId : 'N/A',
-                    itemCategory: item.category || item.kategori || 'N/A',
-                    filterCategory: category
+                    productCatId: product?.categoryId,
+                    productName: product?.name,
+                    selectedCat: category
                   });
                 }
                 
-                // 2. Cek match by product.categoryId
+                // Cek match
                 let isMatch = false;
                 
-                if (product && product.categoryId) {
-                  // Cocokkan ID kategori
+                // 1. Match by categoryId
+                if (product?.categoryId) {
                   isMatch = product.categoryId === category;
+                  if (isMatch) console.log('✅ Match by categoryId');
                 }
                 
-                // 3. Cek match by item.category (fallback jika produk tidak di cache)
+                // 2. Match by category name di produk
+                if (!isMatch && product?.category) {
+                  const prodCat = product.category.toLowerCase();
+                  isMatch = prodCat === selectedCatName || 
+                           prodCat.includes(selectedCatName) || 
+                           selectedCatName.includes(prodCat);
+                  if (isMatch) console.log('✅ Match by product.category name');
+                }
+                
+                // 3. Match by item.category
                 if (!isMatch && (item.category || item.kategori)) {
-                  const itemCatName = (item.category || item.kategori).toString().toLowerCase();
-                  isMatch = itemCatName === selectedCatName || 
-                            itemCatName.includes(selectedCatName) || 
-                            selectedCatName.includes(itemCatName);
+                  const itemCat = (item.category || item.kategori).toLowerCase();
+                  isMatch = itemCat === selectedCatName || 
+                           itemCat.includes(selectedCatName) ||
+                           selectedCatName.includes(itemCat);
+                  if (isMatch) console.log('✅ Match by item.category');
                 }
                 
-                // 4. Cek match by product name mengandung nama kategori (fallback terakhir)
-                if (!isMatch && product && product.name) {
-                  const prodName = product.name.toLowerCase();
-                  // Cek apakah nama produk mengandung nama kategori yang dipilih
-                  isMatch = prodName.includes(selectedCatName.replace('pulsa ', '').replace('voucher ', ''));
+                // 4. Match by nama produk mengandung nama kategori
+                if (!isMatch && item.name) {
+                  const itemName = item.name.toLowerCase();
+                  const catKeywords = selectedCatName.split(' '); // "voucher axis" -> ["voucher", "axis"]
+                  isMatch = catKeywords.some(kw => itemName.includes(kw));
+                  if (isMatch) console.log('✅ Match by product name keyword');
                 }
                 
-                if (!isMatch) {
-                  return; // Skip item ini
-                }
+                if (!isMatch) return;
               }
               
-              // Aggregate data
+              // Aggregate
               if (!productSales[id]) {
                 productSales[id] = {
                   id: id,
                   name: item.name || item.nama || 'Unknown',
                   code: item.code || item.kode || id,
-                  category: item.category || item.kategori || '-',
+                  category: item.category || item.kategori || product?.category || '-',
                   quantity: 0,
                   revenue: 0
                 };
@@ -1026,31 +1061,32 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             .sort((a, b) => b.quantity - a.quantity)
             .slice(0, limit);
           
-          console.log('🏆 Ranking produk:', rankingData.length, 'items');
+          console.log('🏆 Final ranking:', rankingData.length, 'items');
+          console.log('📈 Best seller:', rankingData[0]?.name);
           
-          // Update stats
+          // Update UI
           document.getElementById('statTotalSold').textContent = totalSold.toLocaleString('id-ID');
           document.getElementById('statRevenue').textContent = 'Rp ' + totalRevenue.toLocaleString('id-ID');
           document.getElementById('statActiveProducts').textContent = Object.keys(productSales).length;
-          document.getElementById('statBestSeller').textContent = rankingData[0]?.name?.substring(0, 12) + (rankingData[0]?.name?.length > 12 ? '...' : '') || '-';
+          document.getElementById('statBestSeller').textContent = rankingData[0]?.name?.substring(0, 12) + '...' || '-';
           
           renderTable(rankingData);
           
           if (rankingData.length === 0) {
-            Utils.showToast('Tidak ada data penjualan untuk periode ini', 'warning');
+            Utils.showToast('Tidak ada data untuk kategori ini', 'warning');
           }
           
           Utils.hideLoading();
           
         }).catch(error => {
-          console.error('❌ Error Firebase:', error);
-          Utils.showToast('Gagal memuat data: ' + error.message, 'error');
+          console.error('❌ Error:', error);
+          Utils.showToast('Gagal memuat data', 'error');
           Utils.hideLoading();
         });
         
       } catch (error) {
         console.error('❌ Error:', error);
-        Utils.showToast('Error: ' + error.message, 'error');
+        Utils.showToast('Error', 'error');
         Utils.hideLoading();
       }
     }
