@@ -267,10 +267,53 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     }
 
     @media (max-width: 768px) {
-      .telegram-container {
-        grid-template-columns: 1fr;
-      }
-    }
+  .telegram-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  /* Card biru diperkecil */
+  .status-card {
+    padding: 1rem;
+    border-radius: 0.75rem;
+  }
+  
+  .telegram-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .status-title {
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .status-desc {
+    font-size: 0.8rem;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+  }
+  
+  .balance-display {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .balance-label {
+    font-size: 0.75rem;
+  }
+  
+  .balance-value {
+    font-size: 1.75rem;
+  }
+  
+  .btn-telegram {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+}
 
     .status-card {
       background: linear-gradient(135deg, #0088cc, #00a8e6);
@@ -743,77 +786,114 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 }
 
 /* ============================================
-   TOGGLE KONFIGURASI - COLLAPSE/EXPAND
+   TOGGLE KONFIGURASI - PERBAIKAN
    ============================================ */
 
 .config-toggle-btn {
   width: 100%;
-  background: var(--card-bg, #f8fafc);
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 0.75rem;
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
   padding: 1rem 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
   font-weight: 600;
-  color: var(--text-primary, #1e293b);
-  margin-bottom: 0.5rem;
-  transition: all 0.3s ease;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .config-toggle-btn:hover {
-  background: var(--hover-bg, #f1f5f9);
-  border-color: var(--primary-color, #0088cc);
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.05);
 }
 
-.config-toggle-btn i:first-child {
-  margin-right: 0.5rem;
-  color: var(--primary-color, #0088cc);
-}
-
-.toggle-icon {
+.config-toggle-btn .toggle-icon {
   transition: transform 0.3s ease;
-  color: var(--text-secondary, #64748b);
+  font-size: 1rem;
+  color: var(--text-muted);
 }
 
 .config-toggle-btn.active .toggle-icon {
   transform: rotate(180deg);
+  color: var(--primary);
 }
 
-/* Section Konfigurasi dengan animasi */
-.telegram-config {
-  background: var(--card-bg, white);
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 0.75rem;
+/* Collapse System yang Benar */
+.config-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  max-height: 2000px; /* Nilai besar untuk animasi */
-  opacity: 1;
-  transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.3s ease;
+  transition: all 0.3s ease;
 }
 
-.telegram-config.collapsed {
-  max-height: 0;
-  opacity: 0;
-  padding: 0 1.5rem;
-  margin: 0;
-  border: none;
+/* Saat collapsed - benar-benar hilang */
+.config-card.collapsed {
+  display: none; /* ← INI PENTING! bukan max-height:0 */
 }
 
-.telegram-config:not(.collapsed) {
+/* Saat expanded */
+.config-card:not(.collapsed) {
+  display: block;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  animation: slideDown 0.3s ease;
 }
 
-/* Mobile - padding lebih kecil */
-@media screen and (max-width: 768px) {
-  .telegram-config:not(.collapsed) {
-    padding: 1rem;
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
   }
-  
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile Specific */
+@media screen and (max-width: 768px) {
   .config-toggle-btn {
     padding: 0.875rem 1rem;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .config-toggle-btn i:first-child {
+    font-size: 1.1rem;
+  }
+  
+  .config-card:not(.collapsed) {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* Mobile: Card status diperkecil */
+  .status-card {
+    padding: 1.25rem;
+  }
+  
+  .telegram-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+  
+  .status-title {
+    font-size: 1.25rem;
+  }
+  
+  .status-desc {
+    font-size: 0.875rem;
+  }
+  
+  .balance-value {
+    font-size: 2rem;
   }
 }
 
@@ -1172,8 +1252,8 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     <i class="fas fa-chevron-down toggle-icon" style="transition: transform 0.3s;"></i>
   </button>
 
-  <div id="configSection" class="config-card collapsed" style="overflow: hidden; transition: all 0.3s ease;">
-              
+<div id="configSection" class="config-card collapsed">
+  
               <form id="configForm">
                 <div class="form-group">
                   <label class="form-label">Bot Token</label>
@@ -1364,33 +1444,44 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           });
         });
 
-        // Toggle Konfigurasi
-const toggleBtn = document.getElementById('toggleConfig');
-const configSection = document.getElementById('configSection');
+        /        // Toggle Konfigurasi - Perbaikan Final
+        const toggleBtn = document.getElementById('toggleConfig');
+        const configSection = document.getElementById('configSection');
 
-if (toggleBtn && configSection) {
-  // Load saved state
-  const isVisible = localStorage.getItem('telegram_config_visible') === 'true';
-  if (isVisible) {
-    configSection.classList.remove('collapsed');
-    toggleBtn.classList.add('active');
-  }
+        if (toggleBtn && configSection) {
+          // Set default: Mobile = collapsed, Desktop = expanded
+          const isMobile = window.innerWidth <= 768;
+          const savedState = localStorage.getItem('telegram_config_visible');
+          
+          if (isMobile && savedState !== 'true') {
+            // Mobile: collapsed default
+            configSection.classList.add('collapsed');
+            toggleBtn.classList.remove('active');
+          } else if (!isMobile && savedState === 'false') {
+            // Desktop: expanded default, kecuali user pernah collapse
+            configSection.classList.add('collapsed');
+            toggleBtn.classList.remove('active');
+          } else {
+            // Expanded
+            configSection.classList.remove('collapsed');
+            toggleBtn.classList.add('active');
+          }
 
-  toggleBtn.addEventListener('click', () => {
-    const isCollapsed = configSection.classList.contains('collapsed');
-    
-    if (isCollapsed) {
-      configSection.classList.remove('collapsed');
-      toggleBtn.classList.add('active');
-      localStorage.setItem('telegram_config_visible', 'true');
-    } else {
-      configSection.classList.add('collapsed');
-      toggleBtn.classList.remove('active');
-      localStorage.setItem('telegram_config_visible', 'false');
-    }
-  });
-}
-
+          toggleBtn.addEventListener('click', () => {
+            const isCollapsed = configSection.classList.contains('collapsed');
+            
+            if (isCollapsed) {
+              configSection.classList.remove('collapsed');
+              toggleBtn.classList.add('active');
+              localStorage.setItem('telegram_config_visible', 'true');
+            } else {
+              configSection.classList.add('collapsed');
+              toggleBtn.classList.remove('active');
+              localStorage.setItem('telegram_config_visible', 'false');
+            }
+          });
+        }
+        
         // Sidebar toggle - Desktop (collapse/expand)
 document.getElementById('menuToggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('collapsed');
