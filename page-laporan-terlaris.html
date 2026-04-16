@@ -727,7 +727,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       });
     }
 
-    function loadCategories() {
+        function loadCategories() {
       const select = document.getElementById('filterCategory');
       select.innerHTML = '<option value="all">Semua Kategori</option>';
       
@@ -737,17 +737,17 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         return;
       }
       
-      // Coba ambil dari Firebase
       database.ref('categories').once('value')
         .then(snapshot => {
           const data = snapshot.val() || {};
           const cats = Object.values(data);
           
           if (cats.length > 0) {
-            populateCategoryDropdown(cats);
+            // Simpan ke cache
+            cachedCategories = cats;
             Utils.setStorage('webpos_categories', cats);
+            populateCategoryDropdown(cats);
           } else {
-            // Fallback: Ekstrak dari produk
             extractFromProducts();
           }
         })
@@ -755,11 +755,29 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           console.warn('⚠️ Error load categories:', err.message);
           const cached = Utils.getStorage('webpos_categories');
           if (cached && cached.length > 0) {
+            cachedCategories = cached;
             populateCategoryDropdown(cached);
           } else {
             extractFromProducts();
           }
         });
+    }
+
+    function populateCategoryDropdown(cats) {
+      const select = document.getElementById('filterCategory');
+      cats.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      
+      cats.forEach(cat => {
+        if (cat.name) {
+          const option = document.createElement('option');
+          // Selalu gunakan ID sebagai value, bukan nama
+          option.value = cat.id; 
+          option.textContent = cat.name;
+          select.appendChild(option);
+        }
+      });
+      
+      console.log('✅ Kategori loaded:', cats.length, 'items');
     }
 
     function populateCategoryDropdown(cats) {
@@ -825,13 +843,16 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       console.log('📂 Kategori dari produk:', categoryMap.size);
     }
 
-    function loadReport() {
+        function loadReport() {
       Utils.showLoading();
       
       try {
         const period = document.getElementById('filterPeriod').value;
         const category = document.getElementById('filterCategory').value;
         const limit = parseInt(document.getElementById('filterLimit').value);
+        
+        console.log('🔍 Filter kategori dipilih:', category);
+        console.log('📦 Cached products:', cachedProducts.length);
         
         // Hitung rentang tanggal
         const now = new Date();
@@ -849,12 +870,10 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           startDate = new Date(now.getFullYear(), 0, 1);
           endDate = new Date(now);
         } else {
-          // all time - ambil 1 tahun terakhir untuk performa
           startDate = new Date(now.getFullYear() - 1, 0, 1);
           endDate = new Date(now);
         }
         
-        // Generate array tanggal
         const dates = [];
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
           dates.push(d.toISOString().split('T')[0]);
@@ -862,7 +881,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         
         console.log('📅 Mengambil data dari', dates.length, 'hari');
         
-        // Ambil semua transaksi PARALEL
         Promise.all(
           dates.map(dateStr => database.ref(`transactions/${dateStr}`).once('value'))
         ).then(snapshots => {
@@ -879,32 +897,50 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           
           console.log('📊 Total transaksi penjualan:', allTransactions.length);
           
-          // Aggregate by product
           const productSales = {};
           let totalSold = 0;
           let totalRevenue = 0;
           
-          allTransactions.forEach(t => {
+          allTransactions.forEach((t, tIndex) => {
             const items = t.items || [];
             if (!Array.isArray(items)) return;
             
-            items.forEach(item => {
+            items.forEach((item, iIndex) => {
               const id = item.productId || item.id;
               if (!id) return;
               
-              // Filter kategori
+              // Filter kategori - PERBAIKAN DI SINI
               if (category !== 'all') {
-                const product = cachedProducts.find(p => p.id === id || p.code === id);
+                // Cari produk di cache berdasarkan ID
+                const product = cachedProducts.find(p => p.id === id);
                 
-                const itemCategoryId = item.categoryId;
-                const productCategoryId = product ? product.categoryId : null;
-                const itemCategoryName = item.category || item.kategori;
-                const productCategoryName = product ? (product.category || product.kategori) : null;
+                // Debug untuk item pertama
+                if (tIndex === 0 && iIndex === 0) {
+                  console.log('🔎 Debug item:', {
+                    itemId: id,
+                    itemName: item.name,
+                    productFound: product ? 'YES' : 'NO',
+                    productCatId: product ? product.categoryId : 'N/A',
+                    filterCategory: category
+                  });
+                }
                 
-                const matchById = itemCategoryId === category || productCategoryId === category;
-                const matchByName = itemCategoryName === category || productCategoryName === category;
+                if (!product) return; // Skip kalau produk tidak ditemukan
                 
-                if (!matchById && !matchByName) return;
+                // Cek match by ID (primary) atau by Name (fallback)
+                const productCatId = product.categoryId ? product.categoryId.toString() : '';
+                const filterCat = category.toString();
+                
+                // Cek juga nama kategori untuk fallback
+                const productCatName = (product.category || product.kategori || '').toString().toLowerCase();
+                const filterCatName = cachedCategories.find(c => c.id === filterCat)?.name?.toLowerCase() || filterCat.toLowerCase();
+                
+                const matchById = productCatId === filterCat;
+                const matchByName = productCatName === filterCatName || productCatName.includes(filterCatName) || filterCatName.includes(productCatName);
+                
+                if (!matchById && !matchByName) {
+                  return; // Skip item ini
+                }
               }
               
               if (!productSales[id]) {
@@ -932,6 +968,8 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           rankingData = Object.values(productSales)
             .sort((a, b) => b.quantity - a.quantity)
             .slice(0, limit);
+          
+          console.log('🏆 Ranking produk:', rankingData.length, 'items');
           
           // Update stats
           document.getElementById('statTotalSold').textContent = totalSold.toLocaleString('id-ID');
