@@ -731,17 +731,26 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     const category = document.getElementById('filterCategory').value;
     const limit = parseInt(document.getElementById('filterLimit').value);
     
-    // DEBUG: Cek data transaksi
-    let transactions = Utils.getStorage('webpos_transactions') || [];
+    // Coba beberapa kemungkinan key untuk transaksi
+    let transactions = Utils.getStorage('webpos_transactions') || 
+                       Utils.getStorage('transactions') || 
+                       Utils.getStorage('webpos_transaksi') || 
+                       [];
+    
     console.log('📊 Total transaksi ditemukan:', transactions.length);
-    console.log('📋 Sample transaksi:', transactions[0]);
+    if (transactions.length > 0) {
+      console.log('📋 Sample transaksi:', transactions[0]);
+    }
     
     const now = new Date();
     
-    // Filter by date dengan fix date calculation
+    // Filter by date
     transactions = transactions.filter(t => {
-      const tDate = new Date(t.timestamp || t.date || t.tanggal || t.created_at);
-      if (isNaN(tDate.getTime())) return false; // Skip invalid dates
+      const dateStr = t.timestamp || t.date || t.tanggal || t.createdAt;
+      if (!dateStr) return false;
+      
+      const tDate = new Date(dateStr);
+      if (isNaN(tDate.getTime())) return false;
       
       if (period === 'today') return tDate.toDateString() === now.toDateString();
       if (period === 'week') return tDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -750,28 +759,21 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       return true;
     });
     
-    console.log('📅 Transaksi setelah filter periode:', transactions.length);
+    console.log('📅 Transaksi setelah filter:', transactions.length);
     
-    // Aggregate by product dengan fallback field names (Indonesia & English)
+    // Aggregate by product
     const productSales = {};
     let totalSold = 0;
     let totalRevenue = 0;
     
-    transactions.forEach((t, idx) => {
-      // Cek berbagai kemungkinan nama field untuk items
-      const items = t.items || t.detail || t.produk || t.cart || t.keranjang || [];
-      
-      if (!Array.isArray(items)) {
-        console.log(`⚠️ Transaksi ${idx} tidak memukan items array:`, t);
-        return;
-      }
+    transactions.forEach(t => {
+      const items = t.items || t.detail || t.produk || t.cart || [];
+      if (!Array.isArray(items)) return;
       
       items.forEach(item => {
-        // Fallback untuk ID produk
-        const id = item.id || item.productId || item.produkId || item.kode || item.code;
+        const id = item.id || item.productId || item.produkId || item.kode;
         if (!id) return;
         
-        // Filter kategori jika dipilih
         if (category !== 'all') {
           const products = Utils.getStorage('webpos_products') || [];
           const product = products.find(p => p.id === id || p.kode === id);
@@ -781,7 +783,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         if (!productSales[id]) {
           productSales[id] = {
             id: id,
-            name: item.name || item.nama || item.namaProduk || 'Unknown',
+            name: item.name || item.nama || 'Unknown',
             code: item.code || item.kode || id,
             category: item.category || item.kategori || '-',
             quantity: 0,
@@ -789,7 +791,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           };
         }
         
-        // Fallback untuk qty dan harga
         const qty = parseInt(item.quantity || item.qty || item.jumlah || 0);
         const price = parseFloat(item.price || item.harga || item.hargaJual || 0);
         
@@ -804,29 +805,25 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, limit);
     
-    console.log('🏆 Ranking produk:', rankingData);
-    
     // Update stats
     document.getElementById('statTotalSold').textContent = totalSold.toLocaleString('id-ID');
     document.getElementById('statRevenue').textContent = 'Rp ' + totalRevenue.toLocaleString('id-ID');
     document.getElementById('statActiveProducts').textContent = Object.keys(productSales).length;
-    document.getElementById('statBestSeller').textContent = rankingData[0]?.name.substring(0, 12) + (rankingData[0]?.name.length > 12 ? '...' : '') || '-';
+    document.getElementById('statBestSeller').textContent = rankingData[0]?.name?.substring(0, 12) + (rankingData[0]?.name?.length > 12 ? '...' : '') || '-';
     
-    renderChart(rankingData.slice(0, 10));
-    renderTable(rankingData);
-    
-    if (rankingData.length === 0) {
-      Utils.showToast('Tidak ada data penjualan untuk periode ini', 'warning');
-    }
+    // Render chart dan table
+    if (typeof renderChart === 'function') renderChart(rankingData.slice(0, 10));
+    if (typeof renderTable === 'function') renderTable(rankingData);
     
   } catch (error) {
     console.error('❌ Error loading report:', error);
     Utils.showToast('Gagal memuat laporan: ' + error.message, 'error');
+  } finally {
+    // PENTING: Selalu hide loading meski error
+    Utils.hideLoading();
   }
-  
-  Utils.hideLoading();
 }
-
+    
 function renderTable(data) {
   const tbody = document.getElementById('rankingTableBody');
   
