@@ -769,35 +769,40 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 
     // ===== DATA FUNCTIONS =====
     async function loadData() {
-      try {
-        showLoading(true);
-        
-        // Load products
-        const prodSnap = await firebase.database().ref('products').once('value');
-        const prodData = prodSnap.val() || {};
-        products = Object.entries(prodData).map(([id, d]) => ({ id, ...d }));
-        
-        // Load categories
-        const catSnap = await firebase.database().ref('categories').once('value');
-        const catData = catSnap.val() || {};
-        categories = Object.entries(catData).map(([id, d]) => ({ id, ...d }));
-        
-        // Load adjustments (last 100)
-        const adjSnap = await firebase.database().ref('stock_adjustments').limitToLast(100).once('value');
-        const adjData = adjSnap.val() || {};
-        adjustments = Object.entries(adjData).map(([id, d]) => ({ id, ...d }));
-        
-        updateStats();
-        renderTable();
-        renderFilters();
-        
-      } catch (error) {
-        console.error('Error loading data:', error);
-        showToast('Gagal memuat data: ' + error.message, 'error');
-      } finally {
-        showLoading(false);
-      }
+  try {
+    showLoading(true);
+    
+    // Load products (wajib)
+    const prodSnap = await firebase.database().ref('products').once('value');
+    const prodData = prodSnap.val() || {};
+    products = Object.entries(prodData).map(([id, d]) => ({ id, ...d }));
+    
+    // Load categories (wajib)
+    const catSnap = await firebase.database().ref('categories').once('value');
+    const catData = catSnap.val() || {};
+    categories = Object.entries(catData).map(([id, d]) => ({ id, ...d }));
+    
+    // Load adjustments (opsional, bisa gagal kalau rules belum diatur)
+    try {
+      const adjSnap = await firebase.database().ref('stock_adjustments').limitToLast(100).once('value');
+      const adjData = adjSnap.val() || {};
+      adjustments = Object.entries(adjData).map(([id, d]) => ({ id, ...d }));
+    } catch (adjError) {
+      console.warn('Gagal memuat riwayat penyesuaian (perlu update Firebase Rules):', adjError);
+      adjustments = []; // fallback kosong
     }
+    
+    updateStats();
+    renderTable();
+    renderFilters();
+    
+  } catch (error) {
+    console.error('Error loading data:', error);
+    showToast('Gagal memuat data produk: ' + error.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
 
     function updateStats() {
       const total = products.length;
