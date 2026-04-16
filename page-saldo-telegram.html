@@ -270,51 +270,64 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   .telegram-container {
     grid-template-columns: 1fr;
     gap: 1rem;
+    width: 100%;
+    overflow-x: hidden;
   }
   
   /* Card biru diperkecil */
   .status-card {
     padding: 1rem;
     border-radius: 0.75rem;
+    width: 100%;
   }
   
-  .telegram-icon {
-    width: 50px;
-    height: 50px;
-    font-size: 1.5rem;
+  /* Perbaiki card riwayat agar tidak terpotong */
+  .info-card {
+    padding: 1rem;
+    margin-top: 1rem;
+    width: 100%;
+    overflow-x: hidden;
+  }
+  
+  /* Perbaiki card title agar tidak terpotong */
+  .card-title {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 1rem;
+  }
+  
+  /* Perbaiki tombol di header card */
+  .card-title > div {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 0.5rem;
+  }
+  
+    .telegram-icon {
+    width: 50px !important;
+    height: 50px !important;
+    font-size: 1.25rem !important;
     margin-bottom: 0.75rem;
   }
   
-  .status-title {
-    font-size: 1.1rem;
-    margin-bottom: 0.25rem;
-  }
-  
-  .status-desc {
-    font-size: 0.8rem;
-    margin-bottom: 1rem;
-    line-height: 1.3;
-  }
-  
-  .balance-display {
-    padding: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-  
-  .balance-label {
+  /* Perbaiki tombol sync dan refresh */
+  #btnSyncToSheet, #btnRefreshHistory {
+    padding: 0.5rem 0.75rem;
     font-size: 0.75rem;
+    white-space: nowrap;
   }
   
-  .balance-value {
-    font-size: 1.75rem;
+  .quick-actions {
+    grid-template-columns: 1fr;
   }
   
-  .btn-telegram {
+  .btn-saldo {
+    flex-direction: row;
+    justify-content: flex-start;
     padding: 0.75rem;
-    font-size: 0.9rem;
   }
 }
-
+  
     .status-card {
       background: linear-gradient(135deg, #0088cc, #00a8e6);
       border-radius: var(--radius-xl);
@@ -688,103 +701,6 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       50% { opacity: .5; }
     }
 
-    /* ============================================
-   RESPONSIVE CARD TELEGRAM - MOBILE FIX
-   ============================================ */
-
-/* Desktop - Ukuran normal */
-.telegram-status-card {
-  background: linear-gradient(135deg, #0088cc 0%, #00a8e8 100%);
-  color: white;
-  padding: 2rem;
-  border-radius: 1rem;
-  text-align: center;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3);
-}
-
-.telegram-icon {
-  width: 70px;
-  height: 70px;
-  background: rgba(255,255,255,0.2);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1rem;
-  font-size: 2rem;
-}
-
-.telegram-status-card h3 {
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.telegram-status-card p {
-  font-size: 0.9rem;
-  opacity: 0.9;
-  margin-bottom: 1.5rem;
-}
-
-.saldo-display {
-  background: rgba(255,255,255,0.2);
-  padding: 1.5rem;
-  border-radius: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.saldo-amount {
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin: 0.5rem 0;
-}
-
-/* Mobile - Diperkecil */
-@media screen and (max-width: 768px) {
-  .telegram-status-card {
-    padding: 1rem;
-    border-radius: 0.75rem;
-    margin-bottom: 1rem;
-  }
-  
-  .telegram-icon {
-    width: 45px;
-    height: 45px;
-    font-size: 1.25rem;
-    margin-bottom: 0.75rem;
-  }
-  
-  .telegram-status-card h3 {
-    font-size: 1.1rem;
-    margin-bottom: 0.25rem;
-  }
-  
-  .telegram-status-card p {
-    font-size: 0.75rem;
-    margin-bottom: 1rem;
-    line-height: 1.3;
-  }
-  
-  .saldo-display {
-    padding: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-  
-  .saldo-display label {
-    font-size: 0.75rem;
-  }
-  
-  .saldo-amount {
-    font-size: 1.75rem;
-    margin: 0.25rem 0;
-  }
-  
-  .btn-disconnect {
-    padding: 0.6rem 1rem;
-    font-size: 0.85rem;
-  }
-}
-
 /* ============================================
    TOGGLE KONFIGURASI - PERBAIKAN
    ============================================ */
@@ -804,6 +720,14 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   margin-bottom: 0.75rem;
   transition: all 0.2s;
   box-shadow: var(--shadow-sm);
+  position: relative;
+  z-index: 10;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 48px;
+}
+
+.config-toggle-btn:active {
+  transform: scale(0.98);
 }
 
 .config-toggle-btn:hover {
@@ -878,10 +802,10 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   }
   
   .telegram-icon {
-    width: 60px;
-    height: 60px;
-    font-size: 2rem;
-    margin-bottom: 1rem;
+    width: 50px !important;
+    height: 50px !important;
+    font-size: 1.25rem !important;
+    margin-bottom: 0.75rem;
   }
   
   .status-title {
@@ -1173,37 +1097,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
               </div>
             </div>
 
-            <!-- Info Card -->
-            <!-- History & Delete Panel -->
-<div class="info-card" style="margin-top: 1.5rem;">
-  <h3 class="card-title">
-    <i class="fas fa-history" style="color: var(--danger);"></i>
-    Riwayat Input (Bisa Dihapus)
-    <div style="margin-left: auto; display: flex; gap: 0.5rem;">
-      <button class="btn btn-sm btn-primary" id="btnSyncToSheet" title="Sinkronkan data Firebase yang belum masuk ke Sheet">
-        <i class="fas fa-cloud-upload-alt"></i> Sync ke Sheet
-      </button>
-      <button class="btn btn-sm btn-outline" id="btnRefreshHistory">
-        <i class="fas fa-sync"></i> Refresh
-      </button>
-    </div>
-  </h3>
-  <div id="historyList" style="max-height: 300px; overflow-y: auto;">
-    <div class="empty-state" style="padding: 2rem;">
-      <i class="fas fa-inbox"></i>
-      <p>Belum ada riwayat input</p>
-    </div>
-  </div>
-  <!-- Progress sync -->
-  <div id="syncProgress" style="display: none; padding: 1rem; background: var(--bg-secondary); border-radius: 0.5rem; margin-top: 0.5rem;">
-    <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-      Menyinkronkan: <span id="syncProgressText">0/0</span>
-    </div>
-    <div style="width: 100%; height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden;">
-      <div id="syncProgressBar" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.3s;"></div>
-    </div>
-  </div>
-</div>
+                        <!-- Info Card -->
             <div class="info-card">
               <h3 class="card-title">
                 <i class="fas fa-info-circle" style="color: #0088cc;"></i>
@@ -1239,10 +1133,46 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
                 </li>
               </ul>
             </div>
-          </div>
+          </div> <!-- tutup Info Card -->
+
+            <!-- History & Delete Panel -->
+            <div class="info-card" style="margin-top: 1.5rem;">
+              <h3 class="card-title" style="flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                  <i class="fas fa-history" style="color: var(--danger);"></i>
+                  <span>Riwayat Input (Bisa Dihapus)</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-left: auto; flex-wrap: wrap;">
+                  <button class="btn btn-sm btn-primary" id="btnSyncToSheet" title="Sinkronkan data Firebase yang belum masuk ke Sheet">
+                    <i class="fas fa-cloud-upload-alt"></i> Sync ke Sheet
+                  </button>
+                  <button class="btn btn-sm btn-outline" id="btnRefreshHistory">
+                    <i class="fas fa-sync"></i> Refresh
+                  </button>
+                </div>
+              </h3>
+              <div id="historyList" style="max-height: 300px; overflow-y: auto;">
+                <div class="empty-state" style="padding: 2rem;">
+                  <i class="fas fa-inbox"></i>
+                  <p>Belum ada riwayat input</p>
+                </div>
+              </div>
+              <!-- Progress sync -->
+              <div id="syncProgress" style="display: none; padding: 1rem; background: var(--bg-secondary); border-radius: 0.5rem; margin-top: 0.5rem;">
+                <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                  Menyinkronkan: <span id="syncProgressText">0/0</span>
+                </div>
+                <div style="width: 100%; height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden;">
+                  <div id="syncProgressBar" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.3s;"></div>
+                </div>
+              </div>
+            </div>
+
+          </div> <!-- tutup kolom pertama -->
+          <!-- Config Section (KOLOM KEDUA) -->
+          <div>  <!-- ✅ TAMBAHKAN DIV PEMBUKA KOLOM KEDUA -->
 
           <!-- Config Section -->
-          <div>
   <!-- ✅ TOMBOL TOGGLE KONFIGURASI -->
   <button id="toggleConfig" class="config-toggle-btn">
     <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -1444,30 +1374,35 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           });
         });
 
-        /        // Toggle Konfigurasi - Perbaikan Final
+          // Toggle Konfigurasi - Perbaikan Final
         const toggleBtn = document.getElementById('toggleConfig');
         const configSection = document.getElementById('configSection');
 
         if (toggleBtn && configSection) {
-          // Set default: Mobile = collapsed, Desktop = expanded
+          console.log('Toggle found:', toggleBtn);
+          
+          // Set initial state
           const isMobile = window.innerWidth <= 768;
           const savedState = localStorage.getItem('telegram_config_visible');
           
           if (isMobile && savedState !== 'true') {
-            // Mobile: collapsed default
             configSection.classList.add('collapsed');
             toggleBtn.classList.remove('active');
-          } else if (!isMobile && savedState === 'false') {
-            // Desktop: expanded default, kecuali user pernah collapse
+          } else if (savedState === 'false') {
             configSection.classList.add('collapsed');
             toggleBtn.classList.remove('active');
           } else {
-            // Expanded
             configSection.classList.remove('collapsed');
             toggleBtn.classList.add('active');
           }
 
-          toggleBtn.addEventListener('click', () => {
+          // Pakai onclick agar pasti jalan
+          toggleBtn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('Toggle clicked!');
+            
             const isCollapsed = configSection.classList.contains('collapsed');
             
             if (isCollapsed) {
@@ -1479,7 +1414,9 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
               toggleBtn.classList.remove('active');
               localStorage.setItem('telegram_config_visible', 'false');
             }
-          });
+          };
+        } else {
+          console.error('Toggle not found:', toggleBtn, configSection);
         }
         
         // Sidebar toggle - Desktop (collapse/expand)
