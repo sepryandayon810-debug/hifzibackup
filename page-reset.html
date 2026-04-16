@@ -905,18 +905,27 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      auth.onAuthStateChanged((user) => {
-        if (!user && !Utils.getStorage('webpos_session')) {
-          window.location.href = 'login.html';
-          return;
-        }
-        
-        if (user) {
-          Auth.loadUserData(user.uid);
-        }
-        
-        initReset();
-      });
+      firebase.auth().onAuthStateChanged((user) => {
+  if (!user && !Utils.getStorage('webpos_session')) {
+    window.location.href = 'login.html';
+    return;
+  }
+  
+  if (user) {
+    // Load user data langsung dari Firebase (sama seperti page-backup)
+    firebase.database().ref('users/' + user.uid).once('value').then(snap => {
+      const data = snap.val() || {};
+      document.getElementById('userName').textContent = data.name || user.email || 'Admin';
+      document.getElementById('userRole').textContent = data.role || 'admin';
+      document.getElementById('userAvatar').textContent = (data.name || user.email || 'A').charAt(0).toUpperCase();
+    }).catch(err => {
+      console.error('Error loading user:', err);
+      document.getElementById('userName').textContent = user.email || 'Admin';
+    });
+  }
+  
+  initReset();
+});
 
       function initReset() {
         let resetType = '';
@@ -1005,32 +1014,50 @@ document.addEventListener('click', (e) => {
           });
         });
 
-        async function loadStats() {
-          try {
-            // Count products
-            const produkSnapshot = await database.ref('products').once('value');
-            const produkCount = produkSnapshot.val() ? Object.keys(produkSnapshot.val()).length : 0;
-            document.getElementById('statProduk').textContent = produkCount;
-
-            // Count transactions
-            const transSnapshot = await database.ref('transactions').once('value');
-            let transCount = 0;
-            if (transSnapshot.val()) {
-              Object.values(transSnapshot.val()).forEach(day => {
-                transCount += Object.keys(day).length;
-              });
-            }
-            document.getElementById('statTransaksi').textContent = transCount;
-
-            // Count customers
-            const custSnapshot = await database.ref('customers').once('value');
-            const custCount = custSnapshot.val() ? Object.keys(custSnapshot.val()).length : 0;
-            document.getElementById('statPelanggan').textContent = custCount;
-          } catch (error) {
-            console.error('Error loading stats:', error);
+                async function loadStats() {
+  try {
+    // Ambil dari localStorage dulu (tidak perlu permission)
+    const products = Utils.getStorage('webpos_products') || [];
+    const transactions = Utils.getStorage('webpos_transactions') || [];
+    const customers = Utils.getStorage('webpos_customers') || [];
+    
+    // Update tampilan - SESUAIKAN ID DENGAN HTML
+    document.getElementById('statProduk').textContent = products.length;
+    document.getElementById('statTransaksi').textContent = transactions.length;
+    document.getElementById('statPelanggan').textContent = customers.length;
+    
+    // Coba juga dari Firebase sebagai backup (kalau permission ada)
+    try {
+      const paths = ['products', 'transactions', 'customers'];
+      for (const path of paths) {
+        try {
+          const snap = await database.ref(path).once('value');
+          const data = snap.val();
+          const count = data ? (Array.isArray(data) ? data.length : Object.keys(data).length) : 0;
+          
+          if (count > 0) {
+            // Update dengan data Firebase kalau ada - SESUAIKAN ID
+            if (path === 'products') document.getElementById('statProduk').textContent = count;
+            if (path === 'transactions') document.getElementById('statTransaksi').textContent = count;
+            if (path === 'customers') document.getElementById('statPelanggan').textContent = count;
           }
+        } catch (e) {
+          // Skip path yang error permission
+          console.log('Permission denied for:', path);
         }
-
+      }
+    } catch (firebaseError) {
+      console.log('Using localStorage for stats');
+    }
+    
+  } catch (error) {
+    console.error('Error loading stats:', error);
+    // Fallback ke 0 kalau error - SESUAIKAN ID
+    document.getElementById('statProduk').textContent = '0';
+    document.getElementById('statTransaksi').textContent = '0';
+    document.getElementById('statPelanggan').textContent = '0';
+  }
+}
         function showConfirmModal(message) {
           document.getElementById('confirmMessage').textContent = message;
           document.getElementById('confirmInput').value = '';
