@@ -1322,22 +1322,33 @@ localStorage.setItem('webpos_last_backup', backupTime); // Backup key alternatif
         }
 
         async function syncData() {
-          Utils.showLoading();
-          
-          try {
-            // Simulate sync
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            addHistory('Sinkronisasi', 'sync', 'success');
-            Utils.showToast('Sinkronisasi berhasil', 'success');
-          } catch (error) {
-            console.error('Error syncing:', error);
-            Utils.showToast('Gagal sinkronisasi', 'error');
-            addHistory('Sinkronisasi', 'sync', 'error');
-          }
-          
-          Utils.hideLoading();
-        }
+  Utils.showLoading();
+  
+  try {
+    // Simulate sync
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Update history
+    addHistory('Sinkronisasi', 'sync', 'success');
+    
+    // ✅ SIMPAN WAKTU BACKUP - HARUS DI SINI (dalam try)
+    const syncTime = Date.now().toString();
+    localStorage.setItem('last_backup', syncTime);
+    localStorage.setItem('webpos_last_backup', syncTime);
+    localStorage.setItem('last_sync_time', syncTime);
+    
+    // Update tampilan status
+    loadStatus();
+    
+    Utils.showToast('Sinkronisasi berhasil', 'success');
+  } catch (error) {
+    console.error('Error syncing:', error);
+    Utils.showToast('Gagal sinkronisasi', 'error');
+    addHistory('Sinkronisasi', 'sync', 'error');
+  } finally {
+    Utils.hideLoading();
+  }
+}
 
         function addHistory(action, type, status) {
           const history = JSON.parse(localStorage.getItem('backup_history') || '[]');
