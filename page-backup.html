@@ -1145,30 +1145,88 @@ document.addEventListener('click', (e) => {
         });
 
         async function loadStatus() {
-          try {
-            // Get database size estimate
-            const snapshot = await database.ref().once('value');
-            const data = snapshot.val();
-            const size = JSON.stringify(data).length;
-            const sizeMB = (size / 1024 / 1024).toFixed(2);
-            
-            document.getElementById('dbSize').textContent = sizeMB + ' MB';
-            
-            // Storage usage (simulated)
-            const storagePercent = Math.min((size / (10 * 1024 * 1024)) * 100, 100);
-            document.getElementById('storageUsed').textContent = storagePercent.toFixed(1) + '%';
-            document.getElementById('storageProgress').style.width = storagePercent + '%';
-            
-            // Last backup
-            const lastBackup = localStorage.getItem('last_backup');
-            if (lastBackup) {
-              document.getElementById('lastBackup').textContent = new Date(parseInt(lastBackup)).toLocaleString('id-ID');
-              document.getElementById('lastBackup').classList.remove('warning');
-            }
-          } catch (error) {
-            console.error('Error loading status:', error);
-          }
+  try {
+    // Coba ambil data dari localStorage dulu sebagai fallback
+    const localData = {
+      products: Utils.getStorage('webpos_products') || [],
+      transactions: Utils.getStorage('webpos_transactions') || [],
+      customers: Utils.getStorage('webpos_customers') || [],
+      kas: Utils.getStorage('webpos_kas') || {},
+      saldoTelegram: Utils.getStorage('webpos_saldo_telegram') || []
+    };
+    
+    let size = 0;
+    let dataSource = 'local';
+    
+    try {
+      // Coba dari Firebase tapi spesifik path, bukan root
+      const paths = ['products', 'transactions', 'customers', 'kas', 'saldo_telegram'];
+      const firebaseData = {};
+      
+      for (const path of paths) {
+        try {
+          const snap = await database.ref(path).once('value');
+          firebaseData[path] = snap.val() || {};
+        } catch (e) {
+          // Skip path yang error permission
+          firebaseData[path] = {};
         }
+      }
+      
+      size = JSON.stringify(firebaseData).length;
+      dataSource = 'firebase';
+    } catch (firebaseError) {
+      // Kalau Firebase error, pakai localStorage
+      size = JSON.stringify(localData).length;
+      console.log('Using localStorage for size estimate');
+    }
+    
+    const sizeMB = (size / 1024 / 1024).toFixed(2);
+    const sizeKB = (size / 1024).toFixed(0);
+    
+    // Tampilkan KB kalau < 1MB, MB kalau >= 1MB
+    document.getElementById('dbSize').textContent = 
+      size < 1024 * 1024 ? `${sizeKB} KB` : `${sizeMB} MB`;
+    
+    // Storage usage (dari localStorage quota atau simulasi)
+    const storageUsed = Math.min((size / (5 * 1024 * 1024)) * 100, 100);
+    document.getElementById('storageUsed').textContent = storageUsed.toFixed(1) + '%';
+    document.getElementById('storageProgress').style.width = storageUsed + '%';
+    
+  } catch (error) {
+    console.error('Error loading status:', error);
+    document.getElementById('dbSize').textContent = 'N/A';
+    document.getElementById('storageUsed').textContent = 'N/A';
+  }
+  
+  // Last backup - cek semua kemungkinan key
+  const possibleBackupKeys = ['last_backup', 'webpos_last_backup', 'backup_last_time'];
+  let lastBackup = null;
+  
+  for (const key of possibleBackupKeys) {
+    const val = localStorage.getItem(key);
+    if (val && val !== 'null') {
+      lastBackup = val;
+      break;
+    }
+  }
+  
+  if (lastBackup) {
+    const backupDate = new Date(parseInt(lastBackup));
+    const backupStr = backupDate.toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    const el = document.getElementById('lastBackup');
+    el.textContent = backupStr;
+    el.classList.remove('warning');
+    el.classList.add('success');
+  }
+}
 
         function loadHistory() {
           const history = JSON.parse(localStorage.getItem('backup_history') || '[]');
@@ -1214,8 +1272,10 @@ document.addEventListener('click', (e) => {
             URL.revokeObjectURL(url);
             
             // Save history
-            addHistory('Export Data', 'export', 'success');
-            localStorage.setItem('last_backup', Date.now().toString());
+addHistory('Export Data', 'export', 'success');
+const backupTime = Date.now().toString();
+localStorage.setItem('last_backup', backupTime);
+localStorage.setItem('webpos_last_backup', backupTime); // Backup key alternatif
             
             Utils.showToast('Data berhasil diexport', 'success');
             loadStatus();
