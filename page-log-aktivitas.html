@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Log Aktivitas - WebPOS Hifzi Cell</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  
+  <!-- WebPOS Utils -->
+  <script src="js/utils.js"></script>
+  <script src="js/firebase-config.js"></script>
+  
+  <style>
+    :root {
+      --primary: #f97316;
+      --primary-dark: #ea580c;
+      --secondary: #3b82f6;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --bg-dark: #1e293b;
+      --bg-light: #f8fafc;
+      --card-bg: #ffffff;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --border: #e2e8f0;
+      --radius-xl: 1rem;
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+    
+    [data-theme="dark"] {
+      --card-bg: #334155;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --border: #475569;
+      --bg-light: #0f172a;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-primary);
+    }
+    
+    /* Sidebar Styles */
+    .sidebar {
+      width: 260px;
+      background: var(--bg-dark);
+      color: white;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 1000;
+      transition: transform 0.3s ease;
+    }
+    
+    .sidebar-header {
+      padding: 1.5rem;
+      background: rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    
+    .sidebar-logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    
+    .nav-section {
+      margin: 0.5rem 0;
+    }
+    
+    .nav-header {
+      padding: 0.75rem 1.25rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    
+    .nav-item {
+      padding: 0.875rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+    
+    .nav-item:hover, .nav-item.active {
+      background: rgba(249,115,22,0.15);
+      border-left-color: var(--primary);
+      color: var(--primary);
+    }
+    
+    .nav-dropdown {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      background: rgba(0,0,0,0.1);
+    }
+    
+    .nav-dropdown.open {
+      max-height: 500px;
+    }
+    
+    .nav-subitem {
+      padding: 0.75rem 1.25rem 0.75rem 3.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .nav-subitem:hover, .nav-subitem.active {
+      color: var(--primary);
+      background: rgba(249,115,22,0.1);
+    }
+    
+    .nav-arrow {
+      margin-left: auto;
+      transition: transform 0.3s;
+      font-size: 0.75rem;
+    }
+    
+    .nav-item.open .nav-arrow {
+      transform: rotate(180deg);
+    }
+    
+    /* Sidebar User */
+    .sidebar-user {
+      padding: 1rem;
+      background: rgba(0,0,0,0.2);
+      margin-top: auto;
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+    
+    .user-details h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    
+    .user-details p {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+    
+    /* Main Content */
+    .main-content {
+      margin-left: 260px;
+      min-height: 100vh;
+      transition: margin-left 0.3s ease;
+    }
+    
+    /* Top Header */
+    .top-header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      padding: 0.5rem;
+    }
+    
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .theme-toggle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-primary);
+      transition: all 0.2s;
+    }
+    
+    .theme-toggle:hover {
+      background: var(--bg-light);
+      transform: rotate(180deg);
+    }
+    
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem;
+      border-radius: var(--radius-xl);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .user-profile:hover {
+      background: var(--bg-light);
+    }
+    
+    /* Content Area */
+    .content-area {
+      padding: 1.5rem;
+    }
+    
+    .page-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+    
+    .page-subtitle {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+    }
+    
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .card-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    /* Filter Section */
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .form-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    
+    .form-input, .form-select {
+      padding: 0.625rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      background: var(--card-bg);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+    }
+    
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    
+    /* Log Table */
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .log-table th {
+      text-align: left;
+      padding: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-bottom: 2px solid var(--border);
+      font-size: 0.875rem;
+    }
+    
+    .log-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+      vertical-align: top;
+    }
+    
+    .log-time {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+    
+    .log-user {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 500;
+    }
+    
+    .log-action {
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .log-action.login { background: #dbeafe; color: #1d4ed8; }
+    .log-action.logout { background: #fee2e2; color: #991b1b; }
+    .log-action.create { background: #d1fae5; color: #065f46; }
+    .log-action.update { background: #fef3c7; color: #92400e; }
+    .log-action.delete { background: #fecaca; color: #991b1b; }
+    .log-action.transaction { background: #e0e7ff; color: #3730a3; }
+    .log-action.reset { background: #f3e8ff; color: #6b21a3; }
+    .log-action.backup { background: #ccfbf1; color: #0f766e; }
+    
+    .log-detail {
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-secondary);
+    }
+    
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+    
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+    
+    .page-btn {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      background: var(--card-bg);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .page-btn:hover:not(:disabled) {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    
+    .page-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .page-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    
+    /* Buttons */
+    .btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 0.75rem;
+      border: none;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+    
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+    
+    .btn-outline:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+    
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .stat-card {
+      background: var(--card-bg);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      padding: 1rem;
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+    }
+    
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      
+      .main-content {
+        margin-left: 0;
+      }
+      
+      .menu-toggle {
+        display: block;
+      }
+      
+      .top-header h2 {
+        display: none;
+      }
+      
+      .content-area {
+        padding: 1rem;
+      }
+      
+      .card {
+        padding: 1rem;
+      }
+      
+      .log-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+      
+      .filter-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    /* Overlay for mobile */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar-overlay.active {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <i class="fas fa-bolt text-orange-500 mr-2"></i>HIFZI CELL
+      </div>
+      <p class="text-xs text-gray-400 mt-1">WebPOS System</p>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-header">Utama</div>
+      <div class="nav-item" onclick="window.location.href='page-dashboard.html'">
+        <i class="fas fa-home w-5"></i>
+        <span>Dashboard</span>
+      </div>
+      <div class="nav-item" onclick="window.location.href='page-kasir.html'">
+        <i class="fas fa-cash-register w-5"></i>
+        <span>Kasir</span>
+      </div>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-header">Transaksi</div>
+      <div class="nav-item" onclick="toggleDropdown(this)">
+        <i class="fas fa-exchange-alt w-5"></i>
+        <span>Riwayat</span>
+        <i class="fas fa-chevron-down nav-arrow"></i>
+      </div>
+      <div class="nav-dropdown">
+        <div class="nav-subitem" onclick="window.location.href='page-riwayat-transaksi.html'">
+          <i class="fas fa-receipt w-4"></i>
+          <span>Riwayat Transaksi</span>
+        </div>
+        <div class="nav-subitem" onclick="window.location.href='page-riwayat-modal.html'">
+          <i class="fas fa-wallet w-4"></i>
+          <span>Riwayat Modal</span>
+        </div>
+      </div>
+      
+      <div class="nav-item" onclick="window.location.href='page-hutang.html'">
+        <i class="fas fa-hand-holding-usd w-5"></i>
+        <span>Hutang</span>
+      </div>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-header">Inventori</div>
+      <div class="nav-item" onclick="window.location.href='page-produk.html'">
+        <i class="fas fa-box w-5"></i>
+        <span>Produk</span>
+      </div>
+      <div class="nav-item" onclick="window.location.href='page-pembelian.html'">
+        <i class="fas fa-cart-plus w-5"></i>
+        <span>Pembelian</span>
+      </div>
+      <div class="nav-item" onclick="toggleDropdown(this)">
+        <i class="fas fa-chart-bar w-5"></i>
+        <span>Laporan</span>
+        <i class="fas fa-chevron-down nav-arrow"></i>
+      </div>
+      <div class="nav-dropdown">
+        <div class="nav-subitem" onclick="window.location.href='page-laporan-penjualan.html'">
+          <i class="fas fa-chart-line w-4"></i>
+          <span>Laporan Penjualan</span>
+        </div>
+        <div class="nav-subitem" onclick="window.location.href='page-laporan-stok.html'">
+          <i class="fas fa-boxes w-4"></i>
+          <span>Laporan Stok</span>
+        </div>
+        <div class="nav-subitem" onclick="window.location.href='page-laporan-terlaris.html'">
+          <i class="fas fa-crown w-4"></i>
+          <span>Barang Terlaris</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-header">Keuangan</div>
+      <div class="nav-item" onclick="window.location.href='page-kas.html'">
+        <i class="fas fa-vault w-5"></i>
+        <span>Kas</span>
+      </div>
+      <div class="nav-item" onclick="toggleDropdown(this)">
+        <i class="fas fa-university w-5"></i>
+        <span>Rekening</span>
+        <i class="fas fa-chevron-down nav-arrow"></i>
+      </div>
+      <div class="nav-dropdown">
+        <div class="nav-subitem" onclick="window.location.href='page-rekening.html'">
+          <i class="fas fa-list w-4"></i>
+          <span>Daftar Rekening</span>
+        </div>
+        <div class="nav-subitem" onclick="window.location.href='page-topup.html'">
+          <i class="fas fa-arrow-down w-4"></i>
+          <span>Top Up</span>
+        </div>
+        <div class="nav-subitem" onclick="window.location.href='page-tarik.html'">
+          <i class="fas fa-arrow-up w-4"></i>
+          <span>Tarik Tunai</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-header">Sistem</div>
+      <div class="nav-item" onclick="window.location.href='page-backup.html'">
+        <i class="fas fa-cloud-upload-alt w-5"></i>
+        <span>Backup & Sync</span>
+      </div>
+      <div class="nav-item active" onclick="toggleDropdown(this)">
+        <i class="fas fa-cog w-5"></i>
+        <span>Pengaturan</span>
+        <i class="fas fa-chevron-down nav-arrow"></i>
+      </div>
+      <div class="nav-dropdown open">
+        <div class="nav-subitem active" onclick="window.location.href='page-log-aktivitas.html'">
+          <i class="fas fa-history w-4"></i>
+          <span>Log Aktivitas</span>
+        </div>
+        <div class="nav-subitem" onclick="window.location.href='page-reset.html'">
+          <i class="fas fa-trash-alt w-4"></i>
+          <span>Reset Data</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="sidebar-user">
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div class="user-details">
+          <h4 id="userName">Loading...</h4>
+          <p id="userRole">Admin</p>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Header -->
+    <header class="top-header">
+      <button class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+      </button>
+      <h2 class="font-semibold text-lg">Log Aktivitas</h2>
+      <div class="header-actions">
+        <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode">
+          <i class="fas fa-moon"></i>
+        </button>
+        <div class="user-profile">
+          <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-semibold text-sm" id="headerAvatar">A</div>
+          <span class="text-sm font-medium hidden md:block" id="headerUserName">Admin</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <h1 class="page-title">Log Aktivitas Sistem</h1>
+      <p class="page-subtitle">Catatan lengkap aktivitas pengguna dalam sistem</p>
+      
+      <!-- Stats Summary -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Log Hari Ini</div>
+          <div class="stat-value" id="statToday">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Login Hari Ini</div>
+          <div class="stat-value" id="statLogins">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Transaksi Dibuat</div>
+          <div class="stat-value" id="statTrans">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Perubahan Data</div>
+          <div class="stat-value" id="statChanges">0</div>
+        </div>
+      </div>
+      
+      <!-- Filter Card -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-filter mr-2"></i>Filter Log</h3>
+        </div>
+        <div class="filter-grid">
+          <div class="form-group">
+            <label class="form-label">Rentang Waktu</label>
+            <select class="form-select" id="filterPeriod">
+              <option value="today">Hari Ini</option>
+              <option value="week">7 Hari Terakhir</option>
+              <option value="month">30 Hari Terakhir</option>
+              <option value="all">Semua Waktu</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tipe Aktivitas</label>
+            <select class="form-select" id="filterType">
+              <option value="all">Semua Aktivitas</option>
+              <option value="login">Login/Logout</option>
+              <option value="transaction">Transaksi</option>
+              <option value="create">Tambah Data</option>
+              <option value="update">Edit Data</option>
+              <option value="delete">Hapus Data</option>
+              <option value="backup">Backup/Sync</option>
+              <option value="reset">Reset Data</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pengguna</label>
+            <select class="form-select" id="filterUser">
+              <option value="all">Semua Pengguna</option>
+            </select>
+          </div>
+          <div class="form-group" style="display: flex; align-items: flex-end;">
+            <button class="btn btn-primary w-full" onclick="loadLogs()">
+              <i class="fas fa-search"></i> Terapkan Filter
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Log Table Card -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-list-alt mr-2"></i>Daftar Aktivitas</h3>
+          <div>
+            <button class="btn btn-danger" onclick="clearAllLogs()">
+              <i class="fas fa-trash"></i> Hapus Semua Log
+            </button>
+          </div>
+        </div>
+        
+        <div id="logsContainer">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Pengguna</th>
+                <th>Aksi</th>
+                <th>Detail</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody">
+              <tr>
+                <td colspan="4" class="text-center py-8 text-gray-500">
+                  Memuat data...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="pagination" id="pagination">
+          <button class="page-btn" onclick="changePage(-1)" id="btnPrev">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <span id="pageInfo">Halaman 1 dari 1</span>
+          <button class="page-btn" onclick="changePage(1)" id="btnNext">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // State
+    let currentPage = 1;
+    let totalPages = 1;
+    let logsPerPage = 20;
+    let allLogs = [];
+    let filteredLogs = [];
+    let currentUser = null;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      initTheme();
+      initSidebar();
+      initAuth();
+      loadUserOptions();
+      loadLogs();
+    });
+
+    // Theme Toggle
+    function initTheme() {
+      const savedTheme = localStorage.getItem('webpos_dark_mode');
+      if (savedTheme === 'true') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i>';
+      }
+      
+      document.getElementById('themeToggle').addEventListener('click', function() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (isDark) {
+          document.documentElement.removeAttribute('data-theme');
+          localStorage.setItem('webpos_dark_mode', 'false');
+          this.innerHTML = '<i class="fas fa-moon"></i>';
+        } else {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          localStorage.setItem('webpos_dark_mode', 'true');
+          this.innerHTML = '<i class="fas fa-sun"></i>';
+        }
+      });
+    }
+
+    // Sidebar
+    function initSidebar() {
+      const menuToggle = document.getElementById('menuToggle');
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      
+      menuToggle.addEventListener('click', function() {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+      });
+      
+      overlay.addEventListener('click', function() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+      });
+    }
+
+    function toggleDropdown(element) {
+      element.classList.toggle('open');
+      const dropdown = element.nextElementSibling;
+      if (dropdown && dropdown.classList.contains('nav-dropdown')) {
+        dropdown.classList.toggle('open');
+      }
+    }
+
+    // Auth
+    function initAuth() {
+      firebase.auth().onAuthStateChanged((user) => {
+        if (!user && !Utils.getStorage('webpos_session')) {
+          window.location.href = 'login.html';
+          return;
+        }
+        
+        currentUser = user || { email: 'Admin', uid: 'local' };
+        
+        if (user) {
+          firebase.database().ref('users/' + user.uid).once('value').then(snap => {
+            const data = snap.val() || {};
+            const name = data.name || user.email || 'Admin';
+            document.getElementById('userName').textContent = name;
+            document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+            document.getElementById('headerUserName').textContent = name;
+            document.getElementById('headerAvatar').textContent = name.charAt(0).toUpperCase();
+          }).catch(err => {
+            console.error('Error loading user:', err);
+            document.getElementById('userName').textContent = user.email || 'Admin';
+          });
+        } else {
+          document.getElementById('userName').textContent = 'Admin';
+        }
+      });
+    }
+
+    // Load User Options
+    function loadUserOptions() {
+      const users = Utils.getStorage('webpos_users') || [];
+      const select = document.getElementById('filterUser');
+      
+      users.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user.email || user.name;
+        option.textContent = user.name || user.email;
+        select.appendChild(option);
+      });
+    }
+
+    // Load Logs
+    function loadLogs() {
+      // Get all logs from localStorage
+      allLogs = Utils.getStorage('webpos_activity_logs') || [];
+      
+      // Sort by timestamp (newest first)
+      allLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      // Apply filters
+      applyFilters();
+      
+      // Calculate stats
+      calculateStats();
+    }
+
+    // Apply Filters
+    function applyFilters() {
+      const period = document.getElementById('filterPeriod').value;
+      const type = document.getElementById('filterType').value;
+      const user = document.getElementById('filterUser').value;
+      
+      filteredLogs = allLogs.filter(log => {
+        // Filter by period
+        if (period !== 'all') {
+          const logDate = new Date(log.timestamp);
+          const now = new Date();
+          
+          if (period === 'today') {
+            if (logDate.toDateString() !== now.toDateString()) return false;
+          } else if (period === 'week') {
+            const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+            if (logDate < weekAgo) return false;
+          } else if (period === 'month') {
+            const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+            if (logDate < monthAgo) return false;
+          }
+        }
+        
+        // Filter by type
+        if (type !== 'all' && log.action !== type) return false;
+        
+        // Filter by user
+        if (user !== 'all' && log.user !== user) return false;
+        
+        return true;
+      });
+      
+      // Calculate pagination
+      totalPages = Math.ceil(filteredLogs.length / logsPerPage) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+      
+      renderLogs();
+      updatePagination();
+    }
+
+    // Render Logs
+    function renderLogs() {
+      const tbody = document.getElementById('logsTableBody');
+      
+      if (filteredLogs.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="empty-state">
+              <div class="empty-icon"><i class="fas fa-clipboard-list"></i></div>
+              <p>Tidak ada aktivitas tercatat</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      const start = (currentPage - 1) * logsPerPage;
+      const end = start + logsPerPage;
+      const pageLogs = filteredLogs.slice(start, end);
+      
+      tbody.innerHTML = pageLogs.map(log => {
+        const date = new Date(log.timestamp);
+        const timeStr = date.toLocaleString('id-ID', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
+        return `
+          <tr>
+            <td class="log-time">${timeStr}</td>
+            <td>
+              <div class="log-user">
+                <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-bold">
+                  ${(log.user || 'A').charAt(0).toUpperCase()}
+                </div>
+                <span>${log.user || 'Admin'}</span>
+              </div>
+            </td>
+            <td>
+              <span class="log-action ${log.action}">${getActionLabel(log.action)}</span>
+            </td>
+            <td class="log-detail">${log.detail || '-'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Get Action Label
+    function getActionLabel(action) {
+      const labels = {
+        'login': 'Login',
+        'logout': 'Logout',
+        'create': 'Tambah',
+        'update': 'Edit',
+        'delete': 'Hapus',
+        'transaction': 'Transaksi',
+        'backup': 'Backup',
+        'reset': 'Reset',
+        'topup': 'Top Up',
+        'tarik': 'Tarik Tunai'
+      };
+      return labels[action] || action;
+    }
+
+    // Update Pagination
+    function updatePagination() {
+      document.getElementById('pageInfo').textContent = `Halaman ${currentPage} dari ${totalPages}`;
+      document.getElementById('btnPrev').disabled = currentPage === 1;
+      document.getElementById('btnNext').disabled = currentPage === totalPages;
+    }
+
+    // Change Page
+    function changePage(delta) {
+      currentPage += delta;
+      if (currentPage < 1) currentPage = 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+      renderLogs();
+      updatePagination();
+    }
+
+    // Calculate Stats
+    function calculateStats() {
+      const today = new Date().toDateString();
+      const todayLogs = allLogs.filter(l => new Date(l.timestamp).toDateString() === today);
+      
+      document.getElementById('statToday').textContent = todayLogs.length;
+      document.getElementById('statLogins').textContent = todayLogs.filter(l => l.action === 'login').length;
+      document.getElementById('statTrans').textContent = todayLogs.filter(l => l.action === 'transaction').length;
+      document.getElementById('statChanges').textContent = todayLogs.filter(l => ['create', 'update', 'delete'].includes(l.action)).length;
+    }
+
+    // Clear All Logs
+    function clearAllLogs() {
+      Utils.confirm('Yakin ingin menghapus SEMUA log aktivitas?', () => {
+        localStorage.removeItem('webpos_activity_logs');
+        loadLogs();
+        Utils.showToast('Semua log berhasil dihapus', 'success');
+      });
+    }
+
+    // Add Log Helper (untuk dipanggil dari page lain)
+    function addActivityLog(action, detail, user) {
+      const logs = Utils.getStorage('webpos_activity_logs') || [];
+      
+      const newLog = {
+        timestamp: new Date().toISOString(),
+        action: action,
+        detail: detail,
+        user: user || (currentUser ? currentUser.email : 'Admin')
+      };
+      
+      logs.unshift(newLog); // Add to beginning
+      
+      // Keep only last 500 logs
+      if (logs.length > 500) {
+        logs.splice(500);
+      }
+      
+      Utils.setStorage('webpos_activity_logs', logs);
+    }
+
+    // Expose to global
+    window.addActivityLog = addActivityLog;
+    window.toggleDropdown = toggleDropdown;
+  </script>
+</body>
+</html>
