@@ -1,9 +1,25 @@
 <!DOCTYPE html>
 <html lang="id" data-theme="light">
 <head>
+  <!-- THEME GLOBAL - HARUS PALING ATAS -->
   <script>
     (function() {
-      const themeColor = localStorage.getItem('webpos_primary_color') || localStorage.getItem('theme_color') || 'indigo';
+      // Cek semua kemungkinan key yang mungkin dipakai page setting
+      const possibleKeys = ['webpos_primary_color', 'theme_color', 'primary_color', 'tema', 'theme', 'colorTheme'];
+      let themeColor = null;
+      
+      for (let key of possibleKeys) {
+        const val = localStorage.getItem(key);
+        if (val) {
+          themeColor = val;
+          console.log('Theme found from key [' + key + ']:', val);
+          break;
+        }
+      }
+      
+      // Default orange jika tidak ketemu
+      if (!themeColor) themeColor = 'orange';
+      
       document.documentElement.setAttribute('data-theme-color', themeColor);
       
       const colors = {
@@ -15,8 +31,11 @@
         purple: { primary: '#8b5cf6', primaryDark: '#7c3aed', secondary: '#a78bfa', bgPrimary: '#f5f3ff' }
       };
       
-      const c = colors[themeColor] || colors.indigo;
+      const c = colors[themeColor] || colors.orange;
+      
+      // Buat style tag dengan prioritas tinggi
       const style = document.createElement('style');
+      style.id = 'global-theme-style';
       style.textContent = `
         :root { 
           --primary: ${c.primary} !important; 
@@ -24,10 +43,26 @@
           --secondary: ${c.secondary} !important;
           --bg-primary: ${c.bgPrimary} !important;
         }
+        .logo-icon { background: linear-gradient(135deg, ${c.primary}, ${c.secondary}) !important; }
+        .logo-text { background: linear-gradient(135deg, ${c.primary}, ${c.secondary}) !important; -webkit-background-clip: text !important; }
+        .menu-toggle { background: ${c.primary} !important; }
+        .btn-primary { background: ${c.primary} !important; }
+        .nav-link.active { color: ${c.primary} !important; }
+        .nav-link.active::before { background: ${c.primary} !important; }
       `;
       document.head.appendChild(style);
+      
+      // Update meta theme-color untuk mobile
+      let meta = document.querySelector('meta[name="theme-color"]');
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        document.head.appendChild(meta);
+      }
+      meta.content = c.primary;
     })();
   </script>
+  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="var(--primary)">
