@@ -727,7 +727,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       });
     }
 
-        function loadCategories() {
+            function loadCategories() {
       const select = document.getElementById('filterCategory');
       select.innerHTML = '<option value="all">Semua Kategori</option>';
       
@@ -740,10 +740,21 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       database.ref('categories').once('value')
         .then(snapshot => {
           const data = snapshot.val() || {};
-          const cats = Object.values(data);
+          // Convert object ke array dan filter duplicate
+          const cats = [];
+          const seenIds = new Set();
+          
+          Object.entries(data).forEach(([key, cat]) => {
+            if (cat && cat.name && !seenIds.has(cat.id || key)) {
+              seenIds.add(cat.id || key);
+              cats.push({
+                ...cat,
+                id: cat.id || key // Pastikan ada ID
+              });
+            }
+          });
           
           if (cats.length > 0) {
-            // Simpan ke cache
             cachedCategories = cats;
             Utils.setStorage('webpos_categories', cats);
             populateCategoryDropdown(cats);
@@ -763,6 +774,29 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         });
     }
 
+    function populateCategoryDropdown(cats) {
+      const select = document.getElementById('filterCategory');
+      
+      // Urutkan A-Z
+      cats.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      
+      // Map untuk hindari duplikat
+      const addedIds = new Set();
+      
+      cats.forEach(cat => {
+        const catId = cat.id || cat.name;
+        if (cat.name && !addedIds.has(catId)) {
+          addedIds.add(catId);
+          const option = document.createElement('option');
+          option.value = catId;
+          option.textContent = cat.name;
+          select.appendChild(option);
+        }
+      });
+      
+      console.log('✅ Kategori loaded:', cats.length, 'items');
+    }
+    
     function populateCategoryDropdown(cats) {
       const select = document.getElementById('filterCategory');
       cats.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -817,33 +851,41 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         });
     }
 
-    function processProductCategories(products) {
+       function processProductCategories(products) {
       const select = document.getElementById('filterCategory');
       const categoryMap = new Map();
       
       products.forEach(p => {
-        if (p.categoryId) {
-          const catName = p.categoryName || `Kategori ${p.categoryId.substr(0,6)}`;
-          categoryMap.set(p.categoryId, catName);
+        if (p.categoryId && p.categoryName) {
+          // Gunakan ID sebagai key, tapi simpan juga nama
+          categoryMap.set(p.categoryId, {
+            id: p.categoryId,
+            name: p.categoryName
+          });
         } else if (p.category || p.kategori) {
           const catName = p.category || p.kategori;
-          categoryMap.set(catName, catName);
+          categoryMap.set(catName, {
+            id: catName,
+            name: catName
+          });
         }
       });
       
-      Array.from(categoryMap.entries())
-        .sort((a, b) => a[1].localeCompare(b[1]))
-        .forEach(([id, name]) => {
-          const option = document.createElement('option');
-          option.value = id;
-          option.textContent = name;
-          select.appendChild(option);
-        });
+      // Convert ke array dan sort
+      const cats = Array.from(categoryMap.values())
+        .sort((a, b) => a.name.localeCompare(b.name));
       
-      console.log('📂 Kategori dari produk:', categoryMap.size);
+      cats.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.id;
+        option.textContent = cat.name;
+        select.appendChild(option);
+      });
+      
+      console.log('📂 Kategori dari produk:', cats.length);
     }
 
-        function loadReport() {
+           function loadReport() {
       Utils.showLoading();
       
       try {
@@ -854,7 +896,10 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         console.log('🔍 Filter kategori dipilih:', category);
         console.log('📦 Cached products:', cachedProducts.length);
         
-        // Hitung rentang tanggal
+        // Cari nama kategori yang dipilih untuk fallback
+        const selectedCatName = cachedCategories.find(c => c.id === category)?.name?.toLowerCase() || category.toLowerCase();
+        console.log('🏷️ Selected category name:', selectedCatName);
+        
         const now = new Date();
         let startDate, endDate;
         
@@ -909,40 +954,52 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
               const id = item.productId || item.id;
               if (!id) return;
               
-              // Filter kategori - PERBAIKAN DI SINI
+              // Filter kategori
               if (category !== 'all') {
-                // Cari produk di cache berdasarkan ID
+                // 1. Cari produk di cache
                 const product = cachedProducts.find(p => p.id === id);
                 
-                // Debug untuk item pertama
-                if (tIndex === 0 && iIndex === 0) {
+                // Debug
+                if (tIndex < 2 && iIndex < 2) {
                   console.log('🔎 Debug item:', {
                     itemId: id,
                     itemName: item.name,
                     productFound: product ? 'YES' : 'NO',
                     productCatId: product ? product.categoryId : 'N/A',
+                    itemCategory: item.category || item.kategori || 'N/A',
                     filterCategory: category
                   });
                 }
                 
-                if (!product) return; // Skip kalau produk tidak ditemukan
+                // 2. Cek match by product.categoryId
+                let isMatch = false;
                 
-                // Cek match by ID (primary) atau by Name (fallback)
-                const productCatId = product.categoryId ? product.categoryId.toString() : '';
-                const filterCat = category.toString();
+                if (product && product.categoryId) {
+                  // Cocokkan ID kategori
+                  isMatch = product.categoryId === category;
+                }
                 
-                // Cek juga nama kategori untuk fallback
-                const productCatName = (product.category || product.kategori || '').toString().toLowerCase();
-                const filterCatName = cachedCategories.find(c => c.id === filterCat)?.name?.toLowerCase() || filterCat.toLowerCase();
+                // 3. Cek match by item.category (fallback jika produk tidak di cache)
+                if (!isMatch && (item.category || item.kategori)) {
+                  const itemCatName = (item.category || item.kategori).toString().toLowerCase();
+                  isMatch = itemCatName === selectedCatName || 
+                            itemCatName.includes(selectedCatName) || 
+                            selectedCatName.includes(itemCatName);
+                }
                 
-                const matchById = productCatId === filterCat;
-                const matchByName = productCatName === filterCatName || productCatName.includes(filterCatName) || filterCatName.includes(productCatName);
+                // 4. Cek match by product name mengandung nama kategori (fallback terakhir)
+                if (!isMatch && product && product.name) {
+                  const prodName = product.name.toLowerCase();
+                  // Cek apakah nama produk mengandung nama kategori yang dipilih
+                  isMatch = prodName.includes(selectedCatName.replace('pulsa ', '').replace('voucher ', ''));
+                }
                 
-                if (!matchById && !matchByName) {
+                if (!isMatch) {
                   return; // Skip item ini
                 }
               }
               
+              // Aggregate data
               if (!productSales[id]) {
                 productSales[id] = {
                   id: id,
