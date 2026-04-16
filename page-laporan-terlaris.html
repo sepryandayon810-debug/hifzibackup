@@ -226,61 +226,28 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 .product-name{font-weight:600;color:var(--text-primary)}
 .product-meta{font-size:.75rem;color:var(--text-muted)}
 
-/* Mobile Responsive */
+/* Mobile Responsive - FIX */
 @media(max-width:768px){
-  /* Container fix */
-  .page-content{padding:0.75rem;max-width:100%;box-sizing:border-box;overflow-x:hidden}
+  html,body{overflow-x:hidden;width:100%}
+  .page-content{padding:0.5rem;width:100%;box-sizing:border-box}
   
-  /* Stats grid - pastikan 2 kolom */
-  .stats-grid{grid-template-columns:1fr 1fr!important;gap:0.5rem;width:100%}
-  .stat-card{min-width:0;padding:0.75rem;gap:0.5rem}
-  .stat-icon{width:36px;height:36px;font-size:1rem}
-  .stat-content{min-width:0;overflow:hidden}
-  .stat-value{font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .stat-label{font-size:0.6rem}
+  /* Stats 2 kolom */
+  .stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:0.5rem!important;width:100%!important}
+  .stat-card{padding:0.625rem!important;gap:0.5rem!important;min-width:0!important}
+  .stat-icon{width:32px!important;height:32px!important;font-size:0.875rem!important}
+  .stat-value{font-size:0.85rem!important}
   
-  /* Filter section - pastikan 1 kolom penuh */
-  .filter-section{grid-template-columns:1fr!important;gap:0.5rem;width:100%}
-  .filter-section .form-group{margin-bottom:0.5rem!important;width:100%}
-  .form-select{width:100%;min-width:0}
+  /* Filter vertikal */
+  .filter-section{grid-template-columns:1fr!important;gap:0.5rem!important;width:100%!important}
+  .filter-section .form-group{margin-bottom:0!important}
+  .filter-section .btn{width:100%!important}
   
-  /* Card lebih compact */
-  .card-header{padding:0.875rem}
-  .card-body{padding:0.75rem}
-  .card-title{font-size:0.95rem}
+  /* Card */
+  .card{width:100%!important}
+  .card-header,.card-body{padding:0.75rem!important}
   
-  /* Table scroll */
-  .table-container{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:0.75rem}
-  .table{min-width:600px;font-size:0.8rem}
-  
-  /* Product info */
-  .product-info{gap:0.5rem}
-  .product-img{width:32px;height:32px;font-size:1rem}
-  .product-name{font-size:0.8rem;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .rank-badge{width:28px;height:28px;font-size:0.75rem}
-}
-  .filter-section .form-group{margin-bottom:0.5rem!important}
-  
-  /* Table scroll horizontal */
-  .table-container{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .table{min-width:600px;font-size:0.8rem}
-  .table th,.table td{padding:0.5rem;white-space:nowrap}
-  
-  /* Product compact */
-  .product-info{gap:0.5rem}
-  .product-img{width:32px;height:32px;font-size:1rem}
-  .product-name{font-size:0.85rem;max-width:120px;overflow:hidden;text-overflow:ellipsis}
-  
-  /* Rank badge kecil */
-  .rank-badge{width:28px;height:28px;font-size:0.75rem}
-  
-  /* Card padding */
-  .card-header{padding:1rem}
-  .card-body{padding:1rem}
-  .card-title{font-size:1rem}
-  
-  /* Bottom nav space */
-  .page-content{padding:0.75rem;padding-bottom:calc(var(--bottom-nav-height) + 1rem)}
+  /* Table */
+  .table-container{width:100%!important;overflow-x:auto!important}
 }
   </style>
 
