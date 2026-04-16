@@ -731,95 +731,109 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     const category = document.getElementById('filterCategory').value;
     const limit = parseInt(document.getElementById('filterLimit').value);
     
-    // Coba beberapa kemungkinan key untuk transaksi
-    let transactions = Utils.getStorage('webpos_transactions') || 
-                       Utils.getStorage('transactions') || 
-                       Utils.getStorage('webpos_transaksi') || 
-                       [];
+    // Fetch dari Firebase Realtime Database
+    const dbRef = firebase.database().ref('transaksi');
     
-    console.log('📊 Total transaksi ditemukan:', transactions.length);
-    if (transactions.length > 0) {
-      console.log('📋 Sample transaksi:', transactions[0]);
-    }
-    
-    const now = new Date();
-    
-    // Filter by date
-    transactions = transactions.filter(t => {
-      const dateStr = t.timestamp || t.date || t.tanggal || t.createdAt;
-      if (!dateStr) return false;
+    dbRef.once('value', (snapshot) => {
+      let transactions = [];
       
-      const tDate = new Date(dateStr);
-      if (isNaN(tDate.getTime())) return false;
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        // Convert object Firebase ke array
+        transactions = Object.keys(data).map(key => ({
+          id: key,
+          ...data[key]
+        }));
+      }
       
-      if (period === 'today') return tDate.toDateString() === now.toDateString();
-      if (period === 'week') return tDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      if (period === 'month') return tDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      if (period === 'year') return tDate.getFullYear() === now.getFullYear();
-      return true;
-    });
-    
-    console.log('📅 Transaksi setelah filter:', transactions.length);
-    
-    // Aggregate by product
-    const productSales = {};
-    let totalSold = 0;
-    let totalRevenue = 0;
-    
-    transactions.forEach(t => {
-      const items = t.items || t.detail || t.produk || t.cart || [];
-      if (!Array.isArray(items)) return;
+      console.log('📊 Total transaksi dari Firebase:', transactions.length);
       
-      items.forEach(item => {
-        const id = item.id || item.productId || item.produkId || item.kode;
-        if (!id) return;
+      const now = new Date();
+      
+      // Filter by date
+      transactions = transactions.filter(t => {
+        const dateStr = t.timestamp || t.date || t.tanggal || t.createdAt;
+        if (!dateStr) return false;
         
-        if (category !== 'all') {
-          const products = Utils.getStorage('webpos_products') || [];
-          const product = products.find(p => p.id === id || p.kode === id);
-          if (!product || (product.category !== category && product.kategori !== category)) return;
-        }
+        const tDate = new Date(dateStr);
+        if (isNaN(tDate.getTime())) return false;
         
-        if (!productSales[id]) {
-          productSales[id] = {
-            id: id,
-            name: item.name || item.nama || 'Unknown',
-            code: item.code || item.kode || id,
-            category: item.category || item.kategori || '-',
-            quantity: 0,
-            revenue: 0
-          };
-        }
-        
-        const qty = parseInt(item.quantity || item.qty || item.jumlah || 0);
-        const price = parseFloat(item.price || item.harga || item.hargaJual || 0);
-        
-        productSales[id].quantity += qty;
-        productSales[id].revenue += (qty * price);
-        totalSold += qty;
-        totalRevenue += (qty * price);
+        if (period === 'today') return tDate.toDateString() === now.toDateString();
+        if (period === 'week') return tDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        if (period === 'month') return tDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        if (period === 'year') return tDate.getFullYear() === now.getFullYear();
+        return true;
       });
+      
+      console.log('📅 Transaksi setelah filter:', transactions.length);
+      
+      // Aggregate by product
+      const productSales = {};
+      let totalSold = 0;
+      let totalRevenue = 0;
+      
+      transactions.forEach(t => {
+        const items = t.items || t.detail || t.produk || t.cart || [];
+        if (!Array.isArray(items)) return;
+        
+        items.forEach(item => {
+          const id = item.id || item.productId || item.produkId || item.kode;
+          if (!id) return;
+          
+          if (category !== 'all') {
+            const products = Utils.getStorage('webpos_products') || [];
+            const product = products.find(p => p.id === id || p.kode === id);
+            if (!product || (product.category !== category && product.kategori !== category)) return;
+          }
+          
+          if (!productSales[id]) {
+            productSales[id] = {
+              id: id,
+              name: item.name || item.nama || 'Unknown',
+              code: item.code || item.kode || id,
+              category: item.category || item.kategori || '-',
+              quantity: 0,
+              revenue: 0
+            };
+          }
+          
+          const qty = parseInt(item.quantity || item.qty || item.jumlah || 0);
+          const price = parseFloat(item.price || item.harga || item.hargaJual || 0);
+          
+          productSales[id].quantity += qty;
+          productSales[id].revenue += (qty * price);
+          totalSold += qty;
+          totalRevenue += (qty * price);
+        });
+      });
+      
+      rankingData = Object.values(productSales)
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, limit);
+      
+      // Update stats
+      document.getElementById('statTotalSold').textContent = totalSold.toLocaleString('id-ID');
+      document.getElementById('statRevenue').textContent = 'Rp ' + totalRevenue.toLocaleString('id-ID');
+      document.getElementById('statActiveProducts').textContent = Object.keys(productSales).length;
+      document.getElementById('statBestSeller').textContent = rankingData[0]?.name?.substring(0, 12) + (rankingData[0]?.name?.length > 12 ? '...' : '') || '-';
+      
+      renderTable(rankingData);
+      
+      if (rankingData.length === 0) {
+        Utils.showToast('Tidak ada data penjualan untuk periode ini', 'warning');
+      }
+      
+      Utils.hideLoading();
+      
+    }, (error) => {
+      console.error('❌ Error Firebase:', error);
+      Utils.showToast('Gagal memuat data dari Firebase', 'error');
+      Utils.hideLoading();
     });
-    
-    rankingData = Object.values(productSales)
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, limit);
-    
-    // Update stats
-    document.getElementById('statTotalSold').textContent = totalSold.toLocaleString('id-ID');
-    document.getElementById('statRevenue').textContent = 'Rp ' + totalRevenue.toLocaleString('id-ID');
-    document.getElementById('statActiveProducts').textContent = Object.keys(productSales).length;
-    document.getElementById('statBestSeller').textContent = rankingData[0]?.name?.substring(0, 12) + (rankingData[0]?.name?.length > 12 ? '...' : '') || '-';
-    
-    // Render chart dan table
-    if (typeof renderChart === 'function') renderChart(rankingData.slice(0, 10));
-    if (typeof renderTable === 'function') renderTable(rankingData);
     
   } catch (error) {
-    console.error('❌ Error loading report:', error);
-    Utils.showToast('Gagal memuat laporan: ' + error.message, 'error');
-  } finally {
-    // PENTING: Selalu hide loading meski error
+    console.error('❌ Error:', error);
+    Utils.showToast('Error: ' + error.message, 'error');
     Utils.hideLoading();
   }
 }
