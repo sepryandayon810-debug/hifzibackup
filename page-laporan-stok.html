@@ -4,36 +4,53 @@
   <!-- THEME GLOBAL - HARUS PALING ATAS -->
   <script>
     (function() {
-      // Cek semua kemungkinan key yang mungkin dipakai page setting
-      const possibleKeys = ['webpos_primary_color', 'theme_color', 'primary_color', 'tema', 'theme', 'colorTheme'];
-      let themeColor = null;
+      // Cek semua kemungkinan key yang dipakai page setting
+      const possibleKeys = [
+        'webpos_primary_color', 
+        'theme_color', 
+        'primary_color', 
+        'tema', 
+        'theme', 
+        'colorTheme',
+        'selectedTheme',
+        'accentColor'
+      ];
       
+      let themeColor = null;
+      let foundKey = null;
+      
+      // Coba cari tema di localStorage
       for (let key of possibleKeys) {
         const val = localStorage.getItem(key);
-        if (val) {
+        if (val && val !== 'null' && val !== 'undefined') {
           themeColor = val;
-          console.log('Theme found from key [' + key + ']:', val);
+          foundKey = key;
+          console.log('✅ Theme found from [' + key + ']:', val);
           break;
         }
       }
       
-      // Default orange jika tidak ketemu
-      if (!themeColor) themeColor = 'orange';
+      // Kalau tidak ketemu, default ORANGE (sesuai request)
+      if (!themeColor) {
+        themeColor = 'orange';
+        console.log('⚠️ No theme found in localStorage, defaulting to orange');
+      }
       
+      // Set attribute untuk referensi CSS
       document.documentElement.setAttribute('data-theme-color', themeColor);
       
       const colors = {
         orange: { primary: '#f97316', primaryDark: '#ea580c', secondary: '#fb923c', bgPrimary: '#fff7ed' },
         indigo: { primary: '#6366f1', primaryDark: '#4f46e5', secondary: '#ec4899', bgPrimary: '#f8fafc' },
-        blue: { primary: '#3b82f6', primaryDark: '#2563eb', secondary: '#60a5fa', bgPrimary: '#eff6ff' },
-        green: { primary: '#10b981', primaryDark: '#059669', secondary: '#34d399', bgPrimary: '#ecfdf5' },
-        red: { primary: '#ef4444', primaryDark: '#dc2626', secondary: '#f87171', bgPrimary: '#fef2f2' },
+        blue:   { primary: '#3b82f6', primaryDark: '#2563eb', secondary: '#60a5fa', bgPrimary: '#eff6ff' },
+        green:  { primary: '#10b981', primaryDark: '#059669', secondary: '#34d399', bgPrimary: '#ecfdf5' },
+        red:    { primary: '#ef4444', primaryDark: '#dc2626', secondary: '#f87171', bgPrimary: '#fef2f2' },
         purple: { primary: '#8b5cf6', primaryDark: '#7c3aed', secondary: '#a78bfa', bgPrimary: '#f5f3ff' }
       };
       
       const c = colors[themeColor] || colors.orange;
       
-      // Buat style tag dengan prioritas tinggi
+      // Inject style dengan prioritas TINGGI (!important)
       const style = document.createElement('style');
       style.id = 'global-theme-style';
       style.textContent = `
@@ -44,15 +61,30 @@
           --bg-primary: ${c.bgPrimary} !important;
         }
         .logo-icon { background: linear-gradient(135deg, ${c.primary}, ${c.secondary}) !important; }
-        .logo-text { background: linear-gradient(135deg, ${c.primary}, ${c.secondary}) !important; -webkit-background-clip: text !important; }
-        .menu-toggle { background: ${c.primary} !important; }
-        .btn-primary { background: ${c.primary} !important; }
-        .nav-link.active { color: ${c.primary} !important; }
+        .logo-text { 
+          background: linear-gradient(135deg, ${c.primary}, ${c.secondary}) !important; 
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+        }
+        .menu-toggle { background: ${c.primary} !important; box-shadow: 0 2px 8px ${c.primary}66 !important; }
+        .btn-primary { background: ${c.primary} !important; box-shadow: 0 4px 6px ${c.primary}40 !important; }
+        .btn-primary:hover { background: ${c.primaryDark} !important; }
+        .nav-link.active { color: ${c.primary} !important; background: ${c.primary}15 !important; }
         .nav-link.active::before { background: ${c.primary} !important; }
+        .nav-link:hover { color: ${c.primary} !important; background: ${c.primary}0D !important; }
+        .stat-icon.blue { background: ${c.primary}1A !important; color: ${c.primary} !important; }
+        .btn-action.btn-edit { background: ${c.primary}1A !important; color: ${c.primary} !important; }
+        .btn-action.btn-edit:hover { background: ${c.primary} !important; color: white !important; }
+        .data-table th:hover { background: ${c.primary}1A !important; color: ${c.primary} !important; }
+        .search-input:focus, .form-input:focus, .form-select:focus { 
+          border-color: ${c.primary} !important; 
+          box-shadow: 0 0 0 3px ${c.primary}26 !important; 
+        }
+        .mobile-nav-item.active { color: ${c.primary} !important; background: ${c.primary}0D !important; }
       `;
       document.head.appendChild(style);
       
-      // Update meta theme-color untuk mobile
+      // Update meta theme-color untuk mobile browser
       let meta = document.querySelector('meta[name="theme-color"]');
       if (!meta) {
         meta = document.createElement('meta');
@@ -60,10 +92,10 @@
         document.head.appendChild(meta);
       }
       meta.content = c.primary;
+      
+      console.log('🎨 Theme applied:', themeColor, c.primary);
     })();
   </script>
-  
-  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="var(--primary)">
 <script>
