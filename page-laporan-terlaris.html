@@ -686,9 +686,10 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       ]);
     }
 
-    function initPage() {
+        function initPage() {
       initTheme();
       initSidebar();
+      loadUserData();        // ← TAMBAHKAN INI
       initEventListeners();
       
       preloadData().then(() => {
@@ -696,7 +697,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         loadReport();
       });
     }
-
+      
     function initTheme() {
       const btnTheme = document.getElementById('btnTheme');
       const isDark = localStorage.getItem('webpos_dark_mode') === 'true';
@@ -719,6 +720,14 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       const sidebar = document.getElementById('sidebar');
       const menuToggle = document.getElementById('menuToggle');
       const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+
+       const activeLink = document.querySelector('.nav-link.active');
+      if (activeLink) {
+        const parentDropdown = activeLink.closest('.nav-dropdown');
+        if (parentDropdown) {
+          parentDropdown.classList.add('open');
+        }
+      }
       
       if (menuToggle) {
         menuToggle.addEventListener('click', () => {
@@ -753,6 +762,48 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           }
         }
       });
+    }
+
+        function loadUserData() {
+      // Coba ambil dari Auth dulu (sama seperti Dashboard)
+      const user = Auth.getCurrentUser ? Auth.getCurrentUser() : null;
+      
+      if (user) {
+        document.getElementById('userName').textContent = user.name || user.email || 'Admin';
+        document.getElementById('userRole').textContent = user.role 
+          ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) 
+          : 'Administrator';
+        
+        // Set avatar dengan inisial
+        const avatar = document.getElementById('userAvatar');
+        if (user.name) {
+          const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+          avatar.textContent = initials;
+        } else if (user.email) {
+          avatar.textContent = user.email.charAt(0).toUpperCase();
+        }
+      } else {
+        // Fallback ke localStorage
+        const savedUser = Utils.getStorage('webpos_session');
+        if (savedUser) {
+          document.getElementById('userName').textContent = savedUser.name || savedUser.email || 'Admin';
+          document.getElementById('userRole').textContent = savedUser.role || 'Administrator';
+          
+          const avatar = document.getElementById('userAvatar');
+          if (savedUser.name) {
+            const initials = savedUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+            avatar.textContent = initials;
+          } else {
+            avatar.textContent = (savedUser.email || 'A').charAt(0).toUpperCase();
+          }
+        } else {
+          // Fallback ke store name
+          const storeData = Utils.getStorage('webpos_store') || {};
+          document.getElementById('userName').textContent = storeData.storeName || 'Admin';
+          document.getElementById('userRole').textContent = 'Administrator';
+          document.getElementById('userAvatar').textContent = 'A';
+        }
+      }
     }
 
     function initEventListeners() {
