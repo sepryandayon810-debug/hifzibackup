@@ -692,9 +692,49 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     }
 
     function loadCategories() {
+  const select = document.getElementById('filterCategory');
+  
+  // Kosongkan dulu (kecuali "Semua Kategori")
+  select.innerHTML = '<option value="all">Semua Kategori</option>';
+  
+  // Coba ambil dari Firebase (sama dengan riwayat)
+  database.ref('products').once('value')
+    .then(snapshot => {
+      const products = snapshot.val() || {};
+      const categories = new Set();
+      
+      Object.values(products).forEach(p => {
+        if (p.category || p.kategori) {
+          categories.add(p.category || p.kategori);
+        }
+      });
+      
+      // Fallback ke localStorage kalau Firebase kosong
+      if (categories.size === 0) {
+        const localProducts = Utils.getStorage('webpos_products') || [];
+        localProducts.forEach(p => {
+          if (p.category || p.kategori) {
+            categories.add(p.category || p.kategori);
+          }
+        });
+      }
+      
+      // Tambahkan ke dropdown
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        select.appendChild(option);
+      });
+      
+      console.log('📂 Kategori ditemukan:', categories.size);
+    })
+    .catch(err => {
+      console.warn('⚠️ Gagal load kategori dari Firebase:', err);
+      
+      // Fallback ke localStorage
       const products = Utils.getStorage('webpos_products') || [];
-      const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
-      const select = document.getElementById('filterCategory');
+      const categories = [...new Set(products.map(p => p.category || p.kategori).filter(Boolean))];
       
       categories.forEach(cat => {
         const option = document.createElement('option');
@@ -702,7 +742,8 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         option.textContent = cat;
         select.appendChild(option);
       });
-    }
+    });
+}
 
     function loadReport() {
   Utils.showLoading();
@@ -779,7 +820,10 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             // Cek dari data produk jika ada
             const products = Utils.getStorage('webpos_products') || [];
             const product = products.find(p => p.id === id || p.kode === id);
-            if (!product || (product.category !== category && product.kategori !== category)) return;
+
+            const itemCategory = item.category || item.kategori;
+            const productCategory = product ? (product.category || product.kategori) : null;
+            if (itemCategory !== category && productCategory !== category) return;
           }
           
           if (!productSales[id]) {
