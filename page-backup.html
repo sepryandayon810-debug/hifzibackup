@@ -1033,18 +1033,27 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      auth.onAuthStateChanged((user) => {
-        if (!user && !Utils.getStorage('webpos_session')) {
-          window.location.href = 'login.html';
-          return;
-        }
-        
-        if (user) {
-          Auth.loadUserData(user.uid);
-        }
-        
-        initBackup();
-      });
+      firebase.auth().onAuthStateChanged((user) => {
+  if (!user && !Utils.getStorage('webpos_session')) {
+    window.location.href = 'login.html';
+    return;
+  }
+  
+  if (user) {
+    // Load user data langsung dari Firebase (sama seperti kasir)
+    firebase.database().ref('users/' + user.uid).once('value').then(snap => {
+      const data = snap.val() || {};
+      document.getElementById('userName').textContent = data.name || user.email || 'Admin';
+      document.getElementById('userRole').textContent = data.role || 'admin';
+      document.getElementById('userAvatar').textContent = (data.name || user.email || 'A').charAt(0).toUpperCase();
+    }).catch(err => {
+      console.error('Error loading user:', err);
+      document.getElementById('userName').textContent = user.email || 'Admin';
+    });
+  }
+  
+  initBackup();
+});
 
       function initBackup() {
         // Load status
@@ -1257,36 +1266,45 @@ document.addEventListener('click', (e) => {
         }
 
         async function exportData() {
-          Utils.showLoading();
-          
-          try {
-            const snapshot = await database.ref().once('value');
-            const data = snapshot.val();
-            
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `webpos_backup_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            // Save history
-addHistory('Export Data', 'export', 'success');
-const backupTime = Date.now().toString();
-localStorage.setItem('last_backup', backupTime);
-localStorage.setItem('webpos_last_backup', backupTime); // Backup key alternatif
-            
-            Utils.showToast('Data berhasil diexport', 'success');
-            loadStatus();
-          } catch (error) {
-            console.error('Error exporting:', error);
-            Utils.showToast('Gagal export data', 'error');
-            addHistory('Export Data', 'export', 'error');
-          }
-          
-          Utils.hideLoading();
-        }
+  Utils.showLoading();
+  
+  try {
+    // Ambil dari localStorage saja (tidak perlu permission Firebase root)
+    const data = {
+      products: Utils.getStorage('webpos_products') || [],
+      transactions: Utils.getStorage('webpos_transactions') || [],
+      customers: Utils.getStorage('webpos_customers') || [],
+      kas: Utils.getStorage('webpos_kas') || {},
+      saldoTelegram: Utils.getStorage('webpos_saldo_telegram') || [],
+      categories: Utils.getStorage('webpos_categories') || [],
+      users: Utils.getStorage('webpos_users') || {},
+      settings: Utils.getStorage('webpos_settings') || {}
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `webpos_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    // Save history
+    const backupTime = Date.now().toString();
+    localStorage.setItem('last_backup', backupTime);
+    localStorage.setItem('webpos_last_backup', backupTime);
+    addHistory('Export Data', 'export', 'success');
+    
+    Utils.showToast('Data berhasil diexport', 'success');
+    loadStatus(); // Refresh tampilan backup terakhir
+  } catch (error) {
+    console.error('Error exporting:', error);
+    Utils.showToast('Gagal export data', 'error');
+    addHistory('Export Data', 'export', 'error');
+  } finally {
+    Utils.hideLoading();
+  }
+}
 
         async function importData() {
           const fileInput = document.getElementById('importFile');
