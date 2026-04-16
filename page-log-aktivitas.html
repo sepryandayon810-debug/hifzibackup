@@ -641,8 +641,8 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     function initPage() {
       initTheme();
       initSidebar();
-      initEventListeners();
-      loadUserData(); // ← TAMBAHKAN INI
+      loadUserData();        // ← Panggil setelah sidebar init
+      initEventListeners();  // ← Pindahkan setelah loadUserData
       loadUserOptions();
       loadLogs();
     }
@@ -661,12 +661,12 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     }
 
     function initSidebar() {
-      const sidebar = document.getElementById('sidebar');
+const sidebar = document.getElementById('sidebar');
       const menuToggle = document.getElementById('menuToggle');
       const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-      const activeLink = document.querySelector('.nav-link.active');
+       const activeLink = document.querySelector('.nav-link.active');
       if (activeLink) {
-        const parentDropdown = activeLink.closest('.nav-dropdown');
+         const parentDropdown = activeLink.closest('.nav-dropdown');
         if (parentDropdown) {
           parentDropdown.classList.add('open');
         }
@@ -719,28 +719,44 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       });
     }
 
-        function loadUserData() {
-      // Coba ambil dari storage local dulu
-      const savedUser = Utils.getStorage('webpos_session');
-      const storeData = Utils.getStorage('webpos_store') || {};
+            function loadUserData() {
+      // Coba ambil dari Auth dulu (sama seperti Dashboard)
+      const user = Auth.getCurrentUser ? Auth.getCurrentUser() : null;
       
-      if (savedUser) {
-        document.getElementById('userName').textContent = savedUser.name || savedUser.email || 'Admin';
-        document.getElementById('userRole').textContent = savedUser.role || 'Administrator';
+      if (user) {
+        document.getElementById('userName').textContent = user.name || user.email || 'Admin';
+        document.getElementById('userRole').textContent = user.role 
+          ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) 
+          : 'Administrator';
         
-        // Set avatar
+        // Set avatar dengan inisial
         const avatar = document.getElementById('userAvatar');
-        if (savedUser.name || savedUser.email) {
-          avatar.textContent = (savedUser.name || savedUser.email).charAt(0).toUpperCase();
+        if (user.name) {
+          const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+          avatar.textContent = initials;
+        } else if (user.email) {
+          avatar.textContent = user.email.charAt(0).toUpperCase();
         }
-      } else if (currentUser && currentUser.email) {
-        document.getElementById('userName').textContent = currentUser.email;
-        document.getElementById('userRole').textContent = 'Administrator';
-        document.getElementById('userAvatar').textContent = currentUser.email.charAt(0).toUpperCase();
       } else {
-        document.getElementById('userName').textContent = storeData.storeName || 'Admin';
-        document.getElementById('userRole').textContent = 'Administrator';
-        document.getElementById('userAvatar').innerHTML = '<i class="fas fa-user"></i>';
+        // Fallback ke localStorage
+        const savedUser = Utils.getStorage('webpos_session');
+        if (savedUser) {
+          document.getElementById('userName').textContent = savedUser.name || savedUser.email || 'Admin';
+          document.getElementById('userRole').textContent = savedUser.role || 'Administrator';
+          
+          const avatar = document.getElementById('userAvatar');
+          if (savedUser.name) {
+            const initials = savedUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+            avatar.textContent = initials;
+          } else {
+            avatar.textContent = (savedUser.name || savedUser.email || 'A').charAt(0).toUpperCase();
+          }
+        } else if (currentUser && currentUser.email) {
+          // Fallback ke currentUser dari Firebase Auth
+          document.getElementById('userName').textContent = currentUser.email;
+          document.getElementById('userRole').textContent = 'Administrator';
+          document.getElementById('userAvatar').textContent = currentUser.email.charAt(0).toUpperCase();
+        }
       }
     }
 
