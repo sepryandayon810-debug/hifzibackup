@@ -604,7 +604,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     <p style="margin-top: 1rem; color: var(--text-secondary);">Loading...</p>
   </div>
 
-  <script>
+    <script>
     // State
     let rankingData = [];
     let cachedProducts = [];
@@ -623,26 +623,21 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       });
     });
 
-    // Preload data dari Firebase
-        function preloadData() {
+    function preloadData() {
       return Promise.all([
-        // Load produk dengan data lengkap
         database.ref('products').once('value').then(snap => {
           const data = snap.val() || {};
-          // Pastikan semua field ada
           cachedProducts = Object.entries(data).map(([key, val]) => ({
             ...val,
-            id: val.id || key // Pastikan ID ada
+            id: val.id || key,
+            code: val.code || val.kode || key
           }));
           Utils.setStorage('webpos_products', cachedProducts);
           console.log('💾 Produk cached:', cachedProducts.length);
-          console.log('📋 Sample:', cachedProducts[0]); // Debug struktur
-        }).catch(err => {
-          console.error('Error load products:', err);
+        }).catch(() => {
           cachedProducts = Utils.getStorage('webpos_products') || [];
         }),
         
-        // Load kategori
         database.ref('categories').once('value').then(snap => {
           const data = snap.val() || {};
           cachedCategories = Object.entries(data).map(([key, val]) => ({
@@ -651,8 +646,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           }));
           Utils.setStorage('webpos_categories', cachedCategories);
           console.log('💾 Kategori cached:', cachedCategories.length);
-        }).catch(err => {
-          console.error('Error load categories:', err);
+        }).catch(() => {
           cachedCategories = Utils.getStorage('webpos_categories') || [];
         })
       ]);
@@ -663,7 +657,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       initSidebar();
       initEventListeners();
       
-      // Preload data dulu, baru load kategori dan report
       preloadData().then(() => {
         loadCategories();
         loadReport();
@@ -672,7 +665,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 
     function initTheme() {
       const btnTheme = document.getElementById('btnTheme');
-      // Cek dari localStorage yang diset di page lain (setting)
       const isDark = localStorage.getItem('webpos_dark_mode') === 'true';
       
       if (isDark) {
@@ -737,153 +729,50 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       });
     }
 
-            function loadCategories() {
+    function loadCategories() {
       const select = document.getElementById('filterCategory');
       select.innerHTML = '<option value="all">Semua Kategori</option>';
       
-      // Gunakan cachedCategories jika ada
-      if (cachedCategories.length > 0) {
-        populateCategoryDropdown(cachedCategories);
-        return;
-      }
+      const cats = cachedCategories.length > 0 ? cachedCategories : Utils.getStorage('webpos_categories') || [];
       
-      database.ref('categories').once('value')
-        .then(snapshot => {
-          const data = snapshot.val() || {};
-          // Convert object ke array dan filter duplicate
-          const cats = [];
-          const seenIds = new Set();
-          
-          Object.entries(data).forEach(([key, cat]) => {
-            if (cat && cat.name && !seenIds.has(cat.id || key)) {
-              seenIds.add(cat.id || key);
-              cats.push({
-                ...cat,
-                id: cat.id || key // Pastikan ada ID
-              });
-            }
-          });
-          
-          if (cats.length > 0) {
-            cachedCategories = cats;
-            Utils.setStorage('webpos_categories', cats);
-            populateCategoryDropdown(cats);
-          } else {
-            extractFromProducts();
-          }
-        })
-        .catch(err => {
-          console.warn('⚠️ Error load categories:', err.message);
-          const cached = Utils.getStorage('webpos_categories');
-          if (cached && cached.length > 0) {
-            cachedCategories = cached;
-            populateCategoryDropdown(cached);
-          } else {
-            extractFromProducts();
+      if (cats.length > 0) {
+        // Urutkan A-Z
+        cats.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        
+        cats.forEach(cat => {
+          if (cat.name) {
+            const option = document.createElement('option');
+            option.value = cat.id || cat.name;
+            option.textContent = cat.name;
+            select.appendChild(option);
           }
         });
-    }
-
-    function populateCategoryDropdown(cats) {
-      const select = document.getElementById('filterCategory');
-      
-      // Urutkan A-Z
-      cats.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      
-      // Map untuk hindari duplikat
-      const addedIds = new Set();
-      
-      cats.forEach(cat => {
-        const catId = cat.id || cat.name;
-        if (cat.name && !addedIds.has(catId)) {
-          addedIds.add(catId);
-          const option = document.createElement('option');
-          option.value = catId;
-          option.textContent = cat.name;
-          select.appendChild(option);
-        }
-      });
-      
-      console.log('✅ Kategori loaded:', cats.length, 'items');
-    }
-    
-    function populateCategoryDropdown(cats) {
-      const select = document.getElementById('filterCategory');
-      cats.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      
-      cats.forEach(cat => {
-        if (cat.name) {
-          const option = document.createElement('option');
-          // Selalu gunakan ID sebagai value, bukan nama
-          option.value = cat.id; 
-          option.textContent = cat.name;
-          select.appendChild(option);
-        }
-      });
-      
-      console.log('✅ Kategori loaded:', cats.length, 'items');
-    }
-
-    function populateCategoryDropdown(cats) {
-      const select = document.getElementById('filterCategory');
-      // Urutkan berdasarkan nama
-      cats.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      
-      cats.forEach(cat => {
-        if (cat.name) {
-          const option = document.createElement('option');
-          option.value = cat.id || cat.name;
-          option.textContent = cat.name;
-          select.appendChild(option);
-        }
-      });
-      
-      console.log('✅ Kategori loaded:', cats.length);
+        
+        console.log('✅ Kategori loaded:', cats.length);
+      } else {
+        // Fallback: ekstrak dari produk
+        extractFromProducts();
+      }
     }
 
     function extractFromProducts() {
       console.log('🔄 Fallback: Ekstrak kategori dari produk...');
       const select = document.getElementById('filterCategory');
-      
-      if (cachedProducts.length > 0) {
-        processProductCategories(cachedProducts);
-        return;
-      }
-      
-      database.ref('products').once('value')
-        .then(snapshot => {
-          const data = snapshot.val() || {};
-          const products = Object.values(data);
-          processProductCategories(products);
-        })
-        .catch(err => {
-          console.error('❌ Gagal ekstrak dari produk:', err);
-        });
-    }
-
-       function processProductCategories(products) {
-      const select = document.getElementById('filterCategory');
       const categoryMap = new Map();
       
-      products.forEach(p => {
-        if (p.categoryId && p.categoryName) {
-          // Gunakan ID sebagai key, tapi simpan juga nama
-          categoryMap.set(p.categoryId, {
-            id: p.categoryId,
-            name: p.categoryName
-          });
+      const prods = cachedProducts.length > 0 ? cachedProducts : Utils.getStorage('webpos_products') || [];
+      
+      prods.forEach(p => {
+        if (p.categoryId) {
+          const catName = p.categoryName || p.category || `Kategori ${p.categoryId.substr(0,6)}`;
+          categoryMap.set(p.categoryId, { id: p.categoryId, name: catName });
         } else if (p.category || p.kategori) {
           const catName = p.category || p.kategori;
-          categoryMap.set(catName, {
-            id: catName,
-            name: catName
-          });
+          categoryMap.set(catName, { id: catName, name: catName });
         }
       });
       
-      // Convert ke array dan sort
-      const cats = Array.from(categoryMap.values())
-        .sort((a, b) => a.name.localeCompare(b.name));
+      const cats = Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name));
       
       cats.forEach(cat => {
         const option = document.createElement('option');
@@ -895,7 +784,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       console.log('📂 Kategori dari produk:', cats.length);
     }
 
-               function loadReport() {
+    function loadReport() {
       Utils.showLoading();
       
       try {
@@ -903,14 +792,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         const category = document.getElementById('filterCategory').value;
         const limit = parseInt(document.getElementById('filterLimit').value);
         
-        console.log('🔍 Filter kategori dipilih:', category);
-        console.log('📦 Cached products:', cachedProducts.length);
-        console.log('📋 Sample cached product:', cachedProducts[0]); // Lihat struktur
-        
-        // Cari nama kategori yang dipilih
-        const selectedCatObj = cachedCategories.find(c => c.id === category);
-        const selectedCatName = selectedCatObj?.name?.toLowerCase() || category.toLowerCase();
-        console.log('🏷️ Selected category name:', selectedCatName);
+        console.log('🔍 Filter:', { period, category, limit });
         
         const now = new Date();
         let startDate, endDate;
@@ -955,92 +837,57 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           const productSales = {};
           let totalSold = 0;
           let totalRevenue = 0;
-          let debugCount = 0;
           
-          allTransactions.forEach((t, tIndex) => {
+          allTransactions.forEach(t => {
             const items = t.items || [];
             if (!Array.isArray(items)) return;
             
-            items.forEach((item, iIndex) => {
+            items.forEach(item => {
               const id = item.productId || item.id;
               if (!id) return;
               
-              // Filter kategori
+              // FILTER KATEGORI - Versi Sederhana & Robust
               if (category !== 'all') {
-                // Cari produk di cache dengan berbagai cara
-                let product = cachedProducts.find(p => p.id === id);
-                
-                // Kalau tidak ketemu, coba cari by code/kode
-                if (!product && item.code) {
-                  product = cachedProducts.find(p => p.code === item.code || p.kode === item.code);
-                }
-                
-                // Kalau masih tidak ketemu, coba cari by name
-                if (!product && item.name) {
-                  product = cachedProducts.find(p => 
-                    p.name?.toLowerCase() === item.name?.toLowerCase()
-                  );
-                }
-                
-                // Debug pertama kali
-                if (debugCount < 5) {
-                  debugCount++;
-                  console.log(`🔎 Debug #${debugCount}:`, {
-                    itemId: id,
-                    itemName: item.name,
-                    itemCode: item.code,
-                    productFound: product ? 'YES' : 'NO',
-                    productCatId: product?.categoryId,
-                    productName: product?.name,
-                    selectedCat: category
-                  });
-                }
-                
-                // Cek match
                 let isMatch = false;
+                const selectedCat = category.toLowerCase();
                 
-                // 1. Match by categoryId
-                if (product?.categoryId) {
-                  isMatch = product.categoryId === category;
-                  if (isMatch) console.log('✅ Match by categoryId');
+                // 1. Cek dari item.category (langsung dari transaksi)
+                const itemCat = (item.category || item.kategori || '').toLowerCase();
+                if (itemCat === selectedCat || itemCat.includes(selectedCat)) {
+                  isMatch = true;
                 }
                 
-                // 2. Match by category name di produk
-                if (!isMatch && product?.category) {
-                  const prodCat = product.category.toLowerCase();
-                  isMatch = prodCat === selectedCatName || 
-                           prodCat.includes(selectedCatName) || 
-                           selectedCatName.includes(prodCat);
-                  if (isMatch) console.log('✅ Match by product.category name');
+                // 2. Cek dari produk cache
+                if (!isMatch) {
+                  const product = cachedProducts.find(p => p.id === id || p.code === (item.code || item.kode));
+                  if (product) {
+                    const prodCatId = (product.categoryId || '').toString().toLowerCase();
+                    const prodCat = (product.category || product.kategori || '').toLowerCase();
+                    
+                    if (prodCatId === selectedCat || prodCat === selectedCat || prodCat.includes(selectedCat)) {
+                      isMatch = true;
+                    }
+                  }
                 }
                 
-                // 3. Match by item.category
-                if (!isMatch && (item.category || item.kategori)) {
-                  const itemCat = (item.category || item.kategori).toLowerCase();
-                  isMatch = itemCat === selectedCatName || 
-                           itemCat.includes(selectedCatName) ||
-                           selectedCatName.includes(itemCat);
-                  if (isMatch) console.log('✅ Match by item.category');
-                }
-                
-                // 4. Match by nama produk mengandung nama kategori
+                // 3. Cek dari nama produk mengandung nama kategori
                 if (!isMatch && item.name) {
-                  const itemName = item.name.toLowerCase();
-                  const catKeywords = selectedCatName.split(' '); // "voucher axis" -> ["voucher", "axis"]
-                  isMatch = catKeywords.some(kw => itemName.includes(kw));
-                  if (isMatch) console.log('✅ Match by product name keyword');
+                  const name = item.name.toLowerCase();
+                  if (name.includes(selectedCat.replace('pulsa ', '').replace('voucher ', ''))) {
+                    isMatch = true;
+                  }
                 }
                 
-                if (!isMatch) return;
+                if (!isMatch) return; // Skip item ini
               }
               
-              // Aggregate
+              // Aggregate data
               if (!productSales[id]) {
                 productSales[id] = {
                   id: id,
                   name: item.name || item.nama || 'Unknown',
                   code: item.code || item.kode || id,
-                  category: item.category || item.kategori || product?.category || '-',
+                  category: item.category || item.kategori || '-',
                   quantity: 0,
                   revenue: 0
                 };
@@ -1061,25 +908,23 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             .sort((a, b) => b.quantity - a.quantity)
             .slice(0, limit);
           
-          console.log('🏆 Final ranking:', rankingData.length, 'items');
-          console.log('📈 Best seller:', rankingData[0]?.name);
+          console.log('🏆 Ranking:', rankingData.length, 'items');
           
-          // Update UI
           document.getElementById('statTotalSold').textContent = totalSold.toLocaleString('id-ID');
           document.getElementById('statRevenue').textContent = 'Rp ' + totalRevenue.toLocaleString('id-ID');
           document.getElementById('statActiveProducts').textContent = Object.keys(productSales).length;
-          document.getElementById('statBestSeller').textContent = rankingData[0]?.name?.substring(0, 12) + '...' || '-';
+          document.getElementById('statBestSeller').textContent = rankingData[0]?.name?.substring(0, 12) + (rankingData[0]?.name?.length > 12 ? '...' : '') || '-';
           
           renderTable(rankingData);
           
           if (rankingData.length === 0) {
-            Utils.showToast('Tidak ada data untuk kategori ini', 'warning');
+            Utils.showToast('Tidak ada data untuk filter ini', 'warning');
           }
           
           Utils.hideLoading();
           
         }).catch(error => {
-          console.error('❌ Error:', error);
+          console.error('❌ Error Firebase:', error);
           Utils.showToast('Gagal memuat data', 'error');
           Utils.hideLoading();
         });
@@ -1100,10 +945,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             <td colspan="4" class="empty-state">
               <i class="fas fa-inbox"></i>
               <p>Tidak ada data penjualan untuk periode ini</p>
-              <p style="font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.7;">
-                Pastikan sudah ada transaksi di halaman Kasir<br>
-                atau coba pilih periode "Semua Waktu"
-              </p>
             </td>
           </tr>
         `;
@@ -1116,14 +957,10 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         
         return `
           <tr>
-            <td>
-              <div class="rank-badge ${rankClass}">${rank}</div>
-            </td>
+            <td><div class="rank-badge ${rankClass}">${rank}</div></td>
             <td>
               <div class="product-info">
-                <div class="product-img">
-                  <i class="fas fa-box"></i>
-                </div>
+                <div class="product-img"><i class="fas fa-box"></i></div>
                 <div>
                   <div class="product-name">${item.name}</div>
                   <div class="product-meta">${item.code} • ${item.category}</div>
