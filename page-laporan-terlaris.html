@@ -724,180 +724,157 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     }
 
     function loadReport() {
-      Utils.showLoading();
+  Utils.showLoading();
+  
+  try {
+    const period = document.getElementById('filterPeriod').value;
+    const category = document.getElementById('filterCategory').value;
+    const limit = parseInt(document.getElementById('filterLimit').value);
+    
+    // DEBUG: Cek data transaksi
+    let transactions = Utils.getStorage('webpos_transactions') || [];
+    console.log('📊 Total transaksi ditemukan:', transactions.length);
+    console.log('📋 Sample transaksi:', transactions[0]);
+    
+    const now = new Date();
+    
+    // Filter by date dengan fix date calculation
+    transactions = transactions.filter(t => {
+      const tDate = new Date(t.timestamp || t.date || t.tanggal || t.created_at);
+      if (isNaN(tDate.getTime())) return false; // Skip invalid dates
       
-      try {
-        const period = document.getElementById('filterPeriod').value;
-        const category = document.getElementById('filterCategory').value;
-        const limit = parseInt(document.getElementById('filterLimit').value);
-        
-        let transactions = Utils.getStorage('webpos_transactions') || [];
-        const now = new Date();
-        
-        // Filter by date
-        transactions = transactions.filter(t => {
-          const tDate = new Date(t.timestamp || t.date);
-          if (period === 'today') return tDate.toDateString() === now.toDateString();
-          if (period === 'week') return tDate >= new Date(now - 7 * 24 * 60 * 60 * 1000);
-          if (period === 'month') return tDate >= new Date(now - 30 * 24 * 60 * 60 * 1000);
-          if (period === 'year') return tDate.getFullYear() === now.getFullYear();
-          return true;
-        });
-        
-        // Aggregate by product
-        const productSales = {};
-        let totalSold = 0;
-        let totalRevenue = 0;
-        
-        transactions.forEach(t => {
-          if (t.items && Array.isArray(t.items)) {
-            t.items.forEach(item => {
-              const id = item.id || item.productId;
-              if (!id) return;
-              
-              if (category !== 'all') {
-                const products = Utils.getStorage('webpos_products') || [];
-                const product = products.find(p => p.id === id);
-                if (!product || product.category !== category) return;
-              }
-              
-              if (!productSales[id]) {
-                productSales[id] = {
-                  id: id,
-                  name: item.name || 'Unknown',
-                  code: item.code || '-',
-                  category: item.category || '-',
-                  quantity: 0,
-                  revenue: 0
-                };
-              }
-              
-              const qty = parseInt(item.quantity) || 0;
-              const price = parseFloat(item.price) || 0;
-              
-              productSales[id].quantity += qty;
-              productSales[id].revenue += (qty * price);
-              totalSold += qty;
-              totalRevenue += (qty * price);
-            });
-          }
-        });
-        
-        rankingData = Object.values(productSales)
-          .sort((a, b) => b.quantity - a.quantity)
-          .slice(0, limit);
-        
-        // Update stats
-        document.getElementById('statTotalSold').textContent = totalSold.toLocaleString('id-ID');
-        document.getElementById('statRevenue').textContent = 'Rp ' + totalRevenue.toLocaleString('id-ID');
-        document.getElementById('statActiveProducts').textContent = Object.keys(productSales).length;
-        document.getElementById('statBestSeller').textContent = rankingData[0]?.name.substring(0, 12) + (rankingData[0]?.name.length > 12 ? '...' : '') || '-';
-        
-        renderChart(rankingData.slice(0, 10));
-        renderTable(rankingData);
-        
-      } catch (error) {
-        console.error('Error loading report:', error);
-        Utils.showToast('Gagal memuat laporan', 'error');
-      }
+      if (period === 'today') return tDate.toDateString() === now.toDateString();
+      if (period === 'week') return tDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      if (period === 'month') return tDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      if (period === 'year') return tDate.getFullYear() === now.getFullYear();
+      return true;
+    });
+    
+    console.log('📅 Transaksi setelah filter periode:', transactions.length);
+    
+    // Aggregate by product dengan fallback field names (Indonesia & English)
+    const productSales = {};
+    let totalSold = 0;
+    let totalRevenue = 0;
+    
+    transactions.forEach((t, idx) => {
+      // Cek berbagai kemungkinan nama field untuk items
+      const items = t.items || t.detail || t.produk || t.cart || t.keranjang || [];
       
-      Utils.hideLoading();
-    }
-
-    function renderChart(data) {
-      const ctx = document.getElementById('salesChart').getContext('2d');
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      
-      if (salesChart) salesChart.destroy();
-      
-      salesChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: data.map(d => d.name.substring(0, 12) + (d.name.length > 12 ? '..' : '')),
-          datasets: [{
-            label: 'Jumlah Terjual',
-            data: data.map(d => d.quantity),
-            backgroundColor: 'rgba(99, 102, 241, 0.8)',
-            borderColor: 'rgba(99, 102, 241, 1)',
-            borderWidth: 1,
-            borderRadius: 6
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  return context.parsed.y + ' unit';
-                }
-              }
-            }
-          },
-          scales: {
-            x: {
-              ticks: { color: isDark ? '#94a3b8' : '#64748b', font: { size: 11 } },
-              grid: { color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-            },
-            y: {
-              beginAtZero: true,
-              ticks: { color: isDark ? '#94a3b8' : '#64748b' },
-              grid: { color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-            }
-          }
-        }
-      });
-    }
-
-    function renderTable(data) {
-      const tbody = document.getElementById('rankingTableBody');
-      
-      if (data.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="4" class="empty-state">
-              <i class="fas fa-inbox"></i>
-              <p>Tidak ada data penjualan</p>
-            </td>
-          </tr>
-        `;
+      if (!Array.isArray(items)) {
+        console.log(`⚠️ Transaksi ${idx} tidak memukan items array:`, t);
         return;
       }
       
-      tbody.innerHTML = data.map((item, index) => {
-        const rank = index + 1;
-        const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
+      items.forEach(item => {
+        // Fallback untuk ID produk
+        const id = item.id || item.productId || item.produkId || item.kode || item.code;
+        if (!id) return;
         
-        return `
-          <tr>
-            <td>
-              <div class="rank-badge ${rankClass}">${rank}</div>
-            </td>
-            <td>
-              <div class="product-info">
-                <div class="product-img">
-                  <i class="fas fa-box"></i>
-                </div>
-                <div>
-                  <div class="product-name">${item.name}</div>
-                  <div class="product-meta">${item.code} • ${item.category}</div>
-                </div>
-              </div>
-            </td>
-            <td>
-              <strong>${item.quantity.toLocaleString('id-ID')}</strong>
-              <div style="font-size: 0.75rem; color: var(--text-muted);">unit</div>
-            </td>
-            <td>
-              <strong>Rp ${item.revenue.toLocaleString('id-ID')}</strong>
-              <div style="font-size: 0.75rem; color: var(--text-muted);">pendapatan</div>
-            </td>
-          </tr>
-        `;
-      }).join('');
+        // Filter kategori jika dipilih
+        if (category !== 'all') {
+          const products = Utils.getStorage('webpos_products') || [];
+          const product = products.find(p => p.id === id || p.kode === id);
+          if (!product || (product.category !== category && product.kategori !== category)) return;
+        }
+        
+        if (!productSales[id]) {
+          productSales[id] = {
+            id: id,
+            name: item.name || item.nama || item.namaProduk || 'Unknown',
+            code: item.code || item.kode || id,
+            category: item.category || item.kategori || '-',
+            quantity: 0,
+            revenue: 0
+          };
+        }
+        
+        // Fallback untuk qty dan harga
+        const qty = parseInt(item.quantity || item.qty || item.jumlah || 0);
+        const price = parseFloat(item.price || item.harga || item.hargaJual || 0);
+        
+        productSales[id].quantity += qty;
+        productSales[id].revenue += (qty * price);
+        totalSold += qty;
+        totalRevenue += (qty * price);
+      });
+    });
+    
+    rankingData = Object.values(productSales)
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, limit);
+    
+    console.log('🏆 Ranking produk:', rankingData);
+    
+    // Update stats
+    document.getElementById('statTotalSold').textContent = totalSold.toLocaleString('id-ID');
+    document.getElementById('statRevenue').textContent = 'Rp ' + totalRevenue.toLocaleString('id-ID');
+    document.getElementById('statActiveProducts').textContent = Object.keys(productSales).length;
+    document.getElementById('statBestSeller').textContent = rankingData[0]?.name.substring(0, 12) + (rankingData[0]?.name.length > 12 ? '...' : '') || '-';
+    
+    renderChart(rankingData.slice(0, 10));
+    renderTable(rankingData);
+    
+    if (rankingData.length === 0) {
+      Utils.showToast('Tidak ada data penjualan untuk periode ini', 'warning');
     }
+    
+  } catch (error) {
+    console.error('❌ Error loading report:', error);
+    Utils.showToast('Gagal memuat laporan: ' + error.message, 'error');
+  }
+  
+  Utils.hideLoading();
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('rankingTableBody');
+  
+  if (data.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4" class="empty-state">
+          <i class="fas fa-inbox"></i>
+          <p>Tidak ada data penjualan</p>
+          <p style="font-size: 0.8rem; margin-top: 0.5rem;">Pastikan sudah ada transaksi di halaman Kasir</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = data.map((item, index) => {
+    const rank = index + 1;
+    const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
+    
+    return `
+      <tr>
+        <td>
+          <div class="rank-badge ${rankClass}">${rank}</div>
+        </td>
+        <td>
+          <div class="product-info">
+            <div class="product-img">
+              <i class="fas fa-box"></i>
+            </div>
+            <div>
+              <div class="product-name">${item.name}</div>
+              <div class="product-meta">${item.code} • ${item.category}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <strong>${item.quantity.toLocaleString('id-ID')}</strong>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">unit</div>
+        </td>
+        <td>
+          <strong>Rp ${item.revenue.toLocaleString('id-ID')}</strong>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">pendapatan</div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
 
     function exportReport() {
       const period = document.getElementById('filterPeriod').value;
