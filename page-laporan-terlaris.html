@@ -731,56 +731,71 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     const category = document.getElementById('filterCategory').value;
     const limit = parseInt(document.getElementById('filterLimit').value);
     
-    // Fetch dari Firebase Realtime Database
-    const dbRef = firebase.database().ref('transaksi');
+    // Hitung rentang tanggal
+    const now = new Date();
+    let startDate, endDate;
     
-    dbRef.once('value', (snapshot) => {
-      let transactions = [];
+    if (period === 'today') {
+      startDate = endDate = new Date(now);
+    } else if (period === 'week') {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      endDate = new Date(now);
+    } else if (period === 'month') {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      endDate = new Date(now);
+    } else if (period === 'year') {
+      startDate = new Date(now.getFullYear(), 0, 1);
+      endDate = new Date(now);
+    } else {
+      // all time - ambil 1 tahun terakhir untuk performa
+      startDate = new Date(now.getFullYear() - 1, 0, 1);
+      endDate = new Date(now);
+    }
+    
+    // Generate array tanggal
+    const dates = [];
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().split('T')[0]);
+    }
+    
+    console.log('📅 Mengambil data dari', dates.length, 'hari');
+    
+    // Ambil semua transaksi PARALEL
+    Promise.all(
+      dates.map(dateStr => database.ref(`transactions/${dateStr}`).once('value'))
+    ).then(snapshots => {
+      let allTransactions = [];
       
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        // Convert object Firebase ke array
-        transactions = Object.keys(data).map(key => ({
-          id: key,
-          ...data[key]
-        }));
-      }
-      
-      console.log('📊 Total transaksi dari Firebase:', transactions.length);
-      
-      const now = new Date();
-      
-      // Filter by date
-      transactions = transactions.filter(t => {
-        const dateStr = t.timestamp || t.date || t.tanggal || t.createdAt;
-        if (!dateStr) return false;
-        
-        const tDate = new Date(dateStr);
-        if (isNaN(tDate.getTime())) return false;
-        
-        if (period === 'today') return tDate.toDateString() === now.toDateString();
-        if (period === 'week') return tDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        if (period === 'month') return tDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        if (period === 'year') return tDate.getFullYear() === now.getFullYear();
-        return true;
+      snapshots.forEach((snap, idx) => {
+        const trans = snap.val() || {};
+        Object.entries(trans).forEach(([id, data]) => {
+          // Hanya ambil transaksi penjualan yang sukses
+          if (data.type === 'penjualan' && data.status !== 'cancelled' && data.status !== 'returned') {
+            allTransactions.push({ id, dateKey: dates[idx], ...data });
+          }
+        });
       });
       
-      console.log('📅 Transaksi setelah filter:', transactions.length);
+      console.log('📊 Total transaksi penjualan:', allTransactions.length);
       
       // Aggregate by product
       const productSales = {};
       let totalSold = 0;
       let totalRevenue = 0;
       
-      transactions.forEach(t => {
-        const items = t.items || t.detail || t.produk || t.cart || [];
+      allTransactions.forEach(t => {
+        // Gunakan struktur items yang sama dengan riwayat
+        const items = t.items || [];
         if (!Array.isArray(items)) return;
         
         items.forEach(item => {
-          const id = item.id || item.productId || item.produkId || item.kode;
+          // Cari ID produk (sama dengan riwayat)
+          const id = item.productId || item.id;
           if (!id) return;
           
+          // Filter kategori jika dipilih
           if (category !== 'all') {
+            // Cek dari data produk jika ada
             const products = Utils.getStorage('webpos_products') || [];
             const product = products.find(p => p.id === id || p.kode === id);
             if (!product || (product.category !== category && product.kategori !== category)) return;
@@ -789,7 +804,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           if (!productSales[id]) {
             productSales[id] = {
               id: id,
-              name: item.name || item.nama || 'Unknown',
+              name: item.name || item.nama || item.productName || 'Unknown',
               code: item.code || item.kode || id,
               category: item.category || item.kategori || '-',
               quantity: 0,
@@ -797,19 +812,23 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             };
           }
           
-          const qty = parseInt(item.quantity || item.qty || item.jumlah || 0);
-          const price = parseFloat(item.price || item.harga || item.hargaJual || 0);
+          // Gunakan qty/quantity dan price/harga (sama dengan riwayat)
+          const qty = parseInt(item.qty || item.quantity || 0);
+          const price = parseFloat(item.price || item.harga || 0);
+          const subtotal = item.subtotal || (qty * price);
           
           productSales[id].quantity += qty;
-          productSales[id].revenue += (qty * price);
+          productSales[id].revenue += subtotal;
           totalSold += qty;
-          totalRevenue += (qty * price);
+          totalRevenue += subtotal;
         });
       });
       
       rankingData = Object.values(productSales)
         .sort((a, b) => b.quantity - a.quantity)
         .slice(0, limit);
+      
+      console.log('🏆 Ranking produk:', rankingData.length, 'items');
       
       // Update stats
       document.getElementById('statTotalSold').textContent = totalSold.toLocaleString('id-ID');
@@ -825,9 +844,9 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       
       Utils.hideLoading();
       
-    }, (error) => {
+    }).catch(error => {
       console.error('❌ Error Firebase:', error);
-      Utils.showToast('Gagal memuat data dari Firebase', 'error');
+      Utils.showToast('Gagal memuat data: ' + error.message, 'error');
       Utils.hideLoading();
     });
     
@@ -846,8 +865,11 @@ function renderTable(data) {
       <tr>
         <td colspan="4" class="empty-state">
           <i class="fas fa-inbox"></i>
-          <p>Tidak ada data penjualan</p>
-          <p style="font-size: 0.8rem; margin-top: 0.5rem;">Pastikan sudah ada transaksi di halaman Kasir</p>
+          <p>Tidak ada data penjualan untuk periode ini</p>
+          <p style="font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.7;">
+            Pastikan sudah ada transaksi di halaman Kasir<br>
+            atau coba pilih periode "Semua Waktu"
+          </p>
         </td>
       </tr>
     `;
@@ -886,7 +908,7 @@ function renderTable(data) {
     `;
   }).join('');
 }
-
+    
     function exportReport() {
       const period = document.getElementById('filterPeriod').value;
       const csvContent = [
