@@ -642,6 +642,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       initTheme();
       initSidebar();
       initEventListeners();
+      loadUserData(); // ← TAMBAHKAN INI
       loadUserOptions();
       loadLogs();
     }
@@ -663,6 +664,13 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       const sidebar = document.getElementById('sidebar');
       const menuToggle = document.getElementById('menuToggle');
       const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+      const activeLink = document.querySelector('.nav-link.active');
+      if (activeLink) {
+        const parentDropdown = activeLink.closest('.nav-dropdown');
+        if (parentDropdown) {
+          parentDropdown.classList.add('open');
+        }
+      }
       
       // Desktop toggle
       if (menuToggle) {
@@ -711,6 +719,31 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       });
     }
 
+        function loadUserData() {
+      // Coba ambil dari storage local dulu
+      const savedUser = Utils.getStorage('webpos_session');
+      const storeData = Utils.getStorage('webpos_store') || {};
+      
+      if (savedUser) {
+        document.getElementById('userName').textContent = savedUser.name || savedUser.email || 'Admin';
+        document.getElementById('userRole').textContent = savedUser.role || 'Administrator';
+        
+        // Set avatar
+        const avatar = document.getElementById('userAvatar');
+        if (savedUser.name || savedUser.email) {
+          avatar.textContent = (savedUser.name || savedUser.email).charAt(0).toUpperCase();
+        }
+      } else if (currentUser && currentUser.email) {
+        document.getElementById('userName').textContent = currentUser.email;
+        document.getElementById('userRole').textContent = 'Administrator';
+        document.getElementById('userAvatar').textContent = currentUser.email.charAt(0).toUpperCase();
+      } else {
+        document.getElementById('userName').textContent = storeData.storeName || 'Admin';
+        document.getElementById('userRole').textContent = 'Administrator';
+        document.getElementById('userAvatar').innerHTML = '<i class="fas fa-user"></i>';
+      }
+    }
+
     function loadUserOptions() {
       const users = Utils.getStorage('webpos_users') || [];
       const select = document.getElementById('filterUser');
@@ -723,15 +756,39 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       });
     }
 
-    function loadLogs() {
+        function loadLogs() {
       Utils.showLoading();
       
       try {
-        // Get logs from localStorage
-        allLogs = Utils.getStorage('webpos_activity_logs') || [];
+        // Coba ambil dari localStorage (format lama)
+        let logs = Utils.getStorage('webpos_activity_logs') || [];
         
-        // Sort by timestamp (newest first)
-        allLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        // Jika kosong, coba format lain atau buat log default dari transaksi
+        if (logs.length === 0) {
+          // Coba ambil dari riwayat transaksi sebagai log
+          const transHistory = Utils.getStorage('webpos_transactions') || [];
+          if (transHistory.length > 0) {
+            logs = transHistory.slice(0, 20).map((t, idx) => ({
+              timestamp: t.timestamp || t.date || new Date().toISOString(),
+              user: t.user || t.cashierName || 'Kasir',
+              action: 'transaction',
+              detail: `Transaksi ${t.invoice || t.id || idx+1} - Rp ${(t.total || 0).toLocaleString()}`
+            }));
+          }
+          
+          // Tambahkan log login saat ini
+          logs.unshift({
+            timestamp: new Date().toISOString(),
+            user: currentUser?.email || 'Admin',
+            action: 'login',
+            detail: 'Login ke sistem'
+          });
+          
+          // Simpan ke localStorage
+          Utils.setStorage('webpos_activity_logs', logs);
+        }
+        
+        allLogs = logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         
         applyFilters();
         calculateStats();
@@ -743,7 +800,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       
       Utils.hideLoading();
     }
-
+    
     function applyFilters() {
       const period = document.getElementById('filterPeriod').value;
       const type = document.getElementById('filterType').value;
