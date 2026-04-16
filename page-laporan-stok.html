@@ -30,7 +30,18 @@
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#6366f1">
+<meta name="theme-color" content="var(--primary)">
+<script>
+  // Update meta theme-color based on selected theme
+  (function() {
+    const themeColor = localStorage.getItem('webpos_primary_color') || 'orange';
+    const colors = {
+      orange: '#f97316', indigo: '#6366f1', blue: '#3b82f6', 
+      green: '#10b981', red: '#ef4444', purple: '#8b5cf6'
+    };
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', colors[themeColor] || colors.orange);
+  })();
+</script>
   <title>WebPOS - Laporan Stok</title>
 
   <!-- Font Awesome -->
