@@ -1,6 +1,33 @@
 <!DOCTYPE html>
 <html lang="id" data-theme="light">
 <head>
+  <script>
+    (function() {
+      const themeColor = localStorage.getItem('webpos_primary_color') || localStorage.getItem('theme_color') || 'indigo';
+      document.documentElement.setAttribute('data-theme-color', themeColor);
+      
+      const colors = {
+        orange: { primary: '#f97316', primaryDark: '#ea580c', secondary: '#fb923c', bgPrimary: '#fff7ed' },
+        indigo: { primary: '#6366f1', primaryDark: '#4f46e5', secondary: '#ec4899', bgPrimary: '#f8fafc' },
+        blue: { primary: '#3b82f6', primaryDark: '#2563eb', secondary: '#60a5fa', bgPrimary: '#eff6ff' },
+        green: { primary: '#10b981', primaryDark: '#059669', secondary: '#34d399', bgPrimary: '#ecfdf5' },
+        red: { primary: '#ef4444', primaryDark: '#dc2626', secondary: '#f87171', bgPrimary: '#fef2f2' },
+        purple: { primary: '#8b5cf6', primaryDark: '#7c3aed', secondary: '#a78bfa', bgPrimary: '#f5f3ff' }
+      };
+      
+      const c = colors[themeColor] || colors.indigo;
+      const style = document.createElement('style');
+      style.textContent = `
+        :root { 
+          --primary: ${c.primary} !important; 
+          --primary-dark: ${c.primaryDark} !important; 
+          --secondary: ${c.secondary} !important;
+          --bg-primary: ${c.bgPrimary} !important;
+        }
+      `;
+      document.head.appendChild(style);
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#6366f1">
@@ -1484,7 +1511,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       showToast('File CSV berhasil diunduh', 'success');
     }
 
-    // ===== INIT =====
+        // ===== INIT =====
     firebase.auth().onAuthStateChanged(user => {
       if (!user) {
         window.location.href = 'login.html';
@@ -1501,6 +1528,13 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       loadData().then(() => {
         setupSorting();
       });
+    });
+
+    // ===== GLOBAL THEME LISTENER =====
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'webpos_primary_color' || e.key === 'theme_color') {
+        location.reload();
+      }
     });
   </script>
 </body>
