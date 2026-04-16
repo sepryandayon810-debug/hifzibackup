@@ -214,6 +214,129 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 .type-out{background:rgba(239,68,68,.1);color:var(--danger)}
 .type-adjust{background:rgba(245,158,11,.1);color:var(--warning)}
 .adjustment-note{font-size:.85rem;color:var(--text-secondary);margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--border-color)}
+
+/* ===== TABLE SORTING ===== */
+.data-table th {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  transition: background 0.2s;
+}
+.data-table th:hover {
+  background: rgba(99,102,241,0.1);
+  color: var(--primary);
+}
+.data-table th.sortable::after {
+  content: '\f0dc';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+.data-table th.sort-asc::after {
+  content: '\f0de';
+  opacity: 1;
+  color: var(--primary);
+}
+.data-table th.sort-desc::after {
+  content: '\f0dd';
+  opacity: 1;
+  color: var(--primary);
+}
+
+/* ===== MOBILE TABLE CARDS ===== */
+@media(max-width: 768px) {
+  .table-container {
+    border: none;
+    background: transparent;
+  }
+  .data-table thead {
+    display: none;
+  }
+  .data-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .data-table tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+  .data-table td {
+    border: none;
+    padding: 0.25rem 0;
+    display: flex;
+    align-items: center;
+  }
+  .data-table td:nth-child(1) {
+    grid-column: 1 / -1;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .data-table td:nth-child(1) div:first-child {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .data-table td:nth-child(2) {
+    grid-column: 1;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  .data-table td:nth-child(4) {
+    grid-column: 1;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    justify-content: flex-end;
+  }
+  .data-table td:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2 / 4;
+    font-size: 1.5rem !important;
+    font-weight: 700;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    min-width: 60px;
+    min-height: 60px;
+  }
+  .data-table td:nth-child(5) {
+    grid-column: 1;
+    justify-content: flex-start;
+  }
+  .data-table td:nth-child(6) {
+    grid-column: 2;
+    justify-content: flex-end;
+    align-items: flex-end;
+  }
+  .data-table td:nth-child(6) .action-btns {
+    flex-direction: row;
+  }
+  .hide-mobile {
+    display: none !important;
+  }
+  .data-table td::before {
+    content: attr(data-label);
+    font-weight: 500;
+    margin-right: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+  .data-table td:nth-child(1)::before,
+  .data-table td:nth-child(3)::before,
+  .data-table td:nth-child(6)::before {
+    display: none;
+  }
+}
   </style>
 </head>
 <body>
@@ -497,12 +620,12 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
               <table class="data-table" id="stockTable">
                 <thead>
                   <tr>
-                    <th>Produk</th>
-                    <th>Kategori</th>
-                    <th class="text-center">Stok</th>
-                    <th class="text-center hide-mobile">Satuan</th>
-                    <th>Status</th>
-                    <th class="text-center">Aksi</th>
+                    <th class="sortable" data-sort="name">Produk</th>
+                    <th class="sortable" data-sort="category">Kategori</th>
+                    <th class="sortable" data-sort="stock" style="text-align:center;">Stok</th>
+                    <th class="hide-mobile">Satuan</th>
+                    <th class="sortable" data-sort="status">Status</th>
+                    <th style="text-align:center;">Aksi</th>
                   </tr>
                 </thead>
                 <tbody id="stockTableBody">
@@ -650,6 +773,8 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     let categories = [];
     let adjustments = [];
     let currentUser = null;
+    let sortColumn = 'name';
+    let sortDirection = 'asc';
 
     // ===== SIDEBAR FUNCTIONS =====
     function toggleDropdown(id) {
@@ -657,10 +782,8 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       if (!el) return;
       const isOpen = el.classList.contains('open');
       
-      // Close all dropdowns
       document.querySelectorAll('.nav-dropdown.open').forEach(d => d.classList.remove('open'));
       
-      // Open clicked if was closed
       if (!isOpen) {
         el.classList.add('open');
       }
@@ -671,17 +794,14 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
     const menuToggle = document.getElementById('menuToggle');
 
-    // Desktop: Toggle collapse
     if (menuToggle) {
       menuToggle.addEventListener('click', function(e) {
         e.stopPropagation();
         sidebar.classList.toggle('collapsed');
-        // Save preference
         localStorage.setItem('sidebar_collapsed', sidebar.classList.contains('collapsed'));
       });
     }
 
-    // Mobile: Toggle sidebar open/close
     if (mobileMenuToggle) {
       mobileMenuToggle.addEventListener('click', function(e) {
         e.preventDefault();
@@ -691,7 +811,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       });
     }
 
-    // Close mobile sidebar saat klik nav-link
     document.querySelectorAll('.nav-link').forEach(link => {
       link.addEventListener('click', () => {
         if (window.innerWidth <= 1024) {
@@ -700,7 +819,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       });
     });
 
-    // Close saat klik di luar sidebar (mobile only)
     document.addEventListener('click', (e) => {
       if (window.innerWidth <= 1024 && 
           sidebar.classList.contains('mobile-open') &&
@@ -710,7 +828,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       }
     });
 
-    // Restore sidebar state (desktop)
     if (window.innerWidth > 1024) {
       const savedCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
       if (savedCollapsed) sidebar.classList.add('collapsed');
@@ -769,40 +886,37 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 
     // ===== DATA FUNCTIONS =====
     async function loadData() {
-  try {
-    showLoading(true);
-    
-    // Load products (wajib)
-    const prodSnap = await firebase.database().ref('products').once('value');
-    const prodData = prodSnap.val() || {};
-    products = Object.entries(prodData).map(([id, d]) => ({ id, ...d }));
-    
-    // Load categories (wajib)
-    const catSnap = await firebase.database().ref('categories').once('value');
-    const catData = catSnap.val() || {};
-    categories = Object.entries(catData).map(([id, d]) => ({ id, ...d }));
-    
-    // Load adjustments (opsional, bisa gagal kalau rules belum diatur)
-    try {
-      const adjSnap = await firebase.database().ref('stock_adjustments').limitToLast(100).once('value');
-      const adjData = adjSnap.val() || {};
-      adjustments = Object.entries(adjData).map(([id, d]) => ({ id, ...d }));
-    } catch (adjError) {
-      console.warn('Gagal memuat riwayat penyesuaian (perlu update Firebase Rules):', adjError);
-      adjustments = []; // fallback kosong
+      try {
+        showLoading(true);
+        
+        const prodSnap = await firebase.database().ref('products').once('value');
+        const prodData = prodSnap.val() || {};
+        products = Object.entries(prodData).map(([id, d]) => ({ id, ...d }));
+        
+        const catSnap = await firebase.database().ref('categories').once('value');
+        const catData = catSnap.val() || {};
+        categories = Object.entries(catData).map(([id, d]) => ({ id, ...d }));
+        
+        try {
+          const adjSnap = await firebase.database().ref('stock_adjustments').limitToLast(100).once('value');
+          const adjData = adjSnap.val() || {};
+          adjustments = Object.entries(adjData).map(([id, d]) => ({ id, ...d }));
+        } catch (adjError) {
+          console.warn('Gagal memuat riwayat penyesuaian:', adjError);
+          adjustments = [];
+        }
+        
+        updateStats();
+        renderTable();
+        renderFilters();
+        
+      } catch (error) {
+        console.error('Error loading data:', error);
+        showToast('Gagal memuat data produk: ' + error.message, 'error');
+      } finally {
+        showLoading(false);
+      }
     }
-    
-    updateStats();
-    renderTable();
-    renderFilters();
-    
-  } catch (error) {
-    console.error('Error loading data:', error);
-    showToast('Gagal memuat data produk: ' + error.message, 'error');
-  } finally {
-    showLoading(false);
-  }
-}
 
     function updateStats() {
       const total = products.length;
@@ -825,7 +939,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       function update(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        const easeProgress = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
         const current = Math.round(start + (value - start) * easeProgress);
         
         el.textContent = formatNumber(current);
@@ -854,6 +968,34 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         else if (statusFilter === 'ok') matchStatus = p.stock > 5;
         
         return matchSearch && matchCat && matchStatus;
+      });
+      
+      filtered.sort((a, b) => {
+        let valA, valB;
+        
+        if (sortColumn === 'name') {
+          valA = (a.name || '').toLowerCase();
+          valB = (b.name || '').toLowerCase();
+        } else if (sortColumn === 'stock') {
+          valA = parseInt(a.stock) || 0;
+          valB = parseInt(b.stock) || 0;
+        } else if (sortColumn === 'category') {
+          const catA = categories.find(c => c.id === a.categoryId);
+          const catB = categories.find(c => c.id === b.categoryId);
+          valA = (catA?.name || '').toLowerCase();
+          valB = (catB?.name || '').toLowerCase();
+        }
+        
+        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+      
+      document.querySelectorAll('.data-table th').forEach(th => {
+        th.classList.remove('sort-asc', 'sort-desc');
+        if (th.dataset.sort === sortColumn) {
+          th.classList.add(sortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+        }
       });
       
       if (filtered.length === 0) {
@@ -887,23 +1029,23 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         
         return `
           <tr>
-            <td>
+            <td data-label="">
               <div style="font-weight:600;color:var(--text-primary);">${p.name}</div>
               <div style="font-size:.8rem;color:var(--text-muted);margin-top:2px;">${p.code || 'No Code'}</div>
             </td>
-            <td>
+            <td data-label="Kategori:">
               <span style="background:var(--bg-secondary);padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8rem;color:var(--text-secondary);">
                 ${cat ? cat.name : '-'}
               </span>
             </td>
-            <td class="text-center ${stockClass}" style="font-size:1.1rem;font-weight:700;">
+            <td class="text-center ${stockClass}" data-label="Stok:" style="font-size:1.1rem;font-weight:700;">
               ${formatNumber(p.stock || 0)}
             </td>
-            <td class="text-center hide-mobile" style="color:var(--text-muted);">
+            <td data-label="Satuan:" class="hide-mobile" style="color:var(--text-muted);">
               ${p.unit || 'pcs'}
             </td>
-            <td>${statusBadge}</td>
-            <td class="text-center">
+            <td data-label="Status:">${statusBadge}</td>
+            <td data-label="" class="text-center">
               <div class="action-btns">
                 <button class="btn-action btn-edit" onclick="quickAdjust('${p.id}')" title="Penyesuaian Stok">
                   <i class="fas fa-edit"></i>
@@ -930,16 +1072,52 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       }
     }
 
+    // ===== SORTING FUNCTIONS =====
+    function setupSorting() {
+      const headers = document.querySelectorAll('.data-table th');
+      
+      headers.forEach((th, index) => {
+        const sortMap = ['name', 'category', 'stock', null, 'status', null];
+        
+        if (sortMap[index]) {
+          th.classList.add('sortable');
+          th.dataset.sort = sortMap[index];
+          
+          th.addEventListener('click', () => {
+            const column = sortMap[index];
+            
+            if (sortColumn === column) {
+              sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+              sortColumn = column;
+              sortDirection = 'asc';
+            }
+            
+            renderTable();
+            showToast(`Diurutkan berdasarkan ${getColumnLabel(column)} ${sortDirection === 'asc' ? '(A-Z/0-9)' : '(Z-A/9-0)'}`, 'info');
+          });
+        }
+      });
+    }
+
+    function getColumnLabel(col) {
+      const labels = {
+        'name': 'Nama Produk',
+        'category': 'Kategori',
+        'stock': 'Stok',
+        'status': 'Status'
+      };
+      return labels[col] || col;
+    }
+
     // ===== MODAL FUNCTIONS =====
     function openAdjustmentModal() {
       const modal = document.getElementById('adjustmentModal');
       const select = document.getElementById('adjProduct');
       
-      // Populate product select
       select.innerHTML = '<option value="">-- Pilih Produk --</option>' + 
         products.map(p => `<option value="${p.id}">${p.name} (Stok: ${formatNumber(p.stock || 0)})</option>`).join('');
       
-      // Reset form
       document.getElementById('adjType').value = 'in';
       document.getElementById('adjQty').value = '';
       document.getElementById('adjNote').value = '';
@@ -1024,7 +1202,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       try {
         showLoading(true);
         
-        // Save adjustment record
         await firebase.database().ref('stock_adjustments').push({
           productId,
           productName: product.name,
@@ -1037,7 +1214,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           user: currentUser?.name || 'System'
         });
         
-        // Update product stock
         await firebase.database().ref(`products/${productId}`).update({
           stock: newStock,
           lastUpdated: Date.now()
@@ -1045,7 +1221,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         
         showToast('Penyesuaian stok berhasil disimpan', 'success');
         closeAdjustmentModal();
-        loadData(); // Refresh
+        loadData();
         
       } catch (error) {
         console.error('Error saving adjustment:', error);
@@ -1154,14 +1330,12 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     
     document.getElementById('btnExport').addEventListener('click', exportCSV);
 
-    // Close modals on outside click
     document.querySelectorAll('.modal-overlay').forEach(modal => {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) modal.classList.remove('active');
       });
     });
 
-    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
@@ -1201,7 +1375,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         return;
       }
       
-      // Load user info
       firebase.database().ref('users/' + user.uid).once('value').then(snap => {
         const data = snap.val() || {};
         currentUser = { ...user, ...data };
@@ -1209,7 +1382,9 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         document.getElementById('userRole').textContent = data.role || 'Kasir';
       });
       
-      loadData();
+      loadData().then(() => {
+        setupSorting();
+      });
     });
   </script>
 </body>
