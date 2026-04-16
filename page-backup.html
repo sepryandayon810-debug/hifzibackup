@@ -649,6 +649,30 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       color: var(--text-muted);
       margin-bottom: 0.5rem;
     }
+
+    /* History Card Collapse */
+.history-card.collapsed .history-list {
+  display: none !important;
+}
+
+.history-card.collapsed .history-header {
+  border-bottom: none !important;
+}
+
+#historyToggleIcon {
+  transition: transform 0.3s ease;
+}
+
+.history-card.collapsed #historyToggleIcon {
+  transform: rotate(-90deg);
+}
+
+/* Hover effect untuk header yang bisa diklik */
+#historyHeader:hover {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+}
+    
   </style>
 </head>
 <body>
@@ -952,14 +976,15 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           </div>
         </div>
 
-        <!-- History -->
-        <div class="history-card">
-          <div class="history-header">
+                <!-- History -->
+        <div class="history-card" id="historyCard">
+          <div class="history-header" id="historyHeader" style="cursor: pointer;">
             <h3 class="history-title">
               <i class="fas fa-history"></i>
               Riwayat Backup
+              <i class="fas fa-chevron-down" id="historyToggleIcon" style="margin-left: 0.5rem; font-size: 0.8rem; transition: transform 0.3s;"></i>
             </h3>
-            <button class="btn btn-outline" id="btnClearHistory">
+            <button class="btn btn-outline" id="btnClearHistory" onclick="event.stopPropagation();">
               <i class="fas fa-trash"></i>
               Hapus Riwayat
             </button>
@@ -1082,16 +1107,35 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           Utils.showToast('Fitur auto backup akan segera hadir', 'info');
         });
 
-        // Clear history
+                // Clear history
         document.getElementById('btnClearHistory').addEventListener('click', () => {
           Utils.confirm('Hapus semua riwayat backup?', () => {
             localStorage.removeItem('backup_history');
             loadHistory();
             Utils.showToast('Riwayat berhasil dihapus', 'success');
           });
-        });
+        });  // ← TUTUP EVENT LISTENER DI SINI
 
-        // Sidebar toggle
+        // ✅ TAMBAHKAN INI DI LUAR (setelah tutup kurung di atas):
+        // Collapse/Expand History
+        const historyHeader = document.getElementById('historyHeader');
+        const historyCard = document.getElementById('historyCard');
+        const historyToggleIcon = document.getElementById('historyToggleIcon');
+        
+        // Check saved state
+        const isHistoryCollapsed = localStorage.getItem('webpos_history_collapsed') === 'true';
+        if (isHistoryCollapsed) {
+          historyCard.classList.add('collapsed');
+        }
+        
+        historyHeader.addEventListener('click', (e) => {
+          // Don't trigger if clicking the delete button
+          if (e.target.closest('#btnClearHistory')) return;
+          
+          historyCard.classList.toggle('collapsed');
+          localStorage.setItem('webpos_history_collapsed', historyCard.classList.contains('collapsed'));
+        });
+        
         // Sidebar toggle - Desktop (collapse/expand)
 document.getElementById('menuToggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('collapsed');
