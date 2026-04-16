@@ -382,32 +382,36 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     margin-bottom: -2px !important;
   }
   
-  /* ===== SUMMARY CARDS FIX ===== */
+    /* ===== SUMMARY CARDS FIX - GRID 2x2 ===== */
   .summary-cards {
-    display: flex !important;
-    flex-wrap: nowrap !important; /* Penting: jangan wrap ke bawah */
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    scrollbar-width: none !important;
-    gap: 0.75rem !important;
-    margin-bottom: 1.25rem !important;
-    padding: 0.25rem 0.25rem 0.5rem 0.25rem !important; /* Padding bottom untuk shadow */
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important; /* 2 kolom */
+    gap: 0.625rem !important;
+    margin-bottom: 1rem !important;
+    padding: 0 !important;
     width: 100% !important;
+    overflow-x: visible !important; /* Hapus scroll */
   }
   
-  .summary-cards::-webkit-scrollbar {
-    display: none !important;
-  }
-  
-    .summary-card {
-    flex: 0 0 auto !important;
-    min-width: 180px !important;
-    max-width: 180px !important;
-    width: 180px !important;
-    scroll-snap-align: start !important;
-    padding: 0.75rem !important;
+  .summary-card {
+    flex: none !important; /* Hapus flex */
+    min-width: auto !important;
+    max-width: none !important;
+    width: 100% !important; /* Isi kolom penuh */
+    scroll-snap-align: none !important;
+    padding: 0.625rem !important;
     gap: 0.5rem !important;
     margin-bottom: 0 !important;
+  }
+  
+  .summary-card-icon {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.9rem !important;
+  }
+  
+  .summary-card-value {
+    font-size: 1rem !important;
   }
   
   .summary-card-icon {
@@ -582,6 +586,55 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
   .transaction-type {
     padding: 0.25rem 0.5rem !important;
     font-size: 0.7rem !important;
+  }
+}
+
+/* ===== TABLE MOBILE - HANYA 4 KOLOM ===== */
+@media (max-width: 768px) {
+  /* Sembunyikan kolom: Tipe (4), Metode (5), Kasir (6), Total (7) */
+  .transaction-table thead th:nth-child(4),
+  .transaction-table thead th:nth-child(5),
+  .transaction-table thead th:nth-child(6),
+  .transaction-table thead th:nth-child(7),
+  .transaction-table tbody tr.data-row td:nth-child(4),
+  .transaction-table tbody tr.data-row td:nth-child(5),
+  .transaction-table tbody tr.data-row td:nth-child(6),
+  .transaction-table tbody tr.data-row td:nth-child(7) {
+    display: none !important;
+  }
+  
+  /* Atur ulang lebar kolom yang tersisa */
+  .transaction-table thead th:nth-child(1), /* Expand */
+  .transaction-table tbody tr.data-row td:nth-child(1) {
+    width: 36px !important;
+    padding: 0.5rem 0.25rem !important;
+  }
+  
+  .transaction-table thead th:nth-child(2), /* ID/Deskripsi */
+  .transaction-table tbody tr.data-row td:nth-child(2) {
+    min-width: 120px !important;
+    max-width: 150px !important;
+  }
+  
+  .transaction-table thead th:nth-child(3), /* Tanggal */
+  .transaction-table tbody tr.data-row td:nth-child(3) {
+    min-width: 80px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .transaction-table thead th:nth-child(8), /* Aksi */
+  .transaction-table tbody tr.data-row td:nth-child(8) {
+    width: auto !important;
+    min-width: 100px !important;
+    text-align: center !important;
+  }
+  
+  /* Tombol aksi lebih compact */
+  .transaction-table td:last-child .btn-sm {
+    padding: 0.3rem 0.4rem !important;
+    font-size: 0.7rem !important;
+    min-width: 28px !important;
+    height: 28px !important;
   }
 }
     
