@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Laporan Barang Terlaris - WebPOS Hifzi Cell</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  
+  <!-- WebPOS Utils -->
+  <script src="js/utils.js"></script>
+  <script src="js/firebase-config.js"></script>
+  
+  <style>
+    :root {
+      --primary: #f97316;
+      --primary-dark: #ea580c;
+      --secondary: #3b82f6;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --bg-dark: #1e293b;
+      --bg-light: #f8fafc;
+      --card-bg: #ffffff;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --border: #e2e8f0;
+      --radius-xl: 1rem;
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+    
+    [data-theme="dark"] {
+      --card-bg: #334155;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --border: #475569;
+      --bg-light: #0f172a;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-primary);
+    }
+    
+    /* Sidebar Styles */
+    .sidebar {
+      width: 260px;
+      background: var(--bg-dark);
+      color: white;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 1000;
+      transition: transform 0.3s ease;
+    }
+    
+    .sidebar-header {
+      padding: 1.5rem;
+      background: rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    
+    .sidebar-logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    
+    .nav-section {
+      margin: 0.5rem 0;
+    }
+    
+    .nav-header {
+      padding: 0.75rem 1.25rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    
+    .nav-item {
+      padding: 0.875rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+    
+    .nav-item:hover, .nav-item.active {
+      background: rgba(249,115,22,0.15);
+      border-left-color: var(--primary);
+      color: var(--primary);
+    }
+    
+    .nav-dropdown {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      background: rgba(0,0,0,0.1);
+    }
+    
+    .nav-dropdown.open {
+      max-height: 500px;
+    }
+    
+    .nav-subitem {
+      padding: 0.75rem 1.25rem 0.75rem 3.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .nav-subitem:hover, .nav-subitem.active {
+      color: var(--primary);
+      background: rgba(249,115,22,0.1);
+    }
+    
+    .nav-arrow {
+      margin-left: auto;
+      transition: transform 0.3s;
+      font-size: 0.75rem;
+    }
+    
+    .nav-item.open .nav-arrow {
+      transform: rotate(180deg);
+    }
+    
+    /* Sidebar User */
+    .sidebar-user {
+      padding: 1rem;
+      background: rgba(0,0,0,0.2);
+      margin-top: auto;
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+    
+    .user-details h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    
+    .user-details p {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+    
+    /* Main Content */
+    .main-content {
+      margin-left: 260px;
+      min-height: 100vh;
+      transition: margin-left 0.3s ease;
+    }
+    
+    /* Top Header */
+    .top-header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      padding: 0.5rem;
+    }
+    
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .theme-toggle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-primary);
+      transition: all 0.2s;
+    }
+    
+    .theme-toggle:hover {
+      background: var(--bg-light);
+      transform: rotate(180deg);
+    }
+    
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem;
+      border-radius: var(--radius-xl);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .user-profile:hover {
+      background: var(--bg-light);
+    }
+    
+    /* Content Area */
+    .content-area {
+      padding: 1.5rem;
+    }
+    
+    .page-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+    
+    .page-subtitle {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+    }
+    
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .card-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .stat-card {
+      background: var(--card-bg);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .stat-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+    
+    .stat-icon.orange { background: #fff7ed; color: #ea580c; }
+    .stat-icon.blue { background: #eff6ff; color: #2563eb; }
+    .stat-icon.green { background: #f0fdf4; color: #16a34a; }
+    .stat-icon.purple { background: #faf5ff; color: #9333ea; }
+    
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    
+    /* Filter Section */
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .form-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    
+    .form-input, .form-select {
+      padding: 0.625rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      background: var(--card-bg);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+    }
+    
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    
+    /* Chart Container */
+    .chart-container {
+      position: relative;
+      height: 300px;
+      margin: 1.5rem 0;
+    }
+    
+    /* Table Styles */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .data-table th {
+      text-align: left;
+      padding: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-bottom: 2px solid var(--border);
+      font-size: 0.875rem;
+      white-space: nowrap;
+    }
+    
+    .data-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    
+    .rank-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.875rem;
+    }
+    
+    .rank-1 { background: #ffd700; color: #92400e; }
+    .rank-2 { background: #c0c0c0; color: #374151; }
+    .rank-3 { background: #cd7f32; color: white; }
+    .rank-other { background: #e2e8f0; color: #64748b; }
+    
+    .product-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .product-img {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: var(--bg-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+    
+    .product-name {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    
+    .product-code {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    
+    .trend-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    .trend-up { background: #d1fae5; color: #065f46; }
+    .trend-down { background: #fee2e2; color: #991b1b; }
+    .trend-flat { background: #f1f5f9; color: #64748b; }
+    
+    /* Buttons */
+    .btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 0.75rem;
+      border: none;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+    
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+    
+    .btn-outline:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-secondary);
+    }
+    
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+    
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+    
+    .tab {
+      padding: 0.75rem 1.25rem;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+    
+    .tab:hover {
+      color: var(--primary);
+    }
+    
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      
+      .main-content {
+        margin-left: 0;
+      }
+      
+      .menu-toggle {
+        display: block;
+      }
+      
+      .top-header h2 {
+        display: none;
+      }
+      
+      .content-area {
+        padding: 1rem;
+      }
+      
+      .card {
+        padding: 1rem;
+      }
+      
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .filter-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .chart-container {
+        height: 200px;
+      }
+      
+      .data-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+    
+    /* Overlay for mobile */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar-overlay.active {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <i class="fas fa-bolt text-orange-500 mr-2"></i>HIFZI CELL
+      </div>
+      <p class="text-xs text-gray-400 mt-1">WebPOS System</p>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-header">Utama</div>
+      <div class="nav-item" onclick="window.location.href='page-dashboard.html'">
+        <i class="fas fa-home w-5"></i>
+        <span>Dashboard</span>
+      </div>
+      <div class="nav-item" onclick="window.location.href='page-kasir.html'">
+        <i class="fas fa-cash-register w-5"></i>
+        <span>Kasir</span>
+      </div>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-header">Transaksi</div>
+      <div class="nav-item" onclick="toggleDropdown(this)">
+        <i class="fas fa-exchange-alt w-5"></i>
+        <span>Riwayat</span>
+        <i class="fas fa-chevron-down nav-arrow"></i>
+      </div>
+      <div class="nav-dropdown">
+        <div class="nav-subitem" onclick="window.location.href='page-riwayat-transaksi.html'">
+          <i class="fas fa-receipt w-4"></i>
+          <span>Riwayat Transaksi</span>
+        </div>
+        <div class="nav-subitem" onclick="window.location.href='page-riwayat-modal.html'">
+          <i class="fas fa-wallet w-4"></i>
+          <span>Riwayat Modal</span>
+        </div>
+      </div>
+      
+      <div class="nav-item" onclick="window.location.href='page-hutang.html'">
+        <i class="fas fa-hand-holding-usd w-5"></i>
+        <span>Hutang</span>
+      </div>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-header">Inventori</div>
+      <div class="nav-item" onclick="window.location.href='page-produk.html'">
+        <i class="fas fa-box w-5"></i>
+        <span>Produk</span>
+      </div>
+      <div class="nav-item" onclick="window.location.href='page-pembelian.html'">
+        <i class="fas fa-cart-plus w-5"></i>
+        <span>Pembelian</span>
+      </div>
+      <div class="nav-item active" onclick="toggleDropdown(this)">
+        <i class="fas fa-chart-bar w-5"></i>
+        <span>Laporan</span>
+        <i class="fas fa-chevron-down nav-arrow"></i>
+      </div>
+      <div class="nav-dropdown open">
+        <div class="nav-subitem" onclick="window.location.href='page-laporan-penjualan.html'">
+          <i class="fas fa-chart-line w-4"></i>
+          <span>Laporan Penjualan</span>
+        </div>
+        <div class="nav-subitem" onclick="window.location.href='page-laporan-stok.html'">
+          <i class="fas fa-boxes w-4"></i>
+          <span>Laporan Stok</span>
+        </div>
+        <div class="nav-subitem active" onclick="window.location.href='page-laporan-terlaris.html'">
+          <i class="fas fa-crown w-4"></i>
+          <span>Barang Terlaris</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-header">Keuangan</div>
+      <div class="nav-item" onclick="window.location.href='page-kas.html'">
+        <i class="fas fa-vault w-5"></i>
+        <span>Kas</span>
+      </div>
+      <div class="nav-item" onclick="toggleDropdown(this)">
+        <i class="fas fa-university w-5"></i>
+        <span>Rekening</span>
+        <i class="fas fa-chevron-down nav-arrow"></i>
+      </div>
+      <div class="nav-dropdown">
+        <div class="nav-subitem" onclick="window.location.href='page-rekening.html'">
+          <i class="fas fa-list w-4"></i>
+          <span>Daftar Rekening</span>
+        </div>
+        <div class="nav-subitem" onclick="window.location.href='page-topup.html'">
+          <i class="fas fa-arrow-down w-4"></i>
+          <span>Top Up</span>
+        </div>
+        <div class="nav-subitem" onclick="window.location.href='page-tarik.html'">
+          <i class="fas fa-arrow-up w-4"></i>
+          <span>Tarik Tunai</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-header">Sistem</div>
+      <div class="nav-item" onclick="window.location.href='page-backup.html'">
+        <i class="fas fa-cloud-upload-alt w-5"></i>
+        <span>Backup & Sync</span>
+      </div>
+      <div class="nav-item" onclick="toggleDropdown(this)">
+        <i class="fas fa-cog w-5"></i>
+        <span>Pengaturan</span>
+        <i class="fas fa-chevron-down nav-arrow"></i>
+      </div>
+      <div class="nav-dropdown">
+        <div class="nav-subitem" onclick="window.location.href='page-log-aktivitas.html'">
+          <i class="fas fa-history w-4"></i>
+          <span>Log Aktivitas</span>
+        </div>
+        <div class="nav-subitem" onclick="window.location.href='page-reset.html'">
+          <i class="fas fa-trash-alt w-4"></i>
+          <span>Reset Data</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="sidebar-user">
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div class="user-details">
+          <h4 id="userName">Loading...</h4>
+          <p id="userRole">Admin</p>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Header -->
+    <header class="top-header">
+      <button class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+      </button>
+      <h2 class="font-semibold text-lg">Laporan Barang Terlaris</h2>
+      <div class="header-actions">
+        <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode">
+          <i class="fas fa-moon"></i>
+        </button>
+        <div class="user-profile">
+          <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-semibold text-sm" id="headerAvatar">A</div>
+          <span class="text-sm font-medium hidden md:block" id="headerUserName">Admin</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <h1 class="page-title">Barang Terlaris</h1>
+      <p class="page-subtitle">Analisis produk dengan penjualan tertinggi</p>
+      
+      <!-- Summary Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon orange">
+              <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div>
+              <div class="stat-label">Total Produk Terjual</div>
+              <div class="stat-value" id="statTotalSold">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon green">
+              <i class="fas fa-money-bill-wave"></i>
+            </div>
+            <div>
+              <div class="stat-label">Total Pendapatan</div>
+              <div class="stat-value" id="statRevenue">Rp 0</div>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon blue">
+              <i class="fas fa-cube"></i>
+            </div>
+            <div>
+              <div class="stat-label">Produk Teraktif</div>
+              <div class="stat-value" id="statActiveProducts">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon purple">
+              <i class="fas fa-trophy"></i>
+            </div>
+            <div>
+              <div class="stat-label">Best Seller</div>
+              <div class="stat-value" id="statBestSeller">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Filter Card -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-filter mr-2"></i>Periode Laporan</h3>
+        </div>
+        <div class="filter-grid">
+          <div class="form-group">
+            <label class="form-label">Rentang Waktu</label>
+            <select class="form-select" id="filterPeriod" onchange="loadReport()">
+              <option value="today">Hari Ini</option>
+              <option value="week">7 Hari Terakhir</option>
+              <option value="month" selected>30 Hari Terakhir</option>
+              <option value="year">Tahun Ini</option>
+              <option value="all">Semua Waktu</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kategori</label>
+            <select class="form-select" id="filterCategory" onchange="loadReport()">
+              <option value="all">Semua Kategori</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Batas Tampil</label>
+            <select class="form-select" id="filterLimit" onchange="loadReport()">
+              <option value="10">Top 10</option>
+              <option value="20" selected>Top 20</option>
+              <option value="50">Top 50</option>
+              <option value="100">Top 100</option>
+            </select>
+          </div>
+          <div class="form-group" style="display: flex; align-items: flex-end; gap: 0.5rem;">
+            <button class="btn btn-primary w-full" onclick="loadReport()">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button class="btn btn-outline" onclick="exportReport()" title="Export">
+              <i class="fas fa-download"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Chart Card -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-chart-bar mr-2"></i>Grafik Penjualan</h3>
+        </div>
+        <div class="chart-container">
+          <canvas id="salesChart"></canvas>
+        </div>
+      </div>
+      
+      <!-- Ranking Table -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-list-ol mr-2"></i>Ranking Penjualan</h3>
+        </div>
+        
+        <div id="tableContainer">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Produk</th>
+                <th>Terjual</th>
+                <th>Pendapatan</th>
+                <th>Tren</th>
+              </tr>
+            </thead>
+            <tbody id="rankingTableBody">
+              <tr>
+                <td colspan="5" class="empty-state">
+                  <div class="empty-icon"><i class="fas fa-chart-bar"></i></div>
+                  <p>Memuat data...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // State
+    let salesChart = null;
+    let rankingData = [];
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      initTheme();
+      initSidebar();
+      initAuth();
+      loadCategories();
+      loadReport();
+    });
+
+    // Theme Toggle
+    function initTheme() {
+      const savedTheme = localStorage.getItem('webpos_dark_mode');
+      if (savedTheme === 'true') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i>';
+      }
+      
+      document.getElementById('themeToggle').addEventListener('click', function() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (isDark) {
+          document.documentElement.removeAttribute('data-theme');
+          localStorage.setItem('webpos_dark_mode', 'false');
+          this.innerHTML = '<i class="fas fa-moon"></i>';
+        } else {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          localStorage.setItem('webpos_dark_mode', 'true');
+          this.innerHTML = '<i class="fas fa-sun"></i>';
+        }
+        // Re-render chart with new theme
+        loadReport();
+      });
+    }
+
+    // Sidebar
+    function initSidebar() {
+      const menuToggle = document.getElementById('menuToggle');
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      
+      menuToggle.addEventListener('click', function() {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+      });
+      
+      overlay.addEventListener('click', function() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+      });
+    }
+
+    function toggleDropdown(element) {
+      element.classList.toggle('open');
+      const dropdown = element.nextElementSibling;
+      if (dropdown && dropdown.classList.contains('nav-dropdown')) {
+        dropdown.classList.toggle('open');
+      }
+    }
+
+    // Auth
+    function initAuth() {
+      firebase.auth().onAuthStateChanged((user) => {
+        if (!user && !Utils.getStorage('webpos_session')) {
+          window.location.href = 'login.html';
+          return;
+        }
+        
+        if (user) {
+          firebase.database().ref('users/' + user.uid).once('value').then(snap => {
+            const data = snap.val() || {};
+            const name = data.name || user.email || 'Admin';
+            document.getElementById('userName').textContent = name;
+            document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+            document.getElementById('headerUserName').textContent = name;
+            document.getElementById('headerAvatar').textContent = name.charAt(0).toUpperCase();
+          }).catch(err => {
+            console.error('Error loading user:', err);
+            document.getElementById('userName').textContent = user.email || 'Admin';
+          });
+        } else {
+          document.getElementById('userName').textContent = 'Admin';
+        }
+      });
+    }
+
+    // Load Categories
+    function loadCategories() {
+      const products = Utils.getStorage('webpos_products') || [];
+      const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+      const select = document.getElementById('filterCategory');
+      
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        select.appendChild(option);
+      });
+    }
+
+    // Load Report
+    function loadReport() {
+      const period = document.getElementById('filterPeriod').value;
+      const category = document.getElementById('filterCategory').value;
+      const limit = parseInt(document.getElementById('filterLimit').value);
+      
+      // Get transactions
+      let transactions = Utils.getStorage('webpos_transactions') || [];
+      
+      // Filter by date
+      const now = new Date();
+      transactions = transactions.filter(t => {
+        const tDate = new Date(t.timestamp || t.date);
+        
+        if (period === 'today') {
+          return tDate.toDateString() === now.toDateString();
+        } else if (period === 'week') {
+          const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+          return tDate >= weekAgo;
+        } else if (period === 'month') {
+          const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+          return tDate >= monthAgo;
+        } else if (period === 'year') {
+          return tDate.getFullYear() === now.getFullYear();
+        }
+        return true;
+      });
+      
+      // Aggregate sales by product
+      const productSales = {};
+      let totalSold = 0;
+      let totalRevenue = 0;
+      
+      transactions.forEach(t => {
+        if (t.items && Array.isArray(t.items)) {
+          t.items.forEach(item => {
+            const id = item.id || item.productId;
+            if (!id) return;
+            
+            // Filter by category
+            if (category !== 'all') {
+              const products = Utils.getStorage('webpos_products') || [];
+              const product = products.find(p => p.id === id);
+              if (!product || product.category !== category) return;
+            }
+            
+            if (!productSales[id]) {
+              productSales[id] = {
+                id: id,
+                name: item.name || 'Unknown',
+                code: item.code || '-',
+                category: item.category || '-',
+                quantity: 0,
+                revenue: 0
+              };
+            }
+            
+            const qty = parseInt(item.quantity) || 0;
+            const price = parseFloat(item.price) || 0;
+            
+            productSales[id].quantity += qty;
+            productSales[id].revenue += (qty * price);
+            totalSold += qty;
+            totalRevenue += (qty * price);
+          });
+        }
+      });
+      
+      // Convert to array and sort
+      rankingData = Object.values(productSales)
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, limit);
+      
+      // Update stats
+      document.getElementById('statTotalSold').textContent = totalSold.toLocaleString('id-ID');
+      document.getElementById('statRevenue').textContent = 'Rp ' + totalRevenue.toLocaleString('id-ID');
+      document.getElementById('statActiveProducts').textContent = Object.keys(productSales).length;
+      document.getElementById('statBestSeller').textContent = rankingData[0]?.name || '-';
+      
+      // Render
+      renderChart(rankingData.slice(0, 10));
+      renderTable(rankingData);
+    }
+
+    // Render Chart
+    function renderChart(data) {
+      const ctx = document.getElementById('salesChart').getContext('2d');
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      
+      if (salesChart) {
+        salesChart.destroy();
+      }
+      
+      salesChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.map(d => d.name.substring(0, 15) + (d.name.length > 15 ? '...' : '')),
+          datasets: [{
+            label: 'Jumlah Terjual',
+            data: data.map(d => d.quantity),
+            backgroundColor: 'rgba(249, 115, 22, 0.8)',
+            borderColor: 'rgba(249, 115, 22, 1)',
+            borderWidth: 1,
+            borderRadius: 6
+          }, {
+            label: 'Pendapatan (Rp)',
+            data: data.map(d => d.revenue),
+            backgroundColor: 'rgba(59, 130, 246, 0.8)',
+            borderColor: 'rgba(59, 130, 246, 1)',
+            borderWidth: 1,
+            borderRadius: 6,
+            yAxisID: 'y1'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                color: isDark ? '#f1f5f9' : '#1e293b'
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: isDark ? '#94a3b8' : '#64748b'
+              },
+              grid: {
+                color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'
+              }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: {
+                color: isDark ? '#94a3b8' : '#64748b'
+              },
+              grid: {
+                color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'
+              }
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              beginAtZero: true,
+              ticks: {
+                color: isDark ? '#94a3b8' : '#64748b',
+                callback: function(value) {
+                  return 'Rp ' + (value/1000).toFixed(0) + 'k';
+                }
+              },
+              grid: {
+                drawOnChartArea: false,
+              },
+            }
+          }
+        }
+      });
+    }
+
+    // Render Table
+    function renderTable(data) {
+      const tbody = document.getElementById('rankingTableBody');
+      
+      if (data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="empty-state">
+              <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+              <p>Tidak ada data penjualan</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      tbody.innerHTML = data.map((item, index) => {
+        const rank = index + 1;
+        const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
+        
+        // Calculate trend (mock - in real app compare with previous period)
+        const trend = Math.random() > 0.5 ? 'up' : Math.random() > 0.5 ? 'flat' : 'down';
+        const trendIcon = trend === 'up' ? 'fa-arrow-up' : trend === 'down' ? 'fa-arrow-down' : 'fa-minus';
+        const trendClass = trend === 'up' ? 'trend-up' : trend === 'down' ? 'trend-down' : 'trend-flat';
+        const trendText = trend === 'up' ? 'Naik' : trend === 'down' ? 'Turun' : 'Stabil';
+        
+        return `
+          <tr>
+            <td>
+              <div class="rank-badge ${rankClass}">${rank}</div>
+            </td>
+            <td>
+              <div class="product-info">
+                <div class="product-img">
+                  <i class="fas fa-box text-gray-400"></i>
+                </div>
+                <div>
+                  <div class="product-name">${item.name}</div>
+                  <div class="product-code">${item.code} • ${item.category}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <strong>${item.quantity.toLocaleString('id-ID')}</strong>
+              <div class="text-xs text-gray-500">unit</div>
+            </td>
+            <td>
+              <strong>Rp ${item.revenue.toLocaleString('id-ID')}</strong>
+              <div class="text-xs text-gray-500">pendapatan</div>
+            </td>
+            <td>
+              <span class="trend-indicator ${trendClass}">
+                <i class="fas ${trendIcon}"></i> ${trendText}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Export Report
+    function exportReport() {
+      const period = document.getElementById('filterPeriod').value;
+      const csvContent = [
+        ['Rank', 'Nama Produk', 'Kode', 'Kategori', 'Terjual', 'Pendapatan'],
+        ...rankingData.map((item, index) => [
+          index + 1,
+          item.name,
+          item.code,
+          item.category,
+          item.quantity,
+          item.revenue
+        ])
+      ].map(row => row.join(',')).join('\n');
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Laporan_Terlaris_${period}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      Utils.showToast('Laporan berhasil diexport', 'success');
+    }
+
+    // Expose functions
+    window.toggleDropdown = toggleDropdown;
+    window.loadReport = loadReport;
+    window.exportReport = exportReport;
+  </script>
+</body>
+</html>
