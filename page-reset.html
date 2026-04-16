@@ -261,51 +261,58 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   
   <style>
     .warning-card {
-      background: linear-gradient(135deg, #fef3c7, #fde68a);
-      border: 2px solid #f59e0b;
-      border-radius: var(--radius-xl);
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border: 2px solid #f59e0b;
+  border-radius: var(--radius-xl);
+  padding: 1rem;           /* Dari 1.5rem jadi 1rem */
+  margin-bottom: 1rem;   /* Dari 1.5rem jadi 1rem */
+}
 
-    .warning-header {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
+.warning-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;          /* Dari 1rem jadi 0.75rem */
+  margin-bottom: 0.75rem; /* Dari 1rem jadi 0.75rem */
+}
 
-    .warning-icon {
-      width: 56px;
-      height: 56px;
-      background: #f59e0b;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      color: white;
-    }
+.warning-icon {
+  width: 40px;           /* Dari 56px jadi 40px */
+  height: 40px;          /* Dari 56px jadi 40px */
+  background: #f59e0b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;     /* Dari 1.5rem jadi 1.1rem */
+  color: white;
+  flex-shrink: 0;        /* Supaya tidak menyusut */
+}
 
-    .warning-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #92400e;
-    }
+.warning-title {
+  font-size: 1rem;       /* Dari 1.25rem jadi 1rem */
+  font-weight: 700;
+  color: #92400e;
+}
 
-    .warning-text {
-      color: #a16207;
-      line-height: 1.6;
-    }
+.warning-text {
+  color: #a16207;
+  line-height: 1.5;      /* Dari 1.6 jadi 1.5 */
+  font-size: 0.875rem;   /* Tambahkan ukuran font lebih kecil */
+}
 
-    .warning-text ul {
-      margin-left: 1.5rem;
-      margin-top: 0.5rem;
-    }
+.warning-text p {
+  margin-bottom: 0.5rem; /* Tambah jarak antar paragraf dan list */
+}
 
-    .warning-text li {
-      margin-bottom: 0.25rem;
-    }
+.warning-text ul {
+  margin-left: 1.25rem;  /* Dari 1.5rem jadi 1.25rem */
+  margin-top: 0.25rem;   /* Dari 0.5rem jadi 0.25rem */
+  margin-bottom: 0;
+}
+
+.warning-text li {
+  margin-bottom: 0.15rem; /* Dari 0.25rem jadi 0.15rem */
+}
 
     .reset-container {
       display: grid;
