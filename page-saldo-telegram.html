@@ -644,6 +644,191 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       0%, 100% { opacity: 1; }
       50% { opacity: .5; }
     }
+
+    /* ============================================
+   RESPONSIVE CARD TELEGRAM - MOBILE FIX
+   ============================================ */
+
+/* Desktop - Ukuran normal */
+.telegram-status-card {
+  background: linear-gradient(135deg, #0088cc 0%, #00a8e8 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3);
+}
+
+.telegram-icon {
+  width: 70px;
+  height: 70px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 2rem;
+}
+
+.telegram-status-card h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.telegram-status-card p {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-bottom: 1.5rem;
+}
+
+.saldo-display {
+  background: rgba(255,255,255,0.2);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.saldo-amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+}
+
+/* Mobile - Diperkecil */
+@media screen and (max-width: 768px) {
+  .telegram-status-card {
+    padding: 1rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .telegram-icon {
+    width: 45px;
+    height: 45px;
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .telegram-status-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .telegram-status-card p {
+    font-size: 0.75rem;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+  }
+  
+  .saldo-display {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .saldo-display label {
+    font-size: 0.75rem;
+  }
+  
+  .saldo-amount {
+    font-size: 1.75rem;
+    margin: 0.25rem 0;
+  }
+  
+  .btn-disconnect {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* ============================================
+   TOGGLE KONFIGURASI - COLLAPSE/EXPAND
+   ============================================ */
+
+.config-toggle-btn {
+  width: 100%;
+  background: var(--card-bg, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.config-toggle-btn:hover {
+  background: var(--hover-bg, #f1f5f9);
+  border-color: var(--primary-color, #0088cc);
+}
+
+.config-toggle-btn i:first-child {
+  margin-right: 0.5rem;
+  color: var(--primary-color, #0088cc);
+}
+
+.toggle-icon {
+  transition: transform 0.3s ease;
+  color: var(--text-secondary, #64748b);
+}
+
+.config-toggle-btn.active .toggle-icon {
+  transform: rotate(180deg);
+}
+
+/* Section Konfigurasi dengan animasi */
+.telegram-config {
+  background: var(--card-bg, white);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  max-height: 2000px; /* Nilai besar untuk animasi */
+  opacity: 1;
+  transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.3s ease;
+}
+
+.telegram-config.collapsed {
+  max-height: 0;
+  opacity: 0;
+  padding: 0 1.5rem;
+  margin: 0;
+  border: none;
+}
+
+.telegram-config:not(.collapsed) {
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Mobile - padding lebih kecil */
+@media screen and (max-width: 768px) {
+  .telegram-config:not(.collapsed) {
+    padding: 1rem;
+  }
+  
+  .config-toggle-btn {
+    padding: 0.875rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Dark mode support */
+.dark-mode .config-toggle-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+.dark-mode .telegram-config {
+  background: #1e293b;
+  border-color: #334155;
+}
+    
   </style>
 </head>
 <body>
@@ -978,11 +1163,16 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 
           <!-- Config Section -->
           <div>
-            <div class="config-card">
-              <h3 class="card-title">
-                <i class="fas fa-cog" style="color: var(--primary);"></i>
-                Konfigurasi
-              </h3>
+  <!-- ✅ TOMBOL TOGGLE KONFIGURASI -->
+  <button id="toggleConfig" class="config-toggle-btn">
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <i class="fas fa-cog" style="color: var(--primary);"></i>
+      <span>Konfigurasi</span>
+    </div>
+    <i class="fas fa-chevron-down toggle-icon" style="transition: transform 0.3s;"></i>
+  </button>
+
+  <div id="configSection" class="config-card collapsed" style="overflow: hidden; transition: all 0.3s ease;">
               
               <form id="configForm">
                 <div class="form-group">
@@ -1173,6 +1363,33 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
             Utils.showToast('Log berhasil dihapus', 'success');
           });
         });
+
+        // Toggle Konfigurasi
+const toggleBtn = document.getElementById('toggleConfig');
+const configSection = document.getElementById('configSection');
+
+if (toggleBtn && configSection) {
+  // Load saved state
+  const isVisible = localStorage.getItem('telegram_config_visible') === 'true';
+  if (isVisible) {
+    configSection.classList.remove('collapsed');
+    toggleBtn.classList.add('active');
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    const isCollapsed = configSection.classList.contains('collapsed');
+    
+    if (isCollapsed) {
+      configSection.classList.remove('collapsed');
+      toggleBtn.classList.add('active');
+      localStorage.setItem('telegram_config_visible', 'true');
+    } else {
+      configSection.classList.add('collapsed');
+      toggleBtn.classList.remove('active');
+      localStorage.setItem('telegram_config_visible', 'false');
+    }
+  });
+}
 
         // Sidebar toggle - Desktop (collapse/expand)
 document.getElementById('menuToggle').addEventListener('click', () => {
