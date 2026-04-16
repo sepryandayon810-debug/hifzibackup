@@ -605,8 +605,11 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
   </div>
 
   <script>
+      <script>
     // State
     let rankingData = [];
+    let cachedProducts = [];
+    let cachedCategories = [];
 
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
@@ -621,25 +624,59 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       });
     });
 
+    // Preload data dari Firebase
+    function preloadData() {
+      return Promise.all([
+        // Load produk
+        database.ref('products').once('value').then(snap => {
+          const data = snap.val() || {};
+          cachedProducts = Object.values(data);
+          Utils.setStorage('webpos_products', cachedProducts);
+          console.log('💾 Produk cached:', cachedProducts.length);
+        }).catch(() => {
+          cachedProducts = Utils.getStorage('webpos_products') || [];
+        }),
+        
+        // Load kategori
+        database.ref('categories').once('value').then(snap => {
+          const data = snap.val() || {};
+          cachedCategories = Object.values(data);
+          Utils.setStorage('webpos_categories', cachedCategories);
+          console.log('💾 Kategori cached:', cachedCategories.length);
+        }).catch(() => {
+          cachedCategories = Utils.getStorage('webpos_categories') || [];
+        })
+      ]);
+    }
+
     function initPage() {
       initTheme();
       initSidebar();
       initEventListeners();
-      loadCategories();
-      loadReport();
+      
+      // Preload data dulu, baru load kategori dan report
+      preloadData().then(() => {
+        loadCategories();
+        loadReport();
+      });
     }
 
     function initTheme() {
       const btnTheme = document.getElementById('btnTheme');
-      if (Utils.Theme.isDarkMode()) {
+      // Cek dari localStorage yang diset di page lain (setting)
+      const isDark = localStorage.getItem('webpos_dark_mode') === 'true';
+      
+      if (isDark) {
         document.documentElement.setAttribute('data-theme', 'dark');
         btnTheme.innerHTML = '<i class="fas fa-sun"></i>';
       }
       
       btnTheme.addEventListener('click', () => {
-        const isDark = Utils.Theme.toggleDarkMode();
-        btnTheme.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-        if (salesChart) loadReport(); // Re-render chart
+        const currentDark = localStorage.getItem('webpos_dark_mode') === 'true';
+        const newDark = !currentDark;
+        localStorage.setItem('webpos_dark_mode', newDark);
+        document.documentElement.setAttribute('data-theme', newDark ? 'dark' : 'light');
+        btnTheme.innerHTML = newDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
       });
     }
 
@@ -692,247 +729,289 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     }
 
     function loadCategories() {
-  const select = document.getElementById('filterCategory');
-  
-  // Kosongkan dulu (kecuali "Semua Kategori")
-  select.innerHTML = '<option value="all">Semua Kategori</option>';
-  
-  // Coba ambil dari Firebase (sama dengan riwayat)
-  database.ref('products').once('value')
-    .then(snapshot => {
-      const products = snapshot.val() || {};
-      const categories = new Set();
+      const select = document.getElementById('filterCategory');
+      select.innerHTML = '<option value="all">Semua Kategori</option>';
       
-      Object.values(products).forEach(p => {
-        if (p.category || p.kategori) {
-          categories.add(p.category || p.kategori);
+      // Gunakan cachedCategories jika ada
+      if (cachedCategories.length > 0) {
+        populateCategoryDropdown(cachedCategories);
+        return;
+      }
+      
+      // Coba ambil dari Firebase
+      database.ref('categories').once('value')
+        .then(snapshot => {
+          const data = snapshot.val() || {};
+          const cats = Object.values(data);
+          
+          if (cats.length > 0) {
+            populateCategoryDropdown(cats);
+            Utils.setStorage('webpos_categories', cats);
+          } else {
+            // Fallback: Ekstrak dari produk
+            extractFromProducts();
+          }
+        })
+        .catch(err => {
+          console.warn('⚠️ Error load categories:', err.message);
+          const cached = Utils.getStorage('webpos_categories');
+          if (cached && cached.length > 0) {
+            populateCategoryDropdown(cached);
+          } else {
+            extractFromProducts();
+          }
+        });
+    }
+
+    function populateCategoryDropdown(cats) {
+      const select = document.getElementById('filterCategory');
+      // Urutkan berdasarkan nama
+      cats.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      
+      cats.forEach(cat => {
+        if (cat.name) {
+          const option = document.createElement('option');
+          option.value = cat.id || cat.name;
+          option.textContent = cat.name;
+          select.appendChild(option);
         }
       });
       
-      // Fallback ke localStorage kalau Firebase kosong
-      if (categories.size === 0) {
-        const localProducts = Utils.getStorage('webpos_products') || [];
-        localProducts.forEach(p => {
-          if (p.category || p.kategori) {
-            categories.add(p.category || p.kategori);
-          }
-        });
+      console.log('✅ Kategori loaded:', cats.length);
+    }
+
+    function extractFromProducts() {
+      console.log('🔄 Fallback: Ekstrak kategori dari produk...');
+      const select = document.getElementById('filterCategory');
+      
+      if (cachedProducts.length > 0) {
+        processProductCategories(cachedProducts);
+        return;
       }
       
-      // Tambahkan ke dropdown
-      categories.forEach(cat => {
-        const option = document.createElement('option');
-        option.value = cat;
-        option.textContent = cat;
-        select.appendChild(option);
+      database.ref('products').once('value')
+        .then(snapshot => {
+          const data = snapshot.val() || {};
+          const products = Object.values(data);
+          processProductCategories(products);
+        })
+        .catch(err => {
+          console.error('❌ Gagal ekstrak dari produk:', err);
+        });
+    }
+
+    function processProductCategories(products) {
+      const select = document.getElementById('filterCategory');
+      const categoryMap = new Map();
+      
+      products.forEach(p => {
+        if (p.categoryId) {
+          const catName = p.categoryName || `Kategori ${p.categoryId.substr(0,6)}`;
+          categoryMap.set(p.categoryId, catName);
+        } else if (p.category || p.kategori) {
+          const catName = p.category || p.kategori;
+          categoryMap.set(catName, catName);
+        }
       });
       
-      console.log('📂 Kategori ditemukan:', categories.size);
-    })
-    .catch(err => {
-      console.warn('⚠️ Gagal load kategori dari Firebase:', err);
+      Array.from(categoryMap.entries())
+        .sort((a, b) => a[1].localeCompare(b[1]))
+        .forEach(([id, name]) => {
+          const option = document.createElement('option');
+          option.value = id;
+          option.textContent = name;
+          select.appendChild(option);
+        });
       
-      // Fallback ke localStorage
-      const products = Utils.getStorage('webpos_products') || [];
-      const categories = [...new Set(products.map(p => p.category || p.kategori).filter(Boolean))];
-      
-      categories.forEach(cat => {
-        const option = document.createElement('option');
-        option.value = cat;
-        option.textContent = cat;
-        select.appendChild(option);
-      });
-    });
-}
+      console.log('📂 Kategori dari produk:', categoryMap.size);
+    }
 
     function loadReport() {
-  Utils.showLoading();
-  
-  try {
-    const period = document.getElementById('filterPeriod').value;
-    const category = document.getElementById('filterCategory').value;
-    const limit = parseInt(document.getElementById('filterLimit').value);
-    
-    // Hitung rentang tanggal
-    const now = new Date();
-    let startDate, endDate;
-    
-    if (period === 'today') {
-      startDate = endDate = new Date(now);
-    } else if (period === 'week') {
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      endDate = new Date(now);
-    } else if (period === 'month') {
-      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      endDate = new Date(now);
-    } else if (period === 'year') {
-      startDate = new Date(now.getFullYear(), 0, 1);
-      endDate = new Date(now);
-    } else {
-      // all time - ambil 1 tahun terakhir untuk performa
-      startDate = new Date(now.getFullYear() - 1, 0, 1);
-      endDate = new Date(now);
-    }
-    
-    // Generate array tanggal
-    const dates = [];
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      dates.push(d.toISOString().split('T')[0]);
-    }
-    
-    console.log('📅 Mengambil data dari', dates.length, 'hari');
-    
-    // Ambil semua transaksi PARALEL
-    Promise.all(
-      dates.map(dateStr => database.ref(`transactions/${dateStr}`).once('value'))
-    ).then(snapshots => {
-      let allTransactions = [];
+      Utils.showLoading();
       
-      snapshots.forEach((snap, idx) => {
-        const trans = snap.val() || {};
-        Object.entries(trans).forEach(([id, data]) => {
-          // Hanya ambil transaksi penjualan yang sukses
-          if (data.type === 'penjualan' && data.status !== 'cancelled' && data.status !== 'returned') {
-            allTransactions.push({ id, dateKey: dates[idx], ...data });
-          }
-        });
-      });
-      
-      console.log('📊 Total transaksi penjualan:', allTransactions.length);
-      
-      // Aggregate by product
-      const productSales = {};
-      let totalSold = 0;
-      let totalRevenue = 0;
-      
-      allTransactions.forEach(t => {
-        // Gunakan struktur items yang sama dengan riwayat
-        const items = t.items || [];
-        if (!Array.isArray(items)) return;
+      try {
+        const period = document.getElementById('filterPeriod').value;
+        const category = document.getElementById('filterCategory').value;
+        const limit = parseInt(document.getElementById('filterLimit').value);
         
-        items.forEach(item => {
-          // Cari ID produk (sama dengan riwayat)
-          const id = item.productId || item.id;
-          if (!id) return;
+        // Hitung rentang tanggal
+        const now = new Date();
+        let startDate, endDate;
+        
+        if (period === 'today') {
+          startDate = endDate = new Date(now);
+        } else if (period === 'week') {
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          endDate = new Date(now);
+        } else if (period === 'month') {
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          endDate = new Date(now);
+        } else if (period === 'year') {
+          startDate = new Date(now.getFullYear(), 0, 1);
+          endDate = new Date(now);
+        } else {
+          // all time - ambil 1 tahun terakhir untuk performa
+          startDate = new Date(now.getFullYear() - 1, 0, 1);
+          endDate = new Date(now);
+        }
+        
+        // Generate array tanggal
+        const dates = [];
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+          dates.push(d.toISOString().split('T')[0]);
+        }
+        
+        console.log('📅 Mengambil data dari', dates.length, 'hari');
+        
+        // Ambil semua transaksi PARALEL
+        Promise.all(
+          dates.map(dateStr => database.ref(`transactions/${dateStr}`).once('value'))
+        ).then(snapshots => {
+          let allTransactions = [];
           
-          // Filter kategori jika dipilih
-          if (category !== 'all') {
-            // Cek dari data produk jika ada
-            const products = Utils.getStorage('webpos_products') || [];
-            const product = products.find(p => p.id === id || p.kode === id);
-
-            const itemCategory = item.category || item.kategori;
-            const productCategory = product ? (product.category || product.kategori) : null;
-            if (itemCategory !== category && productCategory !== category) return;
+          snapshots.forEach((snap, idx) => {
+            const trans = snap.val() || {};
+            Object.entries(trans).forEach(([id, data]) => {
+              if (data.type === 'penjualan' && data.status !== 'cancelled' && data.status !== 'returned') {
+                allTransactions.push({ id, dateKey: dates[idx], ...data });
+              }
+            });
+          });
+          
+          console.log('📊 Total transaksi penjualan:', allTransactions.length);
+          
+          // Aggregate by product
+          const productSales = {};
+          let totalSold = 0;
+          let totalRevenue = 0;
+          
+          allTransactions.forEach(t => {
+            const items = t.items || [];
+            if (!Array.isArray(items)) return;
+            
+            items.forEach(item => {
+              const id = item.productId || item.id;
+              if (!id) return;
+              
+              // Filter kategori
+              if (category !== 'all') {
+                const product = cachedProducts.find(p => p.id === id || p.code === id);
+                
+                const itemCategoryId = item.categoryId;
+                const productCategoryId = product ? product.categoryId : null;
+                const itemCategoryName = item.category || item.kategori;
+                const productCategoryName = product ? (product.category || product.kategori) : null;
+                
+                const matchById = itemCategoryId === category || productCategoryId === category;
+                const matchByName = itemCategoryName === category || productCategoryName === category;
+                
+                if (!matchById && !matchByName) return;
+              }
+              
+              if (!productSales[id]) {
+                productSales[id] = {
+                  id: id,
+                  name: item.name || item.nama || 'Unknown',
+                  code: item.code || item.kode || id,
+                  category: item.category || item.kategori || '-',
+                  quantity: 0,
+                  revenue: 0
+                };
+              }
+              
+              const qty = parseInt(item.qty || item.quantity || 0);
+              const price = parseFloat(item.price || item.harga || 0);
+              const subtotal = item.subtotal || (qty * price);
+              
+              productSales[id].quantity += qty;
+              productSales[id].revenue += subtotal;
+              totalSold += qty;
+              totalRevenue += subtotal;
+            });
+          });
+          
+          rankingData = Object.values(productSales)
+            .sort((a, b) => b.quantity - a.quantity)
+            .slice(0, limit);
+          
+          // Update stats
+          document.getElementById('statTotalSold').textContent = totalSold.toLocaleString('id-ID');
+          document.getElementById('statRevenue').textContent = 'Rp ' + totalRevenue.toLocaleString('id-ID');
+          document.getElementById('statActiveProducts').textContent = Object.keys(productSales).length;
+          document.getElementById('statBestSeller').textContent = rankingData[0]?.name?.substring(0, 12) + (rankingData[0]?.name?.length > 12 ? '...' : '') || '-';
+          
+          renderTable(rankingData);
+          
+          if (rankingData.length === 0) {
+            Utils.showToast('Tidak ada data penjualan untuk periode ini', 'warning');
           }
           
-          if (!productSales[id]) {
-            productSales[id] = {
-              id: id,
-              name: item.name || item.nama || item.productName || 'Unknown',
-              code: item.code || item.kode || id,
-              category: item.category || item.kategori || '-',
-              quantity: 0,
-              revenue: 0
-            };
-          }
+          Utils.hideLoading();
           
-          // Gunakan qty/quantity dan price/harga (sama dengan riwayat)
-          const qty = parseInt(item.qty || item.quantity || 0);
-          const price = parseFloat(item.price || item.harga || 0);
-          const subtotal = item.subtotal || (qty * price);
-          
-          productSales[id].quantity += qty;
-          productSales[id].revenue += subtotal;
-          totalSold += qty;
-          totalRevenue += subtotal;
+        }).catch(error => {
+          console.error('❌ Error Firebase:', error);
+          Utils.showToast('Gagal memuat data: ' + error.message, 'error');
+          Utils.hideLoading();
         });
-      });
+        
+      } catch (error) {
+        console.error('❌ Error:', error);
+        Utils.showToast('Error: ' + error.message, 'error');
+        Utils.hideLoading();
+      }
+    }
+    
+    function renderTable(data) {
+      const tbody = document.getElementById('rankingTableBody');
       
-      rankingData = Object.values(productSales)
-        .sort((a, b) => b.quantity - a.quantity)
-        .slice(0, limit);
-      
-      console.log('🏆 Ranking produk:', rankingData.length, 'items');
-      
-      // Update stats
-      document.getElementById('statTotalSold').textContent = totalSold.toLocaleString('id-ID');
-      document.getElementById('statRevenue').textContent = 'Rp ' + totalRevenue.toLocaleString('id-ID');
-      document.getElementById('statActiveProducts').textContent = Object.keys(productSales).length;
-      document.getElementById('statBestSeller').textContent = rankingData[0]?.name?.substring(0, 12) + (rankingData[0]?.name?.length > 12 ? '...' : '') || '-';
-      
-      renderTable(rankingData);
-      
-      if (rankingData.length === 0) {
-        Utils.showToast('Tidak ada data penjualan untuk periode ini', 'warning');
+      if (data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="empty-state">
+              <i class="fas fa-inbox"></i>
+              <p>Tidak ada data penjualan untuk periode ini</p>
+              <p style="font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.7;">
+                Pastikan sudah ada transaksi di halaman Kasir<br>
+                atau coba pilih periode "Semua Waktu"
+              </p>
+            </td>
+          </tr>
+        `;
+        return;
       }
       
-      Utils.hideLoading();
-      
-    }).catch(error => {
-      console.error('❌ Error Firebase:', error);
-      Utils.showToast('Gagal memuat data: ' + error.message, 'error');
-      Utils.hideLoading();
-    });
-    
-  } catch (error) {
-    console.error('❌ Error:', error);
-    Utils.showToast('Error: ' + error.message, 'error');
-    Utils.hideLoading();
-  }
-}
-    
-function renderTable(data) {
-  const tbody = document.getElementById('rankingTableBody');
-  
-  if (data.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="4" class="empty-state">
-          <i class="fas fa-inbox"></i>
-          <p>Tidak ada data penjualan untuk periode ini</p>
-          <p style="font-size: 0.75rem; margin-top: 0.5rem; opacity: 0.7;">
-            Pastikan sudah ada transaksi di halaman Kasir<br>
-            atau coba pilih periode "Semua Waktu"
-          </p>
-        </td>
-      </tr>
-    `;
-    return;
-  }
-  
-  tbody.innerHTML = data.map((item, index) => {
-    const rank = index + 1;
-    const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
-    
-    return `
-      <tr>
-        <td>
-          <div class="rank-badge ${rankClass}">${rank}</div>
-        </td>
-        <td>
-          <div class="product-info">
-            <div class="product-img">
-              <i class="fas fa-box"></i>
-            </div>
-            <div>
-              <div class="product-name">${item.name}</div>
-              <div class="product-meta">${item.code} • ${item.category}</div>
-            </div>
-          </div>
-        </td>
-        <td>
-          <strong>${item.quantity.toLocaleString('id-ID')}</strong>
-          <div style="font-size: 0.75rem; color: var(--text-muted);">unit</div>
-        </td>
-        <td>
-          <strong>Rp ${item.revenue.toLocaleString('id-ID')}</strong>
-          <div style="font-size: 0.75rem; color: var(--text-muted);">pendapatan</div>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
+      tbody.innerHTML = data.map((item, index) => {
+        const rank = index + 1;
+        const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
+        
+        return `
+          <tr>
+            <td>
+              <div class="rank-badge ${rankClass}">${rank}</div>
+            </td>
+            <td>
+              <div class="product-info">
+                <div class="product-img">
+                  <i class="fas fa-box"></i>
+                </div>
+                <div>
+                  <div class="product-name">${item.name}</div>
+                  <div class="product-meta">${item.code} • ${item.category}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <strong>${item.quantity.toLocaleString('id-ID')}</strong>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">unit</div>
+            </td>
+            <td>
+              <strong>Rp ${item.revenue.toLocaleString('id-ID')}</strong>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">pendapatan</div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
     
     function exportReport() {
       const period = document.getElementById('filterPeriod').value;
