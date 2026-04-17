@@ -1157,82 +1157,124 @@
       }
     }
 
-    function readFileAsDataURL(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = () => reject(new Error('Gagal membaca file'));
-        reader.readAsDataURL(file);
-      });
-    }
-
     function parseReceiptText(text) {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const fullText = text.toLowerCase();
   
-  // ===== DETEKSI APLIKASI/PENYEDIA =====
+  // ===== DETEKSI PROVIDER DENGAN BOBOT/PRIORITAS =====
   let detectedApp = '';
   let isEwallet = false;
   let isBank = false;
+  let confidenceBank = 0;
+  let confidenceEwallet = 0;
   
-  // E-Wallet / Top Up providers
-  if (fullText.includes('dana')) { detectedApp = 'DANA'; isEwallet = true; }
-  else if (fullText.includes('gopay') || fullText.includes('go-pay')) { detectedApp = 'GOPAY'; isEwallet = true; }
-  else if (fullText.includes('ovo')) { detectedApp = 'OVO'; isEwallet = true; }
-  else if (fullText.includes('shopeepay') || fullText.includes('shopee pay')) { detectedApp = 'SHOPEEPAY'; isEwallet = true; }
-  else if (fullText.includes('linkaja') || fullText.includes('link aja')) { detectedApp = 'LINKAJA'; isEwallet = true; }
-  else if (fullText.includes('paytren') || fullText.includes('tokopedia') || fullText.includes('bukalapak')) { detectedApp = 'LAINNYA'; isEwallet = true; }
+  // Cek BANK terlebih dahulu (prioritas tinggi kalau ada indikator kuat)
+  // BRI - cek "bri" atau "brimo" (harus standalone, bukan bagian kata lain)
+  if (/\b(bri|brimo|bri mobile)\b/i.test(fullText)) {
+    detectedApp = 'BRI'; 
+    isBank = true; 
+    confidenceBank += 10;
+  }
+  // BCA
+  else if (/\b(bca|mybca|bca mobile)\b/i.test(fullText)) {
+    detectedApp = 'BCA'; 
+    isBank = true; 
+    confidenceBank += 10;
+  }
+  // BNI
+  else if (/\b(bni|bni mobile)\b/i.test(fullText)) {
+    detectedApp = 'BNI'; 
+    isBank = true; 
+    confidenceBank += 10;
+  }
+  // Mandiri
+  else if (/\b(mandiri|livin|bank mandiri)\b/i.test(fullText)) {
+    detectedApp = 'MANDIRI'; 
+    isBank = true; 
+    confidenceBank += 10;
+  }
+  // BSI
+  else if (/\b(bsi|bank syariah indonesia)\b/i.test(fullText)) {
+    detectedApp = 'BSI'; 
+    isBank = true; 
+    confidenceBank += 10;
+  }
   
-  // Bank Transfer providers
-  else if (fullText.includes('bri') || fullText.includes('brimo') || fullText.includes('bri mobile')) { detectedApp = 'BRI'; isBank = true; }
-  else if (fullText.includes('bca') || fullText.includes('mybca') || fullText.includes('bca mobile')) { detectedApp = 'BCA'; isBank = true; }
-  else if (fullText.includes('bni') || fullText.includes('bni mobile')) { detectedApp = 'BNI'; isBank = true; }
-  else if (fullText.includes('mandiri') || fullText.includes('livin') || fullText.includes('living')) { detectedApp = 'MANDIRI'; isBank = true; }
-  else if (fullText.includes('bsi') || fullText.includes('bank syariah')) { detectedApp = 'BSI'; isBank = true; }
-  else if (fullText.includes('cimb') || fullText.includes('octo')) { detectedApp = 'CIMB'; isBank = true; }
-  else if (fullText.includes('danamon') || fullText.includes('d-mobile')) { detectedApp = 'DANAMON'; isBank = true; }
-  else if (fullText.includes('permata') || fullText.includes('permata mobile')) { detectedApp = 'PERMATA'; isBank = true; }
+  // Cek E-WALLET hanya kalau tidak ada bank yang terdeteksi dengan kuat
+  if (confidenceBank === 0) {
+    // DANA - harus ada konteks "dana" sebagai aplikasi, bukan nama orang
+    // Cek apakah ada kata "dana" tapi bukan di awal kalimat sebagai nama
+    if (/\b(dana|dana kaget)\b/i.test(fullText) && 
+        (fullText.includes('top up') || fullText.includes('kirim dana') || fullText.includes('saldo dana'))) {
+      detectedApp = 'DANA'; 
+      isEwallet = true; 
+      confidenceEwallet += 5;
+    }
+    // GoPay
+    else if (/\b(gopay|go-pay|gopay coins)\b/i.test(fullText)) {
+      detectedApp = 'GOPAY'; 
+      isEwallet = true;
+    }
+    // OVO
+    else if (/\b(ovo|ovo cash|ovo points)\b/i.test(fullText)) {
+      detectedApp = 'OVO'; 
+      isEwallet = true;
+    }
+    // ShopeePay
+    else if (/\b(shopeepay|shopee pay)\b/i.test(fullText)) {
+      detectedApp = 'SHOPEEPAY'; 
+      isEwallet = true;
+    }
+    // LinkAja
+    else if (/\b(linkaja|link aja)\b/i.test(fullText)) {
+      detectedApp = 'LINKAJA'; 
+      isEwallet = true;
+    }
+  }
   
   // ===== DETEKSI JENIS TRANSAKSI =====
   let type = 'transfer'; // default
   
-  // Kalau terdeteksi e-wallet (DANA, GoPay, dll) → otomatis Top Up
-  if (isEwallet) {
+  // Kalau e-wallet terdeteksi dan ada indikator top up/isi saldo
+  if (isEwallet && (fullText.includes('top up') || fullText.includes('isi saldo') || fullText.includes('isi ulang'))) {
     type = 'top_up';
   }
-  
-  // Kalau ada kata kunci tarik tunai/ATM
-  if (fullText.includes('tarik tunai') || 
-      fullText.includes('withdrawal') || 
-      fullText.includes('ambil tunai') || 
-      fullText.includes('penarikan')) {
+  // Kalau bank dan ada kata tarik tunai/ATM
+  else if (isBank && (fullText.includes('tarik tunai') || fullText.includes('withdrawal') || fullText.includes('penarikan'))) {
     type = 'tarik_tunai';
   }
-  
-  // Kalau ada kata kunci top up di teks (untuk semua provider)
-  if (fullText.includes('top up') || 
-      fullText.includes('topup') || 
-      fullText.includes('isi ulang') || 
-      fullText.includes('isi saldo')) {
-    type = 'top_up';
+  // Kalau bank dan ada indikator transfer antar bank/rekening
+  else if (isBank && (fullText.includes('transfer') || fullText.includes('bifast') || fullText.includes('rtgs') || fullText.includes('kliring'))) {
+    type = 'transfer';
   }
-
+  
   // ===== PARSE TANGGAL & WAKTU =====
   let date = new Date().toISOString().split('T')[0];
   let time = new Date().toTimeString().slice(0, 5);
   
-  // Format: 17/04/2026 atau 17-04-2026 atau 17.04.2026
-  const dateMatch = text.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4}|\d{2})/);
+  // Format: 17/04/2026 atau 17-04-2026 atau 17.04.2026 atau 17 April 2026
+  const dateMatch = text.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4}|\d{2})/) || 
+                    text.match(/(\d{1,2})\s+(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)\s+(\d{4})/i);
+  
   if (dateMatch) {
-    const day = dateMatch[1].padStart(2,'0');
-    const month = dateMatch[2].padStart(2,'0');
-    let year = dateMatch[3];
-    if (year.length === 2) year = '20' + year;
-    date = `${year}-${month}-${day}`;
+    if (dateMatch[2].match(/\d+/)) {
+      // Format angka 17/04/2026
+      const day = dateMatch[1].padStart(2,'0');
+      const month = dateMatch[2].padStart(2,'0');
+      let year = dateMatch[3];
+      if (year.length === 2) year = '20' + year;
+      date = `${year}-${month}-${day}`;
+    } else {
+      // Format teks 17 April 2026
+      const months = ['januari','februari','maret','april','mei','juni','juli','agustus','september','oktober','november','desember'];
+      const day = dateMatch[1].padStart(2,'0');
+      const month = String(months.indexOf(dateMatch[2].toLowerCase()) + 1).padStart(2,'0');
+      date = `${dateMatch[3]}-${month}-${day}`;
+    }
   }
   
-  // Format waktu: 14:30 atau 14.30
-  const timeMatch = text.match(/(\d{1,2})[:.](\d{2})/);
+  // Format waktu: 14:30 atau 14.30 atau 14.30.45
+  const timeMatch = text.match(/(\d{1,2})[:.](\d{2})(?:[:.]\d{2})?/);
   if (timeMatch) {
     time = `${timeMatch[1].padStart(2,'0')}:${timeMatch[2]}`;
   }
@@ -1242,35 +1284,32 @@
   let admin = 0;
   let total = 0;
 
-  // Cari format Rp 50.000 atau Rp50.000 atau 50.000
+  // Cari semua format Rp 50.000, Rp50.000, Rp 50,000, dll
   const rpMatches = [...text.matchAll(/rp[\s\.]?([\d\.,]+)/gi)];
   
   if (rpMatches.length > 0) {
-    // Ambil angka terbesar sebagai total (biasanya yang paling bawah)
     const amounts = rpMatches.map(match => {
-      const cleanNum = match[1].replace(/[\.]/g, ''); // hapus titik ribuan
-      const finalNum = parseInt(cleanNum);
-      return finalNum;
+      let numStr = match[1].replace(/\./g, ''); // hapus titik ribuan Indonesia
+      numStr = numStr.replace(/,/g, ''); // hapus koma (desimal)
+      return parseInt(numStr);
     }).filter(n => !isNaN(n) && n > 1000);
     
     if (amounts.length > 0) {
-      // Sort descending, ambil yang terbesar sebagai total
-      amounts.sort((a,b) => b-a);
-      total = amounts[0];
-      nominal = total;
+      amounts.sort((a,b) => b-a); // Sort descending
+      total = amounts[0]; // Angka terbesar = Total
       
-      // Jika ada 2 angka dan selisihnya kecil (kurang dari 100rb), anggap yang kecil adalah admin
-      if (amounts.length >= 2) {
-        const diff = amounts[0] - amounts[1];
-        if (diff > 0 && diff < 100000) {
-          admin = diff;
-          nominal = amounts[1]; // yang lebih kecil adalah nominal asli
-        }
+      // Deteksi admin: cari angka yang lebih kecil (biasanya < 50rb)
+      const adminCandidate = amounts.find(n => n > 0 && n < 100000 && n !== total);
+      if (adminCandidate) {
+        admin = adminCandidate;
+        nominal = total - admin;
+      } else {
+        nominal = total;
       }
     }
   }
 
-  // Fallback: cari angka besar (5-10 digit) kalau belum ketemu
+  // Fallback: cari angka besar (5-12 digit) kalau belum ketemu format Rp
   if (total === 0) {
     const allNumbers = [...text.matchAll(/\b\d{5,12}\b/g)]
       .map(m => parseInt(m[0]))
@@ -1290,37 +1329,36 @@
   let receiverAccount = '';
   let phoneNumber = '';
 
-  // Cari nomor HP (untuk DANA/GoPay)
+  // Cari nomor HP (untuk DANA/GoPay) - format 08xxxxxxxx
   const phoneMatch = text.match(/\b(08\d{8,13})\b/);
   if (phoneMatch) {
     phoneNumber = phoneMatch[1];
   }
 
-  // Parsing berdasarkan pola umum bukti transfer
+  // Parsing nama berdasarkan pola umum struk bank Indonesia
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const lowerLine = line.toLowerCase();
     const nextLine = lines[i+1] || '';
     
-    // Deteksi pengirim (Dari/Sumber/From)
-    if ((lowerLine.includes('dari') || 
-         lowerLine.includes('pengirim') || 
+    // Indikator pengirim/sumber
+    if ((lowerLine.includes('pengirim') || 
          lowerLine.includes('sumber') ||
-         lowerLine.includes('from') ||
-         lowerLine.includes('debit')) && 
-        nextLine && !senderName && nextLine.length > 2) {
-      senderName = nextLine.trim().substring(0, 30);
+         lowerLine.includes('dari') ||
+         lowerLine.includes('debit') ||
+         lowerLine.includes('rekening sumber')) && 
+        nextLine && nextLine.length > 2 && !nextLine.match(/^\d+$/)) {
+      senderName = cleanName(nextLine);
     }
     
-    // Deteksi penerima (Ke/Tujuan/To/Beneficiary)
-    if ((lowerLine.includes('ke') || 
-         lowerLine.includes('penerima') || 
+    // Indikator penerima/tujuan
+    if ((lowerLine.includes('penerima') || 
          lowerLine.includes('tujuan') ||
-         lowerLine.includes('to') ||
+         lowerLine.includes('ke rekening') ||
          lowerLine.includes('credit') ||
          lowerLine.includes('beneficiary')) && 
-        nextLine && !receiverName && nextLine.length > 2) {
-      receiverName = nextLine.trim().substring(0, 30);
+        nextLine && nextLine.length > 2 && !nextLine.match(/^\d+$/)) {
+      receiverName = cleanName(nextLine);
     }
   }
 
@@ -1332,29 +1370,22 @@
     senderAccount = maskAccount(uniqueAccounts[0]);
     receiverAccount = maskAccount(uniqueAccounts[1]);
   } else if (uniqueAccounts.length === 1) {
-    // Kalau cuma 1 rekening, tergantung jenis transaksi
-    if (type === 'tarik_tunai' || type === 'top_up') {
-      receiverAccount = maskAccount(uniqueAccounts[0]);
-    } else {
-      receiverAccount = maskAccount(uniqueAccounts[0]);
-    }
+    receiverAccount = maskAccount(uniqueAccounts[0]);
   }
 
-  // Khusus untuk e-wallet, gunakan nomor HP sebagai akun
+  // Khusus E-Wallet: gunakan nomor HP sebagai identifikasi akun
   if (isEwallet && phoneNumber) {
-    if (!receiverAccount) receiverAccount = phoneNumber;
-    if (!receiverName) receiverName = 'Pengguna ' + detectedApp;
+    receiverAccount = phoneNumber;
+    if (!receiverName || receiverName === '-') {
+      receiverName = 'Pengguna ' + detectedApp;
+    }
+    senderName = receiverName; // Top up = self
+    senderAccount = phoneNumber;
   }
 
   // Default names kalau kosong
-  if (!senderName) senderName = isEwallet ? 'Pengguna' : (isBank ? 'Nasabah ' + detectedApp : 'Pengirim');
-  if (!receiverName) receiverName = isEwallet ? 'Penerima' : (isBank ? 'Penerima ' + detectedApp : 'Penerima');
-  
-  // Untuk Top Up, sender dan receiver bisa sama (self transfer)
-  if (type === 'top_up') {
-    senderName = receiverName; // Top up = kirim ke diri sendiri
-    senderAccount = receiverAccount;
-  }
+  if (!senderName) senderName = isBank ? 'Nasabah ' + detectedApp : 'Pengirim';
+  if (!receiverName) receiverName = isBank ? 'Penerima ' + detectedApp : 'Penerima';
 
   return {
     type, // 'transfer', 'top_up', atau 'tarik_tunai'
@@ -1376,6 +1407,11 @@
       total: total || nominal
     }
   };
+}
+
+// Helper untuk bersihin nama (hapus nomor rekening yang ikut tercampur)
+function cleanName(str) {
+  return str.replace(/\d{10,}/g, '').trim().substring(0, 30) || 'Unknown';
 }
 
     function maskAccount(account) {
