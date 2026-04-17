@@ -780,28 +780,34 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           </div>
 
           <!-- Account -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title"><i class="fas fa-user-circle"></i> Akun</h3>
-            </div>
-            <div class="card-body">
-              <div class="form-group">
-                <label class="form-label">Nama Lengkap</label>
-                <input type="text" class="form-input" id="userFullName" placeholder="Nama Lengkap">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Username</label>
-                <input type="text" class="form-input" id="userUsername" disabled>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" class="form-input" id="userEmail" disabled>
-              </div>
-              <button class="btn btn-secondary btn-block" id="btnChangePassword">
-                <i class="fas fa-key"></i> Ganti Password
-              </button>
-            </div>
-          </div>
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-user-circle"></i> Akun</h3>
+  </div>
+  <div class="card-body">
+    <div class="form-group">
+      <label class="form-label">Nama Lengkap</label>
+      <input type="text" class="form-input" id="userFullName" placeholder="Nama Lengkap">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input type="text" class="form-input" id="userUsername" disabled>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input type="email" class="form-input" id="userEmail" disabled>
+    </div>
+    
+    <!-- Tombol Simpan Nama -->
+    <button class="btn btn-primary btn-block" id="btnSaveProfile" style="margin-bottom: 0.75rem;">
+      <i class="fas fa-save"></i> Simpan Perubahan Nama
+    </button>
+    
+    <button class="btn btn-secondary btn-block" id="btnChangePassword">
+      <i class="fas fa-key"></i> Ganti Password
+    </button>
+  </div>
+</div>
 
           <!-- Danger Zone -->
           <div class="card" style="grid-column: 1/-1;">
@@ -835,7 +841,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     <p style="margin-top: 1rem; color: var(--text-secondary);">Loading...</p>
   </div>
 
-   <!-- Scripts -->
+     <!-- Scripts -->
   <script src="js/firebase-config.js?v=2"></script>
   <script src="js/utils.js"></script>
   <script src="js/auth.js"></script>
@@ -860,13 +866,13 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
         const currentUser = Auth.getCurrentUser();
 
         // Fungsi update logo toko
-function updateLogoToko(namaToko) {
-  const logoText = document.querySelector('.logo-text');
-  if (logoText && namaToko) {
-    logoText.textContent = namaToko;
-  }
-  localStorage.setItem('webpos_store_name', namaToko);
-}
+        function updateLogoToko(namaToko) {
+          const logoText = document.querySelector('.logo-text');
+          if (logoText && namaToko) {
+            logoText.textContent = namaToko;
+          }
+          localStorage.setItem('webpos_store_name', namaToko);
+        }
         
         // Update user info
         document.getElementById('userName').textContent = currentUser?.name || currentUser?.username || 'User';
@@ -875,8 +881,6 @@ function updateLogoToko(namaToko) {
         document.getElementById('userFullName').value = currentUser?.name || '';
         document.getElementById('userUsername').value = currentUser?.username || '';
         document.getElementById('userEmail').value = currentUser?.email || '';
-
-        
 
         // Generate theme grid
         const themeGrid = document.getElementById('themeGrid');
@@ -900,40 +904,40 @@ function updateLogoToko(namaToko) {
         });
 
         // Sidebar toggle - Desktop (collapse/expand)
-document.getElementById('menuToggle').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('collapsed');
-});
+        document.getElementById('menuToggle').addEventListener('click', () => {
+          document.getElementById('sidebar').classList.toggle('collapsed');
+        });
 
-// Sidebar toggle - Mobile (burger menu) - VERSI BARU
-const mobileToggle = document.getElementById('mobileMenuToggle');
-const sidebar = document.getElementById('sidebar');
+        // Sidebar toggle - Mobile (burger menu)
+        const mobileToggle = document.getElementById('mobileMenuToggle');
+        const sidebar = document.getElementById('sidebar');
 
-if (mobileToggle) {
-  mobileToggle.removeAttribute('style');
-  mobileToggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-    sidebar.classList.toggle('mobile-open');
-  });
-}
+        if (mobileToggle) {
+          mobileToggle.removeAttribute('style');
+          mobileToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle('mobile-open');
+          });
+        }
 
-// Tutup sidebar saat klik link di mobile
-document.querySelectorAll('.nav-link').forEach(link => {
-  link.addEventListener('click', () => {
-    if (window.innerWidth <= 1024) {
-      sidebar.classList.remove('mobile-open');
-    }
-  });
-});
+        // Tutup sidebar saat klik link di mobile
+        document.querySelectorAll('.nav-link').forEach(link => {
+          link.addEventListener('click', () => {
+            if (window.innerWidth <= 1024) {
+              sidebar.classList.remove('mobile-open');
+            }
+          });
+        });
 
-// Tutup sidebar saat klik overlay (area gelap di luar sidebar)
-document.addEventListener('click', (e) => {
-  if (window.innerWidth <= 1024 && 
-      sidebar.classList.contains('mobile-open') &&
-      !sidebar.contains(e.target) && 
-      e.target !== mobileToggle) {
-    sidebar.classList.remove('mobile-open');
-  }
-});
+        // Tutup sidebar saat klik overlay (area gelap di luar sidebar)
+        document.addEventListener('click', (e) => {
+          if (window.innerWidth <= 1024 && 
+              sidebar.classList.contains('mobile-open') &&
+              !sidebar.contains(e.target) && 
+              e.target !== mobileToggle) {
+            sidebar.classList.remove('mobile-open');
+          }
+        });
 
         // Logout
         document.getElementById('btnLogout').addEventListener('click', () => {
@@ -957,7 +961,7 @@ document.addEventListener('click', (e) => {
         // Load store settings
         loadStoreSettings();
 
-                async function loadStoreSettings() {
+        async function loadStoreSettings() {
           try {
             const snapshot = await database.ref('settings/store').once('value');
             const settings = snapshot.val();
@@ -980,7 +984,7 @@ document.addEventListener('click', (e) => {
           }
         }
                   
-                document.getElementById('btnSaveStore').addEventListener('click', async () => {
+        document.getElementById('btnSaveStore').addEventListener('click', async () => {
           Utils.showLoading();
           
           try {
@@ -1013,21 +1017,97 @@ document.addEventListener('click', (e) => {
             console.error('Error saving settings:', error);
             Utils.showToast('Gagal menyimpan pengaturan', 'error');
           }
-        });  // ✅ Hanya satu closing!
+        });
 
-        // Change password
-        document.getElementById('btnChangePassword').addEventListener('click', () => {
-          Utils.prompt('Masukkan password baru:', '', async (newPassword) => {
-            if (!newPassword || newPassword.length < 6) {
-              Utils.showToast('Password minimal 6 karakter', 'error');
+        // ✅ SIMPAN PERUBAHAN NAMA LENGKAP (BARU)
+        document.getElementById('btnSaveProfile').addEventListener('click', async () => {
+          const newName = document.getElementById('userFullName').value.trim();
+          
+          if (!newName) {
+            Utils.showToast('Nama lengkap tidak boleh kosong', 'error');
+            return;
+          }
+          
+          Utils.showLoading();
+          
+          try {
+            const user = Auth.getCurrentUser();
+            if (!user || !user.uid) {
+              Utils.showToast('User tidak ditemukan', 'error');
+              Utils.hideLoading();
               return;
             }
             
-            const result = await Auth.changePassword(newPassword);
-            if (result.success) {
-              Utils.showToast('Password berhasil diubah', 'success');
+            // Update ke Firebase Auth profile
+            await auth.currentUser.updateProfile({
+              displayName: newName
+            });
+            
+            // Update ke Realtime Database (users node)
+            await database.ref('users/' + user.uid).update({
+              name: newName,
+              updatedAt: Date.now()
+            });
+            
+            // Update local storage/session
+            const sessionData = JSON.parse(localStorage.getItem('webpos_session') || '{}');
+            sessionData.name = newName;
+            localStorage.setItem('webpos_session', JSON.stringify(sessionData));
+            
+            // Update tampilan navbar
+            document.getElementById('userName').textContent = newName;
+            
+            Utils.hideLoading();
+            Utils.showToast('Nama berhasil diperbarui', 'success');
+          } catch (error) {
+            Utils.hideLoading();
+            console.error('Error updating profile:', error);
+            Utils.showToast('Gagal memperbarui nama: ' + error.message, 'error');
+          }
+        });
+
+        // ✅ GANTI PASSWORD (PERBAIKAN)
+        document.getElementById('btnChangePassword').addEventListener('click', async () => {
+          // Gunakan prompt browser native
+          const newPassword = prompt('Masukkan password baru (minimal 6 karakter):');
+          
+          if (!newPassword) return; // User cancel
+          
+          if (newPassword.length < 6) {
+            Utils.showToast('Password minimal 6 karakter', 'error');
+            return;
+          }
+          
+          const confirmPassword = prompt('Konfirmasi password baru:');
+          if (newPassword !== confirmPassword) {
+            Utils.showToast('Password tidak cocok', 'error');
+            return;
+          }
+          
+          Utils.showLoading();
+          
+          try {
+            const user = auth.currentUser;
+            if (!user) {
+              Utils.showToast('User tidak login', 'error');
+              Utils.hideLoading();
+              return;
             }
-          });
+            
+            await user.updatePassword(newPassword);
+            Utils.hideLoading();
+            Utils.showToast('Password berhasil diubah', 'success');
+          } catch (error) {
+            Utils.hideLoading();
+            console.error('Error changing password:', error);
+            if (error.code === 'auth/requires-recent-login') {
+              Utils.showToast('Silakan logout dan login ulang untuk mengubah password', 'error');
+            } else if (error.code === 'auth/weak-password') {
+              Utils.showToast('Password terlalu lemah', 'error');
+            } else {
+              Utils.showToast('Gagal mengubah password: ' + error.message, 'error');
+            }
+          }
         });
 
         // Clear data
