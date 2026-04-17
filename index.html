@@ -1437,10 +1437,9 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   </a>
   
   <button class="quick-action-btn" id="btnToggleShift">
-    <i class="fas fa-store-slash"></i>
-    <span id="shiftBtnText">Tutup Shift</span>
-  </button>
-</div>
+  <i class="fas fa-store-slash"></i>
+  <span id="shiftBtnText">Tutup Shift</span>
+</button>
               </div>
             </div>
           </div>
@@ -1776,7 +1775,8 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
         const user = Auth.getCurrentUser();
         
         if (isShiftOpen) {
-          // Jika buka, arahkan ke halaman Kas Shift untuk tutup lengkap
+        // ✅ TAMBAHKAN DI SINI (Baris pertama dalam if)
+        KasirLock.closeShift();
           window.location.href = 'page-kas-shift.html';
         } else {
           // Buka shift
@@ -1824,9 +1824,6 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           }
         }
       }
-
-      // Event listener untuk tombol toggle shift
-      btnToggleShift.addEventListener('click', toggleShift);
         
       // Prevent links from opening in new tab - ULTRA FIX
       function fixLinks() {
@@ -1864,6 +1861,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       observer.observe(document.body, { childList: true, subtree: true });
 
             // Initialize
+        btnToggleShift.addEventListener('click', toggleShift)
       loadUserData();
       loadDashboardData();
       listenShiftStatus();  // ✅ Hanya 1 kali di sini
