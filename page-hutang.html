@@ -1280,29 +1280,6 @@
                 </button>
               </div>
             </div>
-
-            <!-- Summary Cards -->
-           
-<!-- Summary Cards -->
-<div class="summary-card piutang">
-  <div class="summary-header">
-    <div class="summary-icon">
-      <i class="fas fa-arrow-up"></i>
-    </div>
-    <span class="summary-title">Total Piutang Aktif</span>
-  </div>
-  <div class="summary-amount" id="totalPiutang">Rp 0</div>
-</div>
-
-<div class="summary-card hutang">
-  <div class="summary-header">
-    <div class="summary-icon">
-      <i class="fas fa-arrow-down"></i>
-    </div>
-    <span class="summary-title">Total Hutang Aktif</span>
-  </div>
-  <div class="summary-amount" id="totalHutang">Rp 0</div>
-</div>
             
             <button class="btn-add" id="btnAddHutang">
               <i class="fas fa-plus"></i>
@@ -1312,6 +1289,26 @@
 
           <!-- Right Column: List -->
           <div class="hutang-list-card">
+
+             <!-- KOTAK TOTAL DIPINDAH KE SINI -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1.25rem; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary);">
+              <div class="summary-card piutang" style="margin: 0; border: none; background: var(--bg-card);">
+                <div class="summary-header">
+                  <div class="summary-icon"><i class="fas fa-arrow-up"></i></div>
+                  <span class="summary-title">Total Piutang Aktif</span>
+                </div>
+                <div class="summary-amount" id="totalPiutang">Rp 0</div>
+              </div>
+              <div class="summary-card hutang" style="margin: 0; border: none; background: var(--bg-card);">
+                <div class="summary-header">
+                  <div class="summary-icon"><i class="fas fa-arrow-down"></i></div>
+                  <span class="summary-title">Total Hutang Aktif</span>
+                </div>
+                <div class="summary-amount" id="totalHutang">Rp 0</div>
+              </div>
+            </div>
+            <!-- END KOTAK TOTAL -->
+            
             <div class="card-header">
               <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
                 <h3 class="card-title">
@@ -2046,20 +2043,50 @@
           container.innerHTML = html;
         }
 
-        function renderHutangList() {
+                function renderHutangList() {
           const list = document.getElementById('hutangList');
           let html = '';
           
-          const items = Object.entries(hutangData)
+          // Filter data
+          const filteredItems = Object.entries(hutangData)
             .map(([id, data]) => ({ id, ...data }))
             .filter(item => {
               if (currentStatus === 'active') return item.status === 'active';
               return item.status === 'paid' || item.status === 'inactive' || item.status === 'deleted';
             })
-            .filter(item => currentFilter === 'all' || item.type === currentFilter)
-            .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            .filter(item => currentFilter === 'all' || item.type === currentFilter);
           
-          if (items.length === 0) {
+          // GROUP BY NAMA
+          const groupedByName = {};
+          
+          filteredItems.forEach(item => {
+            const key = item.name.toLowerCase().trim();
+            if (!groupedByName[key]) {
+              groupedByName[key] = {
+                displayName: item.name,
+                items: [],
+                totalRemaining: 0,
+                hasActive: false,
+                type: item.type
+              };
+            }
+            groupedByName[key].items.push(item);
+            if (item.status === 'active') {
+              groupedByName[key].totalRemaining += (item.remaining || item.amount || 0);
+              groupedByName[key].hasActive = true;
+            }
+          });
+          
+          const groupedArray = Object.values(groupedByName).sort((a, b) => 
+            a.displayName.localeCompare(b.displayName)
+          );
+          
+          // Sort items per group by tanggal
+          groupedArray.forEach(group => {
+            group.items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          });
+          
+          if (groupedArray.length === 0) {
             const message = currentStatus === 'active' ? 'Belum ada data hutang/piutang aktif' : 'Belum ada data yang lunas';
             html = `
               <div class="empty-state">
@@ -2068,80 +2095,95 @@
               </div>
             `;
           } else {
-            items.forEach(item => {
-              const isHutang = item.type === 'hutang';
-              const dueDate = item.dueDate ? new Date(item.dueDate).toLocaleDateString('id-ID') : '-';
-              const remaining = item.remaining || item.amount || 0;
-              const isPaid = item.status === 'paid' || item.status === 'inactive';
-              const createdDate = item.createdAt ? new Date(item.createdAt).toLocaleDateString('id-ID') : '-';
+            groupedArray.forEach(group => {
+              const isPaid = !group.hasActive;
+              const groupId = 'group_' + group.displayName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+              const totalAmount = group.items.reduce((sum, item) => sum + (item.amount || 0), 0);
               
               html += `
-                <div class="hutang-item" onclick="window.toggleDetail('${item.id}')">
+                <div class="hutang-item" onclick="window.toggleDetail('${groupId}')" style="cursor: pointer; border-left: 4px solid ${group.type === 'hutang' ? 'var(--danger)' : 'var(--warning)'};">
                   <div class="hutang-info" style="flex: 1;">
-                    <div class="hutang-avatar">
+                    <div class="hutang-avatar" style="background: ${group.type === 'hutang' ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'};">
                       <i class="fas fa-user"></i>
                     </div>
                     <div class="hutang-details" style="flex: 1;">
-                      <div style="display: flex; align-items: center;">
-                        <span class="hutang-name">${item.name}</span>
-                        <button class="expand-btn" id="expand-${item.id}" onclick="event.stopPropagation(); window.toggleDetail('${item.id}')">
+                      <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span class="hutang-name" style="font-size: 1rem; font-weight: 600;">${group.displayName}</span>
+                        <span style="background: var(--bg-secondary); color: var(--text-muted); padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">
+                          ${group.items.length} transaksi
+                        </span>
+                        <button class="expand-btn" id="expand-${groupId}" onclick="event.stopPropagation(); window.toggleDetail('${groupId}')" style="margin-left: auto;">
                           <i class="fas fa-chevron-down"></i>
                         </button>
                       </div>
-                      <span class="hutang-meta">
-                        ${isHutang ? 'Hutang' : 'Piutang'} • Jatuh tempo: ${dueDate}
-                      </span>
-                      <span class="status-badge ${isPaid ? 'inactive' : 'active'}" style="margin-top: 0.25rem;">
-                        ${isPaid ? 'Lunas' : 'Aktif'}
-                      </span>
+                      <div style="display: flex; gap: 1rem; margin-top: 0.25rem; font-size: 0.8rem; color: var(--text-muted);">
+                        <span>Total: ${Utils.formatRupiah(totalAmount)}</span>
+                        <span>•</span>
+                        <span>Sisa: <span style="color: ${group.type === 'hutang' ? 'var(--danger)' : 'var(--warning)'}; font-weight: 600;">${Utils.formatRupiah(group.totalRemaining)}</span></span>
+                      </div>
                     </div>
                   </div>
-                  <div class="hutang-amount-section">
-                    <span class="hutang-amount ${item.type} ${isPaid ? 'paid' : ''}" style="font-size: 1rem;">${Utils.formatRupiah(remaining)}</span>
-                    <div class="hutang-actions" onclick="event.stopPropagation();">
-                      ${!isPaid ? `
-                        <button class="btn-icon-sm btn-pay" onclick="window.openPayment('${item.id}')" title="Bayar">
-                          <i class="fas fa-money-bill-wave"></i>
-                        </button>
-                      ` : `
-                        <button class="btn-icon-sm btn-restore" onclick="window.restoreHutang('${item.id}')" title="Restore">
-                          <i class="fas fa-undo"></i>
-                        </button>
-                      `}
-                      <button class="btn-icon-sm btn-edit" onclick="window.editHutang('${item.id}')" title="Edit">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button class="btn-icon-sm btn-delete" onclick="window.deleteHutang('${item.id}')" title="Hapus">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
+                  <div class="hutang-amount-section" onclick="event.stopPropagation();">
+                    <span class="hutang-amount ${group.type}" style="font-size: 1rem; ${isPaid ? 'text-decoration: line-through; opacity: 0.6;' : ''}">
+                      ${Utils.formatRupiah(group.totalRemaining)}
+                    </span>
+                    <span class="status-badge ${isPaid ? 'inactive' : 'active'}" style="margin-top: 0.25rem;">
+                      ${isPaid ? 'Lunas' : 'Aktif'}
+                    </span>
                   </div>
                 </div>
                 
-                <!-- Detail Expandable Row -->
-                <div class="hutang-detail-row" id="detail-${item.id}">
-                  <div class="hutang-detail-content">
-                    <div class="detail-grid">
-                      <div class="detail-item">
-                        <span class="detail-label">Dibuat Tanggal</span>
-                        <span class="detail-value">${createdDate}</span>
-                      </div>
-                      <div class="detail-item">
-                        <span class="detail-label">Jumlah Awal</span>
-                        <span class="detail-value">${Utils.formatRupiah(item.amount || 0)}</span>
-                      </div>
-                      <div class="detail-item">
-                        <span class="detail-label">Sisa</span>
-                        <span class="detail-value" style="color: ${isHutang ? 'var(--danger)' : 'var(--warning)'}; font-weight: 600;">
-                          ${Utils.formatRupiah(remaining)}
-                        </span>
-                      </div>
-                      ${item.note ? `
-                      <div class="detail-item" style="grid-column: 1 / -1;">
-                        <span class="detail-label">Catatan</span>
-                        <span class="detail-value">${item.note}</span>
-                      </div>
-                      ` : ''}
+                <!-- DETAIL PER TANGGAL -->
+                <div class="hutang-detail-row" id="detail-${groupId}" style="background: var(--bg-secondary);">
+                  <div class="hutang-detail-content" style="padding: 1rem;">
+                    <div style="font-weight: 600; margin-bottom: 0.75rem; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">
+                      Detail Transaksi
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                      ${group.items.map((item, idx) => {
+                        const createdDate = item.createdAt ? new Date(item.createdAt).toLocaleDateString('id-ID') : '-';
+                        const isItemPaid = item.status === 'paid' || item.status === 'inactive';
+                        const noteText = item.note || (item.type === 'hutang' ? 'Hutang' : 'Piutang');
+                        
+                        return `
+                          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid ${item.type === 'hutang' ? 'var(--danger)' : 'var(--warning)'};">
+                            <div style="flex: 1;">
+                              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                <span style="font-weight: 500; color: var(--text-primary);">${idx + 1}. ${noteText}</span>
+                                <span class="status-badge ${isItemPaid ? 'inactive' : 'active'}" style="font-size: 0.65rem; padding: 2px 6px;">
+                                  ${isItemPaid ? 'Lunas' : 'Aktif'}
+                                </span>
+                              </div>
+                              <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                <i class="far fa-calendar-alt"></i> ${createdDate}
+                                ${item.dueDate ? `• Jatuh tempo: ${new Date(item.dueDate).toLocaleDateString('id-ID')}` : ''}
+                              </div>
+                            </div>
+                            <div style="text-align: right; margin-left: 1rem;">
+                              <div style="font-weight: 600; color: ${item.type === 'hutang' ? 'var(--danger)' : 'var(--warning)'}; font-size: 0.9rem;">
+                                ${Utils.formatRupiah(item.remaining || item.amount || 0)}
+                              </div>
+                            </div>
+                            <div style="display: flex; gap: 0.25rem; margin-left: 0.75rem;">
+                              ${!isItemPaid ? `
+                                <button class="btn-icon-sm btn-pay" onclick="window.openPayment('${item.id}')" title="Bayar" style="width: 28px; height: 28px;">
+                                  <i class="fas fa-money-bill-wave" style="font-size: 0.75rem;"></i>
+                                </button>
+                              ` : `
+                                <button class="btn-icon-sm btn-restore" onclick="window.restoreHutang('${item.id}')" title="Restore" style="width: 28px; height: 28px;">
+                                  <i class="fas fa-undo" style="font-size: 0.75rem;"></i>
+                                </button>
+                              `}
+                              <button class="btn-icon-sm btn-edit" onclick="window.editHutang('${item.id}')" title="Edit" style="width: 28px; height: 28px;">
+                                <i class="fas fa-edit" style="font-size: 0.75rem;"></i>
+                              </button>
+                              <button class="btn-icon-sm btn-delete" onclick="window.deleteHutang('${item.id}')" title="Hapus" style="width: 28px; height: 28px;">
+                                <i class="fas fa-trash" style="font-size: 0.75rem;"></i>
+                              </button>
+                            </div>
+                          </div>
+                        `;
+                      }).join('')}
                     </div>
                   </div>
                 </div>
@@ -2151,7 +2193,7 @@
           
           list.innerHTML = html;
         }
-
+        
         async function saveHutang() {
           const id = document.getElementById('hutangId').value;
           const type = document.getElementById('hutangType').value;
