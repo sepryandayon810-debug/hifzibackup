@@ -2189,11 +2189,11 @@
               hutangId = existingDebt.id;
               
               await database.ref('debts/' + hutangId).update({
-                amount: newAmount,
-                remaining: newRemaining,
-                note: note || existingDebt.note,
-                updatedAt: Date.now()
-              });
+  amount: newAmount,
+  remaining: newRemaining,
+  note: note || existingDebt.note || null,
+  updatedAt: Date.now()
+});
               
               Utils.showToast(`${type === 'hutang' ? 'Hutang' : 'Piutang'} ${name} ditambahkan (total: ${Utils.formatRupiah(newRemaining)})`, 'success');
             } else {
