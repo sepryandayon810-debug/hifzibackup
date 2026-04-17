@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="theme-color" content="#6366f1">
   <title>WebPOS - Produk</title>
 
@@ -1131,105 +1132,206 @@ document.querySelectorAll('.nav-link').forEach(function(link){
       });
     }
 
+        // Global state untuk pagination
+    var lastVisibleKey = null;
+    var isLoadingMore = false;
+    var hasMoreData = true;
+
     function loadProducts(){
       Utils.showLoading();
-      database.ref("products").once("value").then(function(snapshot){
+      
+      // ✅ Jika produk sudah ada di cache, render dulu (fast first paint)
+      var cached = localStorage.getItem('webpos_products_cache');
+      if(cached){
+        try{
+          products = JSON.parse(cached);
+          filteredProducts = products.slice();
+          renderProducts();
+          renderPagination();
+          // Load fresh data di background
+          loadProductsFresh();
+        }catch(e){
+          loadProductsFresh();
+        }
+      }else{
+        loadProductsFresh();
+      }
+    }
+
+        function loadProductsFresh(){
+      // ✅ Bersihkan cache kalau produk > 100 (force refresh manual nanti)
+      var query = database.ref("products").limitToLast(100);
+      
+      Utils.showLoading(); // Tampilkan skeleton
+      
+      query.once("value").then(function(snapshot){
         var prods = snapshot.val() || {};
         products = [];
         for(var id in prods){
           if(prods.hasOwnProperty(id)) products.push(Object.assign({id: id}, prods[id]));
         }
+        
+        // ✅ Sort: Produk terbaru di atas (berdasarkan createdAt atau id)
+        products.sort(function(a,b){
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+        
         filteredProducts = products.slice();
+        
+        // ✅ Cache dengan timestamp
+        try{
+          localStorage.setItem('webpos_products_cache', JSON.stringify(products));
+          localStorage.setItem('webpos_products_cache_time', Date.now());
+        }catch(e){ 
+          console.warn('Cache failed:', e);
+        }
+        
         renderProducts();
         renderPagination();
         renderCategories();
         Utils.hideLoading();
+        
+        if(Object.keys(prods).length >= 100){
+          Utils.showToast("Menampilkan 100 produk terbaru", "info");
+        }
       }).catch(function(err){
         console.error("Error load products:", err);
         Utils.hideLoading();
-        Utils.showToast("Gagal memuat produk: " + err.message, "error");
+        // Fallback ke cache kalau ada
+        var cached = localStorage.getItem('webpos_products_cache');
+        if(cached){
+          try{
+            products = JSON.parse(cached);
+            filteredProducts = products.slice();
+            renderProducts();
+            Utils.showToast("Menampilkan data dari cache", "warning");
+          }catch(e){}
+        }
       });
     }
-
+    
     // ============================================================
     // RENDER
     // ============================================================
-    function renderProducts(){
+        function renderProducts(){
       var container = document.getElementById("produkGrid");
       var start = (currentPage - 1) * perPage;
       var pageProducts = filteredProducts.slice(start, start + perPage);
 
       if(pageProducts.length === 0){
         container.className = "produk-grid";
-        container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem"><div class="empty-state"><i class="fas fa-box-open"></i><div class="empty-state-title">Tidak ada produk</div><p>Belum ada produk yang ditambahkan</p></div></div>';
+        container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem"><div class="empty-state"><i class="fas fa-box-open"></i><div class="empty-state-title">Tidak ada produk</div></div></div>';
         return;
       }
 
-      if(currentView === "list"){
-        container.className = "produk-list";
-        var html = "";
-        pageProducts.forEach(function(product){
-          var cat = categories.find(function(c){ return c.id === product.categoryId; });
-          html += '<div class="produk-list-item">';
-          html += '<div class="produk-list-img">';
-          if(product.image) html += '<img src="' + product.image + '" alt="' + escapeHtml(product.name) + '">';
-          else html += '<i class="fas fa-box" style="color:var(--text-muted)"></i>';
-          html += '</div>';
-          html += '<div class="produk-list-info">';
-          html += '<div style="font-weight:600;color:var(--text-primary)">' + escapeHtml(product.name) + '</div>';
-          html += '<div style="font-size:0.75rem;color:var(--text-muted)">' + (product.code || "-") + ' • ' + (cat ? escapeHtml(cat.name) : "Uncategorized") + '</div>';
-          html += '<div style="font-weight:700;color:var(--primary)">' + formatRupiah(product.sellingPrice || 0) + '</div>';
-          html += '</div>';
-          html += '<span style="font-size:0.75rem;padding:0.25rem 0.75rem;border-radius:50px;font-weight:700;background:' + (product.status === "active" ? "var(--success)" : "var(--text-muted)") + ';color:white">' + (product.status === "active" ? "Aktif" : "Nonaktif") + '</span>';
-          html += '<div class="produk-list-actions">';
-          html += '<button class="btn btn-secondary btn-sm btn-edit-produk" data-id="' + product.id + '"><i class="fas fa-edit"></i></button>';
-          html += '<button class="btn btn-danger btn-sm btn-hapus-produk" data-id="' + product.id + '"><i class="fas fa-trash"></i></button>';
-          html += '</div></div>';
-        });
-        container.innerHTML = html;
+      // ✅ Mobile: render bertahap (chunked) agar tidak freeze
+      var isMobile = window.innerWidth <= 640;
+      container.className = currentView === "list" ? "produk-list" : "produk-grid";
+      
+      if(isMobile && currentView !== "list"){
+        // Mobile grid: render per 4 item dengan delay kecil
+        renderChunked(container, pageProducts, 4);
       } else {
-        container.className = "produk-grid";
-        var html = "";
-        pageProducts.forEach(function(product){
-          var cat = categories.find(function(c){ return c.id === product.categoryId; });
-          html += '<div class="produk-card" data-id="' + product.id + '">';
-          html += '<div class="produk-image">';
-          if(product.image) html += '<img src="' + product.image + '" alt="' + escapeHtml(product.name) + '">';
-          else html += '<i class="fas fa-box"></i>';
-          html += '<span class="produk-status ' + (product.status === "active" ? "active" : "inactive") + '">' + (product.status === "active" ? "Aktif" : "Nonaktif") + '</span>';
-// ⭐ Tambahkan deteksi unlimited
-var catId = (product.categoryId || '').toString().toLowerCase();
-var prodName = (product.name || '').toString().toLowerCase();
-var isDigital = ['digital', 'pulsa', 'token', 'voucher', 'kuota', 'listrik', 'games'].includes(catId) || 
-                ['pulsa', 'token', 'voucher', 'digital', 'games', 'game', 'diamond', 'steam', 'top up', 'topup'].some(function(keyword){ 
-                  return prodName.indexOf(keyword) !== -1; 
-                });
-var isUnlimited = product.isUnlimited || isDigital || product.stock === 999999;
-
-var stockBadge = '';
-if(isUnlimited){
-  stockBadge = '<span class="produk-stock-badge" style="background:var(--info)">∞ Unlimited</span>';
-} else if(product.stock <= 0){
-  stockBadge = '<span class="produk-stock-badge" style="background:var(--danger)">Habis</span>';
-} else if(product.stock <= 5){
-  stockBadge = '<span class="produk-stock-badge" style="background:var(--warning)">' + product.stock + ' sisa</span>';
-} else {
-  stockBadge = '<span class="produk-stock-badge">Stok: ' + product.stock + '</span>';
-}
-html += stockBadge;
-          html += '</div>';
-          html += '<div class="produk-info">';
-          html += '<div class="produk-name">' + escapeHtml(product.name) + '</div>';
-          html += '<div class="produk-code">' + (product.code || "-") + ' &bull; ' + escapeHtml(cat ? cat.name : "Uncategorized") + '</div>';
-          html += '<div class="produk-price">' + formatRupiah(product.sellingPrice || 0) + '</div>';
-          html += '</div>';
-          html += '<div class="produk-actions">';
-          html += '<button class="btn btn-secondary btn-sm btn-edit-produk" data-id="' + product.id + '"><i class="fas fa-edit"></i> Edit</button>';
-          html += '<button class="btn btn-danger btn-sm btn-hapus-produk" data-id="' + product.id + '"><i class="fas fa-trash"></i> Hapus</button>';
-          html += '</div></div>';
-        });
-        container.innerHTML = html;
+        // Desktop: render langsung
+        container.innerHTML = currentView === "list" 
+          ? renderListHTML(pageProducts) 
+          : renderGridHTML(pageProducts);
       }
+    }
+
+    // ✅ FUNGSI BARU: Chunked rendering untuk mobile
+    function renderChunked(container, items, chunkSize){
+      container.innerHTML = '';
+      var i = 0;
+      
+      function renderNext(){
+        var chunk = items.slice(i, i + chunkSize);
+        if(chunk.length === 0) return;
+        
+        var html = renderGridHTML(chunk);
+        var div = document.createElement('div');
+        div.style.cssText = 'display:contents;';
+        div.innerHTML = html;
+        container.appendChild(div);
+        
+        i += chunkSize;
+        if(i < items.length){
+          requestAnimationFrame(renderNext);
+        }
+      }
+      
+      renderNext();
+    }
+
+    // ✅ Pisah HTML generator
+    function renderGridHTML(products){
+      return products.map(function(product){
+        var cat = categories.find(function(c){ return c.id === product.categoryId; });
+        var catId = (product.categoryId || '').toString().toLowerCase();
+        var prodName = (product.name || '').toString().toLowerCase();
+        var isDigital = ['digital', 'pulsa', 'token', 'voucher', 'kuota', 'listrik', 'games'].includes(catId) || 
+                ['pulsa', 'token', 'voucher', 'digital', 'games', 'game', 'diamond', 'steam', 'top up', 'topup'].some(function(k){ 
+                  return prodName.indexOf(k) !== -1; 
+                });
+        var isUnlimited = product.isUnlimited || isDigital || product.stock === 999999;
+        
+        var stockBadge = '';
+        if(isUnlimited){
+          stockBadge = '<span class="produk-stock-badge" style="background:var(--info)">∞ Unlimited</span>';
+        } else if(product.stock <= 0){
+          stockBadge = '<span class="produk-stock-badge" style="background:var(--danger)">Habis</span>';
+        } else if(product.stock <= 5){
+          stockBadge = '<span class="produk-stock-badge" style="background:var(--warning)">' + product.stock + ' sisa</span>';
+        } else {
+          stockBadge = '<span class="produk-stock-badge">Stok: ' + product.stock + '</span>';
+        }
+
+        var imgHtml = product.image 
+          ? '<img src="' + product.image + '" alt="' + escapeHtml(product.name) + '" loading="lazy">'
+          : '<i class="fas fa-box"></i>';
+
+        return [
+          '<div class="produk-card" data-id="' + product.id + '">',
+            '<div class="produk-image">',
+              imgHtml,
+              '<span class="produk-status ' + (product.status === "active" ? "active" : "inactive") + '">' + (product.status === "active" ? "Aktif" : "Nonaktif") + '</span>',
+              stockBadge,
+            '</div>',
+            '<div class="produk-info">',
+              '<div class="produk-name">' + escapeHtml(product.name) + '</div>',
+              '<div class="produk-code">' + (product.code || "-") + ' • ' + escapeHtml(cat ? cat.name : "Uncategorized") + '</div>',
+              '<div class="produk-price">' + formatRupiah(product.sellingPrice || 0) + '</div>',
+            '</div>',
+            '<div class="produk-actions">',
+              '<button class="btn btn-secondary btn-sm btn-edit-produk" data-id="' + product.id + '"><i class="fas fa-edit"></i> <span>Edit</span></button>',
+              '<button class="btn btn-danger btn-sm btn-hapus-produk" data-id="' + product.id + '"><i class="fas fa-trash"></i> <span>Hapus</span></button>',
+            '</div>',
+          '</div>'
+        ].join('');
+      }).join('');
+    }
+
+    function renderListHTML(products){
+      return products.map(function(product){
+        var cat = categories.find(function(c){ return c.id === product.categoryId; });
+        return [
+          '<div class="produk-list-item">',
+            '<div class="produk-list-img">',
+              product.image ? '<img src="' + product.image + '" alt="' + escapeHtml(product.name) + '">' : '<i class="fas fa-box" style="color:var(--text-muted)"></i>',
+            '</div>',
+            '<div class="produk-list-info">',
+              '<div style="font-weight:600;color:var(--text-primary)">' + escapeHtml(product.name) + '</div>',
+              '<div style="font-size:0.75rem;color:var(--text-muted)">' + (product.code || "-") + ' • ' + (cat ? escapeHtml(cat.name) : "Uncategorized") + '</div>',
+              '<div style="font-weight:700;color:var(--primary)">' + formatRupiah(product.sellingPrice || 0) + '</div>',
+            '</div>',
+            '<span style="font-size:0.75rem;padding:0.25rem 0.75rem;border-radius:50px;font-weight:700;background:' + (product.status === "active" ? "var(--success)" : "var(--text-muted)") + ';color:white">' + (product.status === "active" ? "Aktif" : "Nonaktif") + '</span>',
+            '<div class="produk-list-actions">',
+              '<button class="btn btn-secondary btn-sm btn-edit-produk" data-id="' + product.id + '"><i class="fas fa-edit"></i></button>',
+              '<button class="btn btn-danger btn-sm btn-hapus-produk" data-id="' + product.id + '"><i class="fas fa-trash"></i></button>',
+            '</div>',
+          '</div>'
+        ].join('');
+      }).join('');
     }
 
         function renderCategories(){
@@ -1256,6 +1358,7 @@ html += stockBadge;
         });
       });
     }
+    
     function openKategoriDetail(catId){
       currentKatId = catId;
       var cat = categories.find(function(c){ return c.id === catId; });
