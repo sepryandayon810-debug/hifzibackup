@@ -832,8 +832,6 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     <button class="btn btn-secondary btn-block" id="btnChangePassword">
       <i class="fas fa-key"></i> Ganti Password
     </button>
-  </div>
-</div>
 
           <!-- Danger Zone -->
           <div class="card" style="grid-column: 1/-1;">
@@ -1201,7 +1199,9 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           } catch (error) {
             console.error('Error changing password:', error);
             if (error.code === 'auth/requires-recent-login') {
-              Utils.showToast('Silakan logout dan login ulang untuk mengubah password', 'error');
+              Utils.confirm('Demi keamanan, Anda perlu login ulang untuk mengubah password. Logout sekarang?', () => {
+                Auth.logout();
+              });
             } else if (error.code === 'auth/weak-password') {
               Utils.showToast('Password terlalu lemah', 'error');
             } else {
