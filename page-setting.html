@@ -239,7 +239,33 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 .mb-0{margin-bottom:0!important}
 .mb-2{margin-bottom:1rem!important}
 .w-full{width:100%!important}
+    /* Password Modal Styles */
+    .toggle-password {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.5rem;
+      transition: all 0.2s;
+    }
+    
+    .toggle-password:hover {
+      background: var(--bg-secondary);
+      color: var(--primary);
+    }
 
+    .password-strength-weak { color: var(--danger); }
+    .password-strength-medium { color: var(--warning); }
+    .password-strength-strong { color: var(--success); }
+    
+    .password-match-error { color: var(--danger); }
+    .password-match-success { color: var(--success); }
+
+    /* Modal Animation Enhancement */
+    .modal-overlay {
+      backdrop-filter: blur(4px);
+    }
   </style>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1066,39 +1092,113 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           }
         });
 
-        // ✅ GANTI PASSWORD (PERBAIKAN)
-        document.getElementById('btnChangePassword').addEventListener('click', async () => {
-          // Gunakan prompt browser native
-          const newPassword = prompt('Masukkan password baru (minimal 6 karakter):');
+                // ✅ GANTI PASSWORD (MODERN MODAL VERSION)
+        const passwordModal = document.getElementById('passwordModal');
+        const newPasswordInput = document.getElementById('newPasswordInput');
+        const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const passwordMatch = document.getElementById('passwordMatch');
+        const btnConfirmPassword = document.getElementById('btnConfirmPassword');
+
+        // Buka modal
+        document.getElementById('btnChangePassword').addEventListener('click', () => {
+          passwordModal.classList.add('active');
+          newPasswordInput.value = '';
+          confirmPasswordInput.value = '';
+          passwordStrength.textContent = '';
+          passwordMatch.textContent = '';
+          newPasswordInput.focus();
+        });
+
+        // Toggle password visibility
+        window.togglePasswordVisibility = (inputId, btn) => {
+          const input = document.getElementById(inputId);
+          const icon = btn.querySelector('i');
+          if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+          } else {
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
+          }
+        };
+
+        // Close modal function
+        window.closePasswordModal = () => {
+          passwordModal.classList.remove('active');
+        };
+
+        // Check password strength real-time
+        newPasswordInput.addEventListener('input', (e) => {
+          const val = e.target.value;
+          if (val.length === 0) {
+            passwordStrength.textContent = '';
+          } else if (val.length < 6) {
+            passwordStrength.textContent = '⚠️ Password terlalu pendek (minimal 6 karakter)';
+            passwordStrength.className = 'password-strength-weak';
+          } else if (val.length < 8) {
+            passwordStrength.textContent = '✓ Cukup kuat';
+            passwordStrength.className = 'password-strength-medium';
+          } else {
+            passwordStrength.textContent = '✓ Kuat';
+            passwordStrength.className = 'password-strength-strong';
+          }
+          checkPasswordMatch();
+        });
+
+        // Check password match real-time
+        confirmPasswordInput.addEventListener('input', checkPasswordMatch);
+
+        function checkPasswordMatch() {
+          const pass1 = newPasswordInput.value;
+          const pass2 = confirmPasswordInput.value;
           
-          if (!newPassword) return; // User cancel
+          if (pass2.length === 0) {
+            passwordMatch.textContent = '';
+            return;
+          }
           
-          if (newPassword.length < 6) {
+          if (pass1 === pass2) {
+            passwordMatch.textContent = '✓ Password cocok';
+            passwordMatch.className = 'password-match-success';
+            btnConfirmPassword.disabled = false;
+          } else {
+            passwordMatch.textContent = '✗ Password tidak cocok';
+            passwordMatch.className = 'password-match-error';
+            btnConfirmPassword.disabled = true;
+          }
+        }
+
+        // Submit password change
+        window.submitPasswordChange = async () => {
+          const newPass = newPasswordInput.value;
+          const confirmPass = confirmPasswordInput.value;
+
+          if (newPass.length < 6) {
             Utils.showToast('Password minimal 6 karakter', 'error');
+            newPasswordInput.focus();
             return;
           }
-          
-          const confirmPassword = prompt('Konfirmasi password baru:');
-          if (newPassword !== confirmPassword) {
+
+          if (newPass !== confirmPass) {
             Utils.showToast('Password tidak cocok', 'error');
+            confirmPasswordInput.focus();
             return;
           }
-          
+
           Utils.showLoading();
           
           try {
             const user = auth.currentUser;
             if (!user) {
               Utils.showToast('User tidak login', 'error');
-              Utils.hideLoading();
               return;
             }
             
-            await user.updatePassword(newPassword);
-            Utils.hideLoading();
+            await user.updatePassword(newPass);
+            closePasswordModal();
             Utils.showToast('Password berhasil diubah', 'success');
           } catch (error) {
-            Utils.hideLoading();
             console.error('Error changing password:', error);
             if (error.code === 'auth/requires-recent-login') {
               Utils.showToast('Silakan logout dan login ulang untuk mengubah password', 'error');
@@ -1107,6 +1207,22 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
             } else {
               Utils.showToast('Gagal mengubah password: ' + error.message, 'error');
             }
+          } finally {
+            Utils.hideLoading();
+          }
+        };
+
+        // Close modal on overlay click
+        passwordModal.addEventListener('click', (e) => {
+          if (e.target === passwordModal) {
+            closePasswordModal();
+          }
+        });
+
+        // Enter key to submit
+        confirmPasswordInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            submitPasswordChange();
           }
         });
 
@@ -1130,5 +1246,46 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       }
     });
   </script>
+
+  <!-- Modal Ganti Password Modern -->
+  <div class="modal-overlay" id="passwordModal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-key"></i> Ganti Password</h3>
+        <button class="modal-close" onclick="closePasswordModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Password Baru</label>
+          <div style="position: relative;">
+            <input type="password" class="form-input" id="newPasswordInput" placeholder="Minimal 6 karakter" style="padding-right: 2.5rem;">
+            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('newPasswordInput', this)" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <div id="passwordStrength" style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);"></div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Konfirmasi Password</label>
+          <div style="position: relative;">
+            <input type="password" class="form-input" id="confirmPasswordInput" placeholder="Ketik ulang password" style="padding-right: 2.5rem;">
+            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('confirmPasswordInput', this)" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <div id="passwordMatch" style="margin-top: 0.5rem; font-size: 0.75rem;"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closePasswordModal()">Batal</button>
+        <button class="btn btn-primary" id="btnConfirmPassword" onclick="submitPasswordChange()">
+          <i class="fas fa-save"></i> Simpan Password
+        </button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
