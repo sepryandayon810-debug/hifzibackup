@@ -1307,7 +1307,14 @@
                 <div class="summary-amount" id="totalHutang">Rp 0</div>
               </div>
             </div>
-            <!-- END KOTAK TOTAL -->
+
+            <!-- SEARCH BOX BARU -->
+            <div style="padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border-color); background: var(--bg-secondary);">
+              <div class="search-input-wrapper" style="position: relative; max-width: 400px;">
+                <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                <input type="text" class="form-input" id="searchHutangName" placeholder="Cari nama pelanggan..." style="padding-left: 2.5rem; background: var(--bg-card);">
+              </div>
+            </div>
             
             <div class="card-header">
               <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
@@ -1726,6 +1733,7 @@
       function initHutang() {
         let currentFilter = 'all';
         let currentStatus = 'active'; // 'active' or 'inactive'
+        let currentSearch = '';
         let currentPaymentId = null;
         let hutangData = {};
         let customerData = {};
@@ -1814,6 +1822,12 @@
             currentFilter = tab.dataset.filter;
             renderHutangList();
           });
+        });
+
+        // Search nama listener - TAMBAHKAN INI
+        document.getElementById('searchHutangName').addEventListener('input', (e) => {
+          currentSearch = e.target.value.toLowerCase().trim();
+          renderHutangList();
         });
 
         // Add buttons
@@ -2043,18 +2057,25 @@
           container.innerHTML = html;
         }
 
-                function renderHutangList() {
+                   function renderHutangList() {
           const list = document.getElementById('hutangList');
           let html = '';
           
           // Filter data
-          const filteredItems = Object.entries(hutangData)
+          let filteredItems = Object.entries(hutangData)
             .map(([id, data]) => ({ id, ...data }))
             .filter(item => {
               if (currentStatus === 'active') return item.status === 'active';
               return item.status === 'paid' || item.status === 'inactive' || item.status === 'deleted';
             })
             .filter(item => currentFilter === 'all' || item.type === currentFilter);
+          
+          // Filter by search nama (jika ada)
+          if (currentSearch) {
+            filteredItems = filteredItems.filter(item => 
+              item.name.toLowerCase().includes(currentSearch)
+            );
+          }
           
           // GROUP BY NAMA
           const groupedByName = {};
@@ -2087,10 +2108,12 @@
           });
           
           if (groupedArray.length === 0) {
-            const message = currentStatus === 'active' ? 'Belum ada data hutang/piutang aktif' : 'Belum ada data yang lunas';
+            const message = currentSearch 
+              ? `Tidak ada hasil untuk "${currentSearch}"`
+              : (currentStatus === 'active' ? 'Belum ada data hutang/piutang aktif' : 'Belum ada data yang lunas');
             html = `
               <div class="empty-state">
-                <i class="fas fa-${currentStatus === 'active' ? 'handshake' : 'check-circle'}"></i>
+                <i class="fas fa-${currentSearch ? 'search' : (currentStatus === 'active' ? 'handshake' : 'check-circle')}"></i>
                 <p>${message}</p>
               </div>
             `;
