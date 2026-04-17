@@ -865,7 +865,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     <p style="margin-top: 1rem; color: var(--text-secondary);">Loading...</p>
   </div>
 
-     <!-- Scripts -->
+       <!-- Scripts -->
   <script src="js/firebase-config.js?v=2"></script>
   <script src="js/utils.js"></script>
   <script src="js/auth.js"></script>
@@ -1043,7 +1043,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           }
         });
 
-        // ✅ SIMPAN PERUBAHAN NAMA LENGKAP (BARU)
+        // ✅ SIMPAN PERUBAHAN NAMA LENGKAP
         document.getElementById('btnSaveProfile').addEventListener('click', async () => {
           const newName = document.getElementById('userFullName').value.trim();
           
@@ -1090,21 +1090,26 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           }
         });
 
-                // ✅ GANTI PASSWORD (MODERN MODAL VERSION)
+        // ✅ GANTI PASSWORD DENGAN RE-AUTHENTICATION
         const passwordModal = document.getElementById('passwordModal');
+        const reauthModal = document.getElementById('reauthModal');
         const newPasswordInput = document.getElementById('newPasswordInput');
         const confirmPasswordInput = document.getElementById('confirmPasswordInput');
         const passwordStrength = document.getElementById('passwordStrength');
         const passwordMatch = document.getElementById('passwordMatch');
         const btnConfirmPassword = document.getElementById('btnConfirmPassword');
+        
+        // Variabel sementara untuk menyimpan password baru
+        let pendingNewPassword = null;
 
-        // Buka modal
+        // Buka modal password baru
         document.getElementById('btnChangePassword').addEventListener('click', () => {
           passwordModal.classList.add('active');
           newPasswordInput.value = '';
           confirmPasswordInput.value = '';
           passwordStrength.textContent = '';
           passwordMatch.textContent = '';
+          pendingNewPassword = null;
           newPasswordInput.focus();
         });
 
@@ -1121,9 +1126,14 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           }
         };
 
-        // Close modal function
+        // Close modal functions
         window.closePasswordModal = () => {
           passwordModal.classList.remove('active');
+        };
+
+        window.closeReauthModal = () => {
+          reauthModal.classList.remove('active');
+          pendingNewPassword = null;
         };
 
         // Check password strength real-time
@@ -1167,8 +1177,8 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           }
         }
 
-        // Submit password change
-        window.submitPasswordChange = async () => {
+        // Step 1: Submit password change (buka modal re-auth)
+        window.submitPasswordChange = () => {
           const newPass = newPasswordInput.value;
           const confirmPass = confirmPasswordInput.value;
 
@@ -1184,31 +1194,67 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
             return;
           }
 
+          // Simpan password baru sementara
+          pendingNewPassword = newPass;
+          
+          // Tutup modal password, buka modal re-auth
+          closePasswordModal();
+          
+          // Buka modal minta password lama
+          document.getElementById('oldPasswordInput').value = '';
+          reauthModal.classList.add('active');
+          document.getElementById('oldPasswordInput').focus();
+        };
+
+        // Step 2: Submit re-authentication dan update password
+        window.submitReauth = async () => {
+          const oldPassword = document.getElementById('oldPasswordInput').value;
+          
+          if (!oldPassword) {
+            Utils.showToast('Password lama wajib diisi', 'error');
+            return;
+          }
+
           Utils.showLoading();
           
           try {
             const user = auth.currentUser;
-            if (!user) {
-              Utils.showToast('User tidak login', 'error');
+            if (!user || !user.email) {
+              Utils.showToast('Session tidak valid', 'error');
+              Utils.hideLoading();
               return;
             }
             
-            await user.updatePassword(newPass);
-            closePasswordModal();
+            // Buat credential dengan email dan password lama
+            const credential = firebase.auth.EmailAuthProvider.credential(
+              user.email, 
+              oldPassword
+            );
+            
+            // Re-authenticate user
+            await user.reauthenticateWithCredential(credential);
+            
+            // Sekarang baru update password ke yang baru
+            await user.updatePassword(pendingNewPassword);
+            
+            closeReauthModal();
+            pendingNewPassword = null;
+            Utils.hideLoading();
             Utils.showToast('Password berhasil diubah', 'success');
           } catch (error) {
-            console.error('Error changing password:', error);
-            if (error.code === 'auth/requires-recent-login') {
-              Utils.confirm('Demi keamanan, Anda perlu login ulang untuk mengubah password. Logout sekarang?', () => {
-                Auth.logout();
-              });
-            } else if (error.code === 'auth/weak-password') {
-              Utils.showToast('Password terlalu lemah', 'error');
-            } else {
-              Utils.showToast('Gagal mengubah password: ' + error.message, 'error');
-            }
-          } finally {
             Utils.hideLoading();
+            console.error('Error reauth/password change:', error);
+            
+            if (error.code === 'auth/wrong-password') {
+              Utils.showToast('Password lama salah', 'error');
+              document.getElementById('oldPasswordInput').focus();
+            } else if (error.code === 'auth/too-many-requests') {
+              Utils.showToast('Terlalu banyak percobaan. Coba lagi nanti.', 'error');
+            } else if (error.code === 'auth/weak-password') {
+              Utils.showToast('Password baru terlalu lemah', 'error');
+            } else {
+              Utils.showToast('Gagal: ' + error.message, 'error');
+            }
           }
         };
 
@@ -1219,10 +1265,22 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           }
         });
 
-        // Enter key to submit
+        reauthModal.addEventListener('click', (e) => {
+          if (e.target === reauthModal) {
+            closeReauthModal();
+          }
+        });
+
+        // Enter key handlers
         confirmPasswordInput.addEventListener('keypress', (e) => {
           if (e.key === 'Enter') {
             submitPasswordChange();
+          }
+        });
+
+        document.getElementById('oldPasswordInput').addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            submitReauth();
           }
         });
 
@@ -1247,7 +1305,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     });
   </script>
 
-  <!-- Modal Ganti Password Modern -->
+  <!-- Modal Ganti Password Baru -->
   <div class="modal-overlay" id="passwordModal">
     <div class="modal-content" style="max-width: 400px;">
       <div class="modal-header">
@@ -1282,7 +1340,39 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="closePasswordModal()">Batal</button>
         <button class="btn btn-primary" id="btnConfirmPassword" onclick="submitPasswordChange()">
-          <i class="fas fa-save"></i> Simpan Password
+          <i class="fas fa-arrow-right"></i> Lanjutkan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Re-Authentication (Password Lama) -->
+  <div class="modal-overlay" id="reauthModal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-shield-alt"></i> Verifikasi Keamanan</h3>
+        <button class="modal-close" onclick="closeReauthModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 1rem; color: var(--text-secondary); font-size: 0.875rem;">
+          Demi keamanan, masukkan password <strong>lama</strong> Anda untuk verifikasi:
+        </p>
+        <div class="form-group">
+          <label class="form-label">Password Lama</label>
+          <div style="position: relative;">
+            <input type="password" class="form-input" id="oldPasswordInput" placeholder="Masukkan password lama" style="padding-right: 2.5rem;">
+            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('oldPasswordInput', this)" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeReauthModal()">Batal</button>
+        <button class="btn btn-primary" id="btnConfirmReauth" onclick="submitReauth()">
+          <i class="fas fa-check"></i> Verifikasi & Ubah Password
         </button>
       </div>
     </div>
