@@ -1563,6 +1563,35 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       const btnLogout = document.getElementById('btnLogout');
       const btnToggleShift = document.getElementById('btnToggleShift');
 
+        // KASIR LOCK SYSTEM - Definisi object
+const KasirLock = {
+  STORAGE_KEY: 'webpos_kasir_shift',
+  
+  // Cek status kasir apakah sedang buka
+  isOpen: function() {
+    return localStorage.getItem('webpos_kasir_open') === 'true';
+  },
+  
+  // Buka kasir (set status buka)
+  open: function() {
+    localStorage.setItem('webpos_kasir_open', 'true');
+    localStorage.setItem('webpos_kasir_opened_at', Date.now().toString());
+    console.log('[KasirLock] Kasir dibuka');
+  },
+  
+  // Tutup kasir (clear status) - DIPANGGIL saat klik Tutup Shift
+  closeShift: function() {
+    localStorage.removeItem('webpos_kasir_open');
+    localStorage.removeItem('webpos_kasir_opened_at');
+    console.log('[KasirLock] Kasir ditutup - menu akan terkunci');
+  },
+  
+  // Alias untuk kompatibilitas
+  close: function() { 
+    this.closeShift(); 
+  }
+};
+
       // Load user data
       function loadUserData() {
         const user = Auth.getCurrentUser();
