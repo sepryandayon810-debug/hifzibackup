@@ -1437,9 +1437,10 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   </a>
   
   <button class="quick-action-btn" id="btnToggleShift">
-  <i class="fas fa-store-slash"></i>
-  <span id="shiftBtnText">Tutup Shift</span>
-</button>
+    <i class="fas fa-store-slash"></i>
+    <span id="shiftBtnText">Tutup Shift</span>
+  </button>
+</div>
               </div>
             </div>
           </div>
@@ -1562,35 +1563,6 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       const btnTheme = document.getElementById('btnTheme');
       const btnLogout = document.getElementById('btnLogout');
       const btnToggleShift = document.getElementById('btnToggleShift');
-
-        // KASIR LOCK SYSTEM - Definisi object
-const KasirLock = {
-  STORAGE_KEY: 'webpos_kasir_shift',
-  
-  // Cek status kasir apakah sedang buka
-  isOpen: function() {
-    return localStorage.getItem('webpos_kasir_open') === 'true';
-  },
-  
-  // Buka kasir (set status buka)
-  open: function() {
-    localStorage.setItem('webpos_kasir_open', 'true');
-    localStorage.setItem('webpos_kasir_opened_at', Date.now().toString());
-    console.log('[KasirLock] Kasir dibuka');
-  },
-  
-  // Tutup kasir (clear status) - DIPANGGIL saat klik Tutup Shift
-  closeShift: function() {
-    localStorage.removeItem('webpos_kasir_open');
-    localStorage.removeItem('webpos_kasir_opened_at');
-    console.log('[KasirLock] Kasir ditutup - menu akan terkunci');
-  },
-  
-  // Alias untuk kompatibilitas
-  close: function() { 
-    this.closeShift(); 
-  }
-};
 
       // Load user data
       function loadUserData() {
@@ -1804,8 +1776,7 @@ const KasirLock = {
         const user = Auth.getCurrentUser();
         
         if (isShiftOpen) {
-        // ✅ TAMBAHKAN DI SINI (Baris pertama dalam if)
-        KasirLock.closeShift();
+          // Jika buka, arahkan ke halaman Kas Shift untuk tutup lengkap
           window.location.href = 'page-kas-shift.html';
         } else {
           // Buka shift
@@ -1853,6 +1824,9 @@ const KasirLock = {
           }
         }
       }
+
+      // Event listener untuk tombol toggle shift
+      btnToggleShift.addEventListener('click', toggleShift);
         
       // Prevent links from opening in new tab - ULTRA FIX
       function fixLinks() {
@@ -1890,7 +1864,6 @@ const KasirLock = {
       observer.observe(document.body, { childList: true, subtree: true });
 
             // Initialize
-        btnToggleShift.addEventListener('click', toggleShift)
       loadUserData();
       loadDashboardData();
       listenShiftStatus();  // ✅ Hanya 1 kali di sini
