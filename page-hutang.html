@@ -2417,9 +2417,10 @@
           const remaining = item.remaining || item.amount || 0;
           
           document.getElementById('remainingAmount').textContent = Utils.formatRupiah(remaining);
+          document.getElementById('paymentModal').dataset.remainingAmount = remaining;
            // Reset checkbox lunasi sekaligus
-          const lunasCheckbox = document.getElementById('lunasSekaligus');
-          lunasCheckbox.checked = false;
+          const lunasCheckbox = document.getElementById('lunasSekaligus');lunasCheckbox.checked = false;
+          lunasCheckbox.removeEventListener('change', handleLunasToggle);
           lunasCheckbox.addEventListener('change', handleLunasToggle);
           document.getElementById('paymentAmount').value = '';
           document.getElementById('paymentNote').value = '';
@@ -2505,31 +2506,32 @@
         };
 
         async function processPayment() {
-          if (!currentPaymentId) return;
-          
-          const paymentAmount = parseInt(document.getElementById('paymentAmount').value.replace(/\./g, '')) || 0;
-          const note = document.getElementById('paymentNote').value;
-          const affectKas = document.getElementById('affectKas').checked;
-          
-          if (paymentAmount <= 0) {
-            Utils.showToast('Jumlah pembayaran harus lebih dari 0', 'error');
-            return;
-          }
+  if (!currentPaymentId) return;
+  
+  // ✅ PINDAHKAN KE ATAS SINI
+  const item = hutangData[currentPaymentId];
+  const remaining = item.remaining || item.amount || 0;
+  
+  const paymentAmount = parseInt(document.getElementById('paymentAmount').value.replace(/\./g, '')) || 0;
+  const note = document.getElementById('paymentNote').value;
+  const affectKas = document.getElementById('affectKas').checked;
+  
+  if (paymentAmount <= 0) {
+    Utils.showToast('Jumlah pembayaran harus lebih dari 0', 'error');
+    return;
+  }
 
-          // Jika lunas sekaligus dipilih, pastikan jumlah sama dengan remaining
-          const lunasSekaligus = document.getElementById('lunasSekaligus').checked;
-          if (lunasSekaligus && paymentAmount !== remaining) {
-             // Koreksi otomatis jika ada selisih format
-             console.log('Lunasi sekaligus dipilih, jumlah:', paymentAmount);
-          }
-          
-          const item = hutangData[currentPaymentId];
-          const remaining = item.remaining || item.amount || 0;
-          
-          if (paymentAmount > remaining) {
-            Utils.showToast('Jumlah pembayaran melebihi sisa hutang/piutang', 'error');
-            return;
-          }
+  const lunasSekaligus = document.getElementById('lunasSekaligus').checked;
+  
+  // Optional: Hapus blok if ini kalau tidak perlu, atau biarkan saja
+  if (lunasSekaligus && paymentAmount !== remaining) {
+     console.log('Lunasi sekaligus dipilih, jumlah:', paymentAmount);
+  }
+  
+  if (paymentAmount > remaining) {
+    Utils.showToast('Jumlah pembayaran melebihi sisa hutang/piutang', 'error');
+    return;
+  }
           
           Utils.showLoading();
           
