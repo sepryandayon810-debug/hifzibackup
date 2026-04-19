@@ -1078,7 +1078,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     <span>Produk</span>
   </a>
 </li>
-        </div>
+  </div>
 
         <!-- Transaksi -->
         <div class="nav-section">
@@ -1104,6 +1104,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
                 <li><a href="page-kas-masuk.html" class="nav-link"><span>Kas Masuk</span></a></li>
                 <li><a href="page-kas-keluar.html" class="nav-link"><span>Kas Keluar</span></a></li>
                 <li><a href="page-kas-shift.html" class="nav-link"><span>Kas & Shift</span></a></li>
+                <li><a href="page-closing.html" class="nav-link"><span>Closing Shift</span></a></li>
                 <li><a href="page-kas-topup.html" class="nav-link"><span>Top Up</span></a></li>
                 <li><a href="page-kas-tarik.html" class="nav-link"><span>Tarik Tunai</span></a></li>
               </ul>
@@ -1516,8 +1517,8 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     <p style="margin-top: 1rem; color: var(--text-secondary);">Loading...</p>
   </div>
 
-  <!-- Scripts -->
-  <script src="js/firebase-config.js"></script>
+   <!-- Scripts -->
+  <script src="js/firebase-config.js?v=2"></script>
   <script src="js/utils.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/sidebar-filter.js"></script>
@@ -1790,6 +1791,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
             if (!modalData || !modalData.amount) {
               Utils.hideLoading();
               Utils.showToast('Silakan set modal awal terlebih dahulu', 'warning');
+              localStorage.setItem('fromDashboard', 'true');
               window.location.href = 'page-modal-harian.html';
               return;
             }
