@@ -2295,6 +2295,7 @@ customerData = await CustomerStorage.getAll();
   amount: newAmount,
   remaining: newRemaining,
   note: note || existingDebt.note || null,
+  dueDate: dueDate || existingDebt.dueDate || null,  // ✅ FIX: Simpan/pertahankan dueDate
   updatedAt: Date.now()
 });
               
@@ -2465,7 +2466,8 @@ renderCustomerList();
           document.getElementById('hutangType').value = item.type;
           document.getElementById('hutangName').value = item.name;
           document.getElementById('hutangAmount').value = Utils.formatNumberInput(item.amount.toString());
-          document.getElementById('hutangDueDate').value = item.dueDate || '';
+const dueDateVal = item.dueDate ? new Date(item.dueDate).toISOString().split('T')[0] : '';
+document.getElementById('hutangDueDate').value = dueDateVal;
           document.getElementById('hutangNote').value = item.note || '';
           document.getElementById('hutangAffectKas').checked = item.affectKas !== false;
           updateKasOptionHutang();
