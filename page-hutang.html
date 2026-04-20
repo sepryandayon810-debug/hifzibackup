@@ -1691,39 +1691,25 @@
       };
     }
 
-    // LOCAL STORAGE FALLBACK for customers (fix permission issue)
-    const CustomerStorage = {
+// Customer Storage - Firebase Only
+const CustomerStorage = {
   getAll: async () => {
     try {
-      // Ambil dari Firebase
       const snapshot = await database.ref('customers').once('value');
-      const data = snapshot.val() || {};
-      // Filter hanya milik user ini (keamanan)
-      const user = Auth.getCurrentUser();
-      const filtered = {};
-      Object.entries(data).forEach(([id, customer]) => {
-        if (customer.userId === user.uid) {
-          filtered[id] = customer;
-        }
-      });
-      return filtered;
+      return snapshot.val() || {};
     } catch (e) {
       console.error('Error load customers:', e);
+      Utils.showToast('Gagal load pelanggan: ' + e.message, 'error');
       return {};
     }
   },
   
   save: async (id, data) => {
-    const user = Auth.getCurrentUser();
     const customerData = {
       ...data,
       id,
-      userId: user.uid,
-      userName: user.name || user.email,
       updatedAt: Date.now()
     };
-    
-    // Simpan ke Firebase
     await database.ref('customers/' + id).set(customerData);
     return customerData;
   },
@@ -1733,7 +1719,8 @@
   }
 };
 
-    document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
+  
       // Auth check
       const checkAuth = () => {
         if (typeof auth !== 'undefined') {
