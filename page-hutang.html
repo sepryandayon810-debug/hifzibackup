@@ -2255,91 +2255,59 @@ filteredItems.forEach(item => {
         }
         
         async function saveHutang() {
-          const id = document.getElementById('hutangId').value;
-          const type = document.getElementById('hutangType').value;
-          const name = document.getElementById('hutangName').value;
-          const amount = parseInt(document.getElementById('hutangAmount').value.replace(/\./g, '')) || 0;
-          const dueDate = document.getElementById('hutangDueDate').value;
-          const note = document.getElementById('hutangNote').value;
-          const affectKas = document.getElementById('hutangAffectKas').checked;
-          
-          if (!name || amount <= 0) {
-            Utils.showToast('Nama dan jumlah harus diisi', 'error');
-            return;
-          }
-          
-          Utils.showLoading();
-          
-          try {
-            const user = Auth.getCurrentUser();
-            let hutangId = id;
-            let existingDebt = null;
-
-            // Kalau bukan edit mode, cari hutang aktif dengan nama yang sama
-            if (!id) {
-              existingDebt = Object.values(hutangData).find(
-                item => item.name.toLowerCase() === name.toLowerCase() && 
-                        item.type === type && 
-                        item.status === 'active'
-              );
-            }
-
-            if (existingDebt && !id) {
-              // UPDATE EXISTING: Tambahkan jumlah
-              const newAmount = existingDebt.amount + amount;
-              const newRemaining = (existingDebt.remaining || existingDebt.amount) + amount;
-              hutangId = existingDebt.id;
-              
-              await database.ref('debts/' + hutangId).update({
-  amount: newAmount,
-  remaining: newRemaining,
-  note: note || existingDebt.note || null,
-  dueDate: dueDate || existingDebt.dueDate || null,  // ✅ FIX: Simpan/pertahankan dueDate
-  updatedAt: Date.now()
-});
-              
-              Utils.showToast(`${type === 'hutang' ? 'Hutang' : 'Piutang'} ${name} ditambahkan (total: ${Utils.formatRupiah(newRemaining)})`, 'success');
-            } else {
-              // INSERT BARU
-              hutangId = id || 'debt_' + Date.now();
-              
-              const hutangPayload = {
-                id: hutangId,
-                type,
-                name,
-                amount,
-                remaining: amount,
-                dueDate: dueDate || null,
-                note,
-                status: 'active',
-                userId: user.uid,
-                userName: user.name || user.email,
-                createdAt: id ? (hutangData[hutangId]?.createdAt || Date.now()) : Date.now(),
-                updatedAt: Date.now(),
-                affectKas: affectKas
-              };
-              
-              await database.ref('debts/' + hutangId).set(hutangPayload);
-              
-              // If affectKas is checked, record to kas
-              if (affectKas && !id) {
-                console.log('🔄 Mencatat ke kas...');
-                await recordToKas(type === 'hutang' ? 'masuk' : 'keluar', amount, 
-                  `${type === 'hutang' ? 'Hutang' : 'Piutang'} baru - ${name}`, user);
-              }
-              
-              Utils.showToast('Data berhasil disimpan', 'success');
-            }
-            
-            closeModal();
-            loadAllData();
-          } catch (error) {
-            console.error('Error saving hutang:', error);
-            Utils.showToast('Gagal menyimpan data', 'error');
-          }
-          
-          Utils.hideLoading();
-        }
+  const id = document.getElementById('hutangId').value;
+  const type = document.getElementById('hutangType').value;
+  const name = document.getElementById('hutangName').value;
+  const amount = parseInt(document.getElementById('hutangAmount').value.replace(/\./g, '')) || 0;
+  const dueDate = document.getElementById('hutangDueDate').value;
+  const note = document.getElementById('hutangNote').value;
+  const affectKas = document.getElementById('hutangAffectKas').checked;
+  
+  if (!name || amount <= 0) {
+    Utils.showToast('Nama dan jumlah harus diisi', 'error');
+    return;
+  }
+  
+  Utils.showLoading();
+  
+  try {
+    const user = Auth.getCurrentUser();
+    const hutangId = id || 'debt_' + Date.now();
+    
+    const hutangPayload = {
+      id: hutangId,
+      type,
+      name,
+      amount,
+      remaining: amount,
+      dueDate: dueDate || null,
+      note,
+      status: 'active',
+      userId: user.uid,
+      userName: user.name || user.email,
+      createdAt: id ? (hutangData[id]?.createdAt || Date.now()) : Date.now(),
+      updatedAt: Date.now(),
+      affectKas: affectKas
+    };
+    
+    await database.ref('debts/' + hutangId).set(hutangPayload);
+    
+    if (affectKas && !id) {
+      console.log('🔄 Mencatat ke kas...');
+      await recordToKas(type === 'hutang' ? 'masuk' : 'keluar', amount, 
+        `${type === 'hutang' ? 'Hutang' : 'Piutang'} baru - ${name}`, user);
+    }
+    
+    Utils.showToast('Data berhasil disimpan', 'success');
+    closeModal();
+    loadAllData();
+  } catch (error) {
+    console.error('Error saving hutang:', error);
+    Utils.showToast('Gagal menyimpan data', 'error');
+  }
+  
+  Utils.hideLoading();
+}
         
         async function saveCustomer() {
           const id = document.getElementById('customerId').value;
