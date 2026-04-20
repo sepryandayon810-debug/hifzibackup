@@ -2117,14 +2117,13 @@ customerData = await CustomerStorage.getAll();
           
           // GROUP BY NAMA
           const groupedByName = {};
-          
-          filteredItems.forEach(item => {
-            const key = item.name.toLowerCase().trim();
-            if (!groupedByName[key]) {
-              groupedByName[key] = {
-                displayName: item.name,
-                items: [],
-                totalRemaining: 0,
+filteredItems.forEach(item => {
+  const key = item.name.toLowerCase().trim();
+  if (!groupedByName[key]) {
+    groupedByName[key] = {
+      displayName: item.name,
+      items: [],      // ← semua transaksi per nama masuk sini
+      totalRemaining: 0,
                 hasActive: false,
                 type: item.type
               };
