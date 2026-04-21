@@ -1717,10 +1717,6 @@ if (namaDisplay) {
         todayStats.penjualan += trans.total || 0;
         todayStats.laba += trans.profit || 0;
         todayStats.transaksiCount++;
-        /* ⭐ TAMBAH: Kalau hutang, catat sisa piutang sebagai pengurang kas */
-        if (trans.paymentMethod === 'hutang') {
-          todayStats.piutang += trans.remainingPiutang || (trans.total - (trans.paymentAmount || 0)) || 0;
-        }
         break;
         
       case 'topup':
