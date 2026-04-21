@@ -2579,7 +2579,7 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
           });
 
                     // 2b. Jika ada pembayaran sebagian, catat sebagai kas masuk
-                             if (piutangPayment > 0) {
+            if (piutangPayment > 0) {
             const kasId = 'kas_' + Date.now();
             await db.ref(`transactions/${todayStr}/${kasId}`).set({
               id: kasId,
