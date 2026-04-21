@@ -1391,6 +1391,17 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
               <span class="kas-item-value expense" id="kasTarik">- Rp 0</span>
             </div>
           </div>
+
+          <div class="kas-item">
+              <div class="kas-item-info">
+                <div class="kas-item-icon warning">
+                  <i class="fas fa-hand-holding-usd"></i>
+                </div>
+                <span class="kas-item-label">Piutang Customer</span>
+              </div>
+              <span class="kas-item-value expense" id="kasPiutang">- Rp 0</span>
+            </div>
+          </div>
           
           <!-- Total Uang Global -->
           <div class="kas-total">
@@ -1402,7 +1413,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           </div>
           
           <div class="formula-display">
-            Modal Awal + Uang Masuk - Uang Keluar + Penjualan + Top Up - Tarik Tunai
+            Modal Awal + Uang Masuk - Uang Keluar + Penjualan - Piutang + Top Up - Tarik Tunai
           </div>
         </div>
 
@@ -1568,6 +1579,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
         tarik: 0,
         kasMasuk: 0,
         kasKeluar: 0,
+        piutang: 0,
         topupAdminFee: 0,
         tarikAdminFee: 0,
         laba: 0,
@@ -1704,7 +1716,11 @@ if (namaDisplay) {
       case 'penjualan':
         todayStats.penjualan += trans.total || 0;
         todayStats.laba += trans.profit || 0;
-        todayStats.transaksiCount++; // ✅ Transaksi bisnis dihitung
+        todayStats.transaksiCount++;
+        /* ⭐ TAMBAH: Kalau hutang, catat sisa piutang sebagai pengurang kas */
+        if (trans.paymentMethod === 'hutang') {
+          todayStats.piutang += trans.remainingPiutang || (trans.total - (trans.paymentAmount || 0)) || 0;
+        }
         break;
         
       case 'topup':
@@ -1720,9 +1736,10 @@ if (namaDisplay) {
         break;
         
       case 'kas_masuk':
-        todayStats.kasMasuk += trans.amount || 0;
-        // ❌ Jangan todayStats.transaksiCount++
-        // Ini termasuk Kas Masuk biasa + Hutang (yang dicentang)
+        /* ⭐ Skip kas_masuk dari penjualan_hutang (supaya tidak double dengan Penjualan - Piutang) */
+        if (trans.category !== 'penjualan_hutang') {
+          todayStats.kasMasuk += trans.amount || 0;
+        }
         break;
         
       case 'kas_keluar':
@@ -1749,6 +1766,7 @@ if (namaDisplay) {
                             todayStats.kasMasuk - 
                             todayStats.kasKeluar + 
                             todayStats.penjualan + 
+                            todayStats.piutang +
                             todayStats.topup +
                             todayStats.topupAdminFee -
                             todayStats.tarik;
@@ -1769,6 +1787,7 @@ if (namaDisplay) {
           document.getElementById('kasPenjualan').textContent = '+ ' + Utils.formatRupiah(todayStats.penjualan);
           document.getElementById('kasTopUp').textContent = '+ ' + Utils.formatRupiah(todayStats.topup);
           document.getElementById('kasTarik').textContent = '- ' + Utils.formatRupiah(todayStats.tarik);
+          document.getElementById('kasPiutang').textContent = '- ' + Utils.formatRupiah(todayStats.piutang);
           document.getElementById('kasGlobal').textContent = Utils.formatRupiah(uangGlobal);
 
           // Check shift status
