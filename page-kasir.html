@@ -1169,6 +1169,13 @@ html, body {
   border-color: var(--warning); 
   background: rgba(245, 158, 11, 0.08); 
 }
+
+/* Sembunyikan numpad & quick amounts saat mode hutang aktif */
+#paymentModal .piutang-section.active ~ .numpad,
+#paymentModal .piutang-section.active ~ .quick-amounts {
+  display: none !important;
+}
+    
 </style>
 </head>
 <body>
@@ -2429,7 +2436,27 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
             hutangName: piutangName
           };
 
-          const db = firebase.database();
+                    const db = firebase.database();
+
+          // ===== AUTO-SAVE CUSTOMER BARU =====
+          const customerExists = Object.values(customers).some(c => 
+            c.name && c.name.toLowerCase() === piutangName.toLowerCase()
+          );
+
+          if (!customerExists) {
+            const newCustomerId = 'cust_' + Date.now();
+            await db.ref('customers/' + newCustomerId).set({
+              name: piutangName,
+              phone: null,
+              createdAt: Date.now(),
+              updatedAt: Date.now()
+            });
+            // Update cache lokal supaya autocomplete langsung kenal
+            customers[newCustomerId] = { name: piutangName, phone: null };
+            console.log('✅ Customer baru tersimpan:', piutangName);
+          }
+          // ===== END AUTO-SAVE =====
+
           await db.ref(`transactions/${todayStr}/${transactionId}`).set(transaction);
 
           // 2. Simpan ke debts/ sebagai piutang (logika SAMA dengan page-hutang.html)
