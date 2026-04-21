@@ -639,7 +639,7 @@
         const catatan = document.getElementById('catatanInput').value;
         const transSnapshot = await database.ref('transactions/' + today).once('value');
         const transactions = transSnapshot.val() || {};
-        let penjualan = 0, kasMasuk = 0, kasKeluar = 0, topup = 0, tarik = 0, topupAdminFee = 0;
+        let penjualan = 0, kasMasuk = 0, kasKeluar = 0, topup = 0, tarik = 0, topupAdminFee = 0, tarikAdminFee = 0;  // ← ⭐ TAMBAH
         Object.values(transactions).forEach(trans => {
           if (trans.status !== 'cancelled') {
             switch(trans.type) {
@@ -647,8 +647,7 @@
               case 'kas_masuk': kasMasuk += trans.amount || 0; break;
               case 'kas_keluar': kasKeluar += trans.amount || 0; break;
               case 'topup': topup += trans.amount || 0; topupAdminFee += trans.adminFee || 0; break;
-              case 'tarik': tarik += trans.amount || 0; break;
-            }
+              case 'tarik': tarik += trans.amount || 0; tarikAdminFee += trans.adminFee || 0; break;  // ← ⭐ TAMBAH            }
           }
         });
                 const modalSnapshot = await database.ref('modal/' + today + '/' + user.uid).once('value');
@@ -681,6 +680,7 @@
                           topup + 
                           topupAdminFee - 
                           tarik;
+                          tarikAdminFee;
         const selisih = kasAkhir - kasSistem;
         let statusSelisih = 'pas';
         if (selisih > 0) statusSelisih = 'lebih';
@@ -688,6 +688,7 @@
                 await database.ref('shifts/' + today + '/' + user.uid).update({
           status: 'closed', closeTime: Date.now(), kasAkhir, kasSistem, selisih, statusSelisih,
           penjualan, kasMasuk, kasKeluar, topup, tarik, topupAdminFee, 
+          tarikAdminFee,
           piutang: totalPiutang,  // ← ⭐ TAMBAH INI
           catatan
         });
@@ -712,13 +713,15 @@
         const modalData = modalSnapshot.val();
         const transSnapshot = await database.ref('transactions/' + today).once('value');
         const transactions = transSnapshot.val() || {};
-        let penjualan = 0, kasMasuk = 0, kasKeluar = 0;
+        let penjualan = 0, kasMasuk = 0, kasKeluar = 0, topup = 0, tarik = 0, topupAdminFee = 0, tarikAdminFee = 0;
         Object.values(transactions).forEach(trans => {
           if (trans.status !== 'cancelled') {
             switch(trans.type) {
               case 'penjualan': penjualan += trans.total || 0; break;
               case 'kas_masuk': kasMasuk += trans.amount || 0; break;
               case 'kas_keluar': kasKeluar += trans.amount || 0; break;
+              case 'topup': topup += trans.amount || 0; topupAdminFee += trans.adminFee || 0; break;   // ← ⭐ TAMBAH
+              case 'tarik': tarik += trans.amount || 0; tarikAdminFee += trans.adminFee || 0; break;      // ← ⭐ TAMBAH
             }
           }
         });
@@ -742,8 +745,11 @@
           console.error('Error loading debts:', e);
         }
 
-        const kasSistemSummary = (modalData ? modalData.amount : 0) + kasMasuk - kasKeluar + penjualan - totalPiutang;
-        document.getElementById('summaryModal').textContent = Utils.formatRupiah(modalData ? modalData.amount : 0);
+const kasSistemSummary = (modalData ? modalData.amount : 0) + 
+                                 kasMasuk - kasKeluar + 
+                                 penjualan - totalPiutang + 
+                                 topup + topupAdminFee - 
+                                 tarik + tarikAdminFee;        document.getElementById('summaryModal').textContent = Utils.formatRupiah(modalData ? modalData.amount : 0);
         document.getElementById('summaryPenjualan').textContent = Utils.formatRupiah(penjualan);
         document.getElementById('summaryPiutang').textContent = '-' + Utils.formatRupiah(totalPiutang);
         document.getElementById('summaryKasMasuk').textContent = Utils.formatRupiah(kasMasuk);
