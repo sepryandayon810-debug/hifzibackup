@@ -1010,7 +1010,6 @@ html, body {
   #paymentModal .numpad {
     gap: 0.15rem !important;
     flex: 1 !important; /* Mengisi semua sisa ruang */
-    display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     grid-template-rows: repeat(4, 1fr) !important; /* 4 baris sama rata */
     margin-bottom: 0 !important;
@@ -1148,6 +1147,23 @@ html, body {
   border: 1.5px solid var(--border-color); border-radius: var(--radius-lg);
   background: var(--bg-secondary); color: var(--text-primary); font-size: 0.9rem;
 }
+
+.piutang-section .input-prefix {
+  position: relative;
+}
+.piutang-section .input-prefix .prefix {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+.piutang-section .input-prefix input {
+  padding-left: 3rem;
+}
+    
 .autocomplete-dropdown {
   position: absolute; top: 100%; left: 0; right: 0;
   background: var(--bg-card); border: 1px solid var(--border-color);
@@ -1662,12 +1678,12 @@ html, body {
           <div class="amount-value" id="paymentChange" style="color:var(--success);">Rp 0</div>
         </div>
 
-        <div class="piutang-section" id="piutangSection">
+          <div class="piutang-section" id="piutangSection">
           <div class="info-box">
             <i class="fas fa-info-circle"></i>
             <span>Total transaksi dicatat sebagai piutang (customer berhutang ke toko)</span>
           </div>
-                    <div class="form-group" style="margin-top:0.75rem;">
+          <div class="form-group" style="margin-top:0.75rem;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem;">
               <label class="form-label" style="margin-bottom:0;">Nama Pelanggan *</label>
               <button type="button" class="btn-add-customer-inline" id="btnToggleAddCustomer" onclick="toggleAddCustomerForm()">
@@ -1678,7 +1694,6 @@ html, body {
               <input type="text" class="form-input" id="piutangName" placeholder="Ketik nama pelanggan..." autocomplete="off">
               <div class="autocomplete-dropdown" id="customerAutocomplete"></div>
             </div>
-            <!-- Form Tambah Pelanggan Inline -->
             <div class="new-customer-form" id="newCustomerForm" style="display:none;">
               <input type="text" class="form-input" id="newCustomerName" placeholder="Nama pelanggan baru" style="margin-bottom:0.5rem;font-size:0.9rem;padding:0.625rem 0.875rem;">
               <input type="tel" class="form-input" id="newCustomerPhone" placeholder="No. Telepon (opsional)" style="margin-bottom:0.75rem;font-size:0.9rem;padding:0.625rem 0.875rem;">
@@ -1694,7 +1709,20 @@ html, body {
             <label class="form-label">Tanggal Jatuh Tempo (Opsional)</label>
             <input type="date" class="form-input" id="piutangDueDate">
           </div>
-        </div>
+          
+          <!-- ⭐ PINDAHKAN KE SINI -->
+          <div class="form-group">
+            <label class="form-label">Jumlah Diterima Sekarang</label>
+            <div class="input-prefix">
+              <span class="prefix">Rp</span>
+              <input type="text" class="form-input" id="piutangPayment" placeholder="0" value="0" oninput="updatePiutangDisplay()">
+            </div>
+          </div>
+          <div class="amount-display" id="sisaPiutangDisplay" style="background:rgba(245,158,11,.08);border:2px solid var(--warning);margin-top:0.5rem;">
+            <div class="amount-label">Sisa Piutang</div>
+            <div class="amount-value" id="sisaPiutangValue" style="color:var(--warning);font-size:1.5rem;">Rp 0</div>
+          </div>
+        </div>   <!-- ← TUTUP #piutangSection, SATU KALI SAJA -->
 
         <div class="quick-amounts">
           <button class="quick-amount" data-amount="exact">Uang Pas</button>
@@ -2324,8 +2352,9 @@ function renderCart() {
       
       // Reset piutang section
       document.getElementById('piutangSection').classList.remove('active');
-      document.getElementById('piutangName').value = '';
-      document.getElementById('piutangDueDate').value = '';
+            document.getElementById('piutangPayment').value = '0';
+      document.getElementById('sisaPiutangValue').textContent = 'Rp 0';
+      document.getElementById('newCustomerForm').style.display = 'none';
       document.querySelector('.quick-amounts').style.display = 'flex';
       document.querySelector('.numpad').style.display = 'grid';
       document.getElementById('paymentInput').parentElement.style.display = 'block';
@@ -2367,14 +2396,15 @@ function renderCart() {
         const diterima = document.getElementById('paymentInput').parentElement;
         const kembalian = document.getElementById('paymentChange').parentElement;
 
-        if (paymentMethod === 'hutang') {
-          // Mode piutang: tampilkan form nama, sembunyikan numpad & uang diterima
+                if (paymentMethod === 'hutang') {
+          // Mode piutang: tampilkan form nama + numpad untuk input bayar separuh
           piutangSection.classList.add('active');
           quickAmounts.style.display = 'none';
-          numpad.style.display = 'none';
+          numpad.style.display = 'grid';  // TAMPILKAN numpad
           diterima.style.display = 'none';
           kembalian.style.display = 'none';
           loadCustomers();
+          updatePiutangDisplay();
         } else {
           // Mode normal
           piutangSection.classList.remove('active');
@@ -2386,19 +2416,35 @@ function renderCart() {
       });
     });
 
-    // Numpad
+        // Numpad
     document.querySelectorAll('.numpad-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const num = btn.dataset.num;
         const action = btn.dataset.action;
-        if (num !== undefined) {
-          paymentAmount = paymentAmount * 10 + parseInt(num);
-        } else if (action === 'clear') {
-          paymentAmount = 0;
-        } else if (action === 'backspace') {
-          paymentAmount = Math.floor(paymentAmount / 10);
+        
+        if (paymentMethod === 'hutang') {
+          // Mode hutang: numpad isi #piutangPayment
+          let currentVal = parseInt(document.getElementById('piutangPayment').value.replace(/\D/g, '')) || 0;
+          if (num !== undefined) {
+            currentVal = currentVal * 10 + parseInt(num);
+          } else if (action === 'clear') {
+            currentVal = 0;
+          } else if (action === 'backspace') {
+            currentVal = Math.floor(currentVal / 10);
+          }
+          document.getElementById('piutangPayment').value = currentVal.toLocaleString('id-ID');
+          updatePiutangDisplay();
+        } else {
+          // Mode normal: numpad isi paymentAmount
+          if (num !== undefined) {
+            paymentAmount = paymentAmount * 10 + parseInt(num);
+          } else if (action === 'clear') {
+            paymentAmount = 0;
+          } else if (action === 'backspace') {
+            paymentAmount = Math.floor(paymentAmount / 10);
+          }
+          updatePaymentDisplay();
         }
-        updatePaymentDisplay();
       });
     });
 
@@ -2425,11 +2471,11 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
   });
 });
 
-    function updatePaymentDisplay() {
+        function updatePiutangDisplay() {
       const total = calculateTotal();
-      const change = paymentAmount - total;
-      document.getElementById('paymentInput').textContent = formatRupiah(paymentAmount);
-      document.getElementById('paymentChange').textContent = formatRupiah(change > 0 ? change : 0);
+      const paid = parseInt(document.getElementById('piutangPayment').value.replace(/\D/g, '')) || 0;
+      const remaining = total - paid;
+      document.getElementById('sisaPiutangValue').textContent = formatRupiah(remaining > 0 ? remaining : 0);
     }
 
     // ===== PROSES BAYAR =====
@@ -2445,6 +2491,11 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
           showToast('Nama pelanggan wajib diisi untuk piutang', 'error');
           return;
         }
+
+        /* ⭐ TAMBAHKAN INI */
+        const piutangPayment = parseInt(document.getElementById('piutangPayment').value.replace(/\D/g, '')) || 0;
+        const remainingDebt = total - piutangPayment;
+        /* ⭐ END TAMBAHAN */
 
         try {
           document.getElementById('loadingOverlay').classList.add('active');
@@ -2472,8 +2523,9 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
             total,
             profit,
             paymentMethod: 'hutang',
-            paymentAmount: 0,
+            paymentAmount: piutangPayment,   // ← INI
             change: 0,
+            remainingPiutang: remainingDebt > 0 ? remainingDebt : 0, //
             cashierId: user ? user.uid : 'unknown',
             cashierName: document.getElementById('userName').textContent,
             note: localStorage.getItem('kasir_note') || '',
@@ -2511,10 +2563,10 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
           const dueDate = document.getElementById('piutangDueDate').value || null;
           await db.ref(`debts/${debtId}`).set({
             id: debtId,
-            type: 'piutang',              // orang berhutang ke toko
+            type: 'piutang',
             name: piutangName,
-            amount: total,
-            remaining: total,             // sisa = total (belum bayar)
+            amount: remainingDebt > 0 ? remainingDebt : 0,
+            remaining: remainingDebt > 0 ? remainingDebt : 0,
             dueDate: dueDate,
             note: localStorage.getItem('kasir_note') || `Piutang transaksi ${transactionId}`,
             status: 'active',
@@ -2522,7 +2574,7 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
             userName: document.getElementById('userName').textContent,
             createdAt: Date.now(),
             updatedAt: Date.now(),
-            affectKas: false,             // tidak masuk kas sekarang
+            affectKas: piutangPayment > 0,   // kalau bayar separuh, masuk kas
             sourceTransactionId: transactionId
           });
 
