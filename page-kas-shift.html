@@ -647,7 +647,8 @@
               case 'kas_masuk': kasMasuk += trans.amount || 0; break;
               case 'kas_keluar': kasKeluar += trans.amount || 0; break;
               case 'topup': topup += trans.amount || 0; topupAdminFee += trans.adminFee || 0; break;
-              case 'tarik': tarik += trans.amount || 0; tarikAdminFee += trans.adminFee || 0; break;  // ← ⭐ TAMBAH            }
+              case 'tarik': tarik += trans.amount || 0; tarikAdminFee += trans.adminFee || 0; break;
+            }
           }
         });
                 const modalSnapshot = await database.ref('modal/' + today + '/' + user.uid).once('value');
@@ -689,7 +690,7 @@
           status: 'closed', closeTime: Date.now(), kasAkhir, kasSistem, selisih, statusSelisih,
           penjualan, kasMasuk, kasKeluar, topup, tarik, topupAdminFee, 
           tarikAdminFee,
-          piutang: totalPiutang,  // ← ⭐ TAMBAH INI
+          piutang: totalPiutang,
           catatan
         });
         document.getElementById('closeShiftModal').classList.remove('active');
@@ -714,14 +715,14 @@
         const transSnapshot = await database.ref('transactions/' + today).once('value');
         const transactions = transSnapshot.val() || {};
         let penjualan = 0, kasMasuk = 0, kasKeluar = 0, topup = 0, tarik = 0, topupAdminFee = 0, tarikAdminFee = 0;
-        Object.values(transactions).forEach(trans => {
+        O        Object.values(transactions).forEach(trans => {
           if (trans.status !== 'cancelled') {
             switch(trans.type) {
               case 'penjualan': penjualan += trans.total || 0; break;
               case 'kas_masuk': kasMasuk += trans.amount || 0; break;
               case 'kas_keluar': kasKeluar += trans.amount || 0; break;
-              case 'topup': topup += trans.amount || 0; topupAdminFee += trans.adminFee || 0; break;   // ← ⭐ TAMBAH
-              case 'tarik': tarik += trans.amount || 0; tarikAdminFee += trans.adminFee || 0; break;      // ← ⭐ TAMBAH
+              case 'topup': topup += trans.amount || 0; topupAdminFee += trans.adminFee || 0; break;
+              case 'tarik': tarik += trans.amount || 0; tarikAdminFee += trans.adminFee || 0; break;
             }
           }
         });
