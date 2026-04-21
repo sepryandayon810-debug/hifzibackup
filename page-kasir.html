@@ -1170,6 +1170,37 @@ html, body {
   background: rgba(245, 158, 11, 0.08); 
 }
 
+/* ===== TAMBAH PELANGGAN INLINE ===== */
+.btn-add-customer-inline {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-md);
+  transition: all 0.15s;
+}
+.btn-add-customer-inline:hover {
+  background: rgba(99,102,241,0.1);
+}
+.new-customer-form {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1.5px dashed var(--border-color);
+  animation: fadeInDown 0.2s ease;
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Sembunyikan numpad & quick amounts saat mode hutang aktif */
 #paymentModal .piutang-section.active ~ .numpad,
 #paymentModal .piutang-section.active ~ .quick-amounts {
@@ -1636,11 +1667,27 @@ html, body {
             <i class="fas fa-info-circle"></i>
             <span>Total transaksi dicatat sebagai piutang (customer berhutang ke toko)</span>
           </div>
-          <div class="form-group" style="margin-top:0.75rem;">
-            <label class="form-label">Nama Pelanggan *</label>
+                    <div class="form-group" style="margin-top:0.75rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem;">
+              <label class="form-label" style="margin-bottom:0;">Nama Pelanggan *</label>
+              <button type="button" class="btn-add-customer-inline" id="btnToggleAddCustomer" onclick="toggleAddCustomerForm()">
+                <i class="fas fa-plus"></i> Baru
+              </button>
+            </div>
             <div style="position:relative;">
               <input type="text" class="form-input" id="piutangName" placeholder="Ketik nama pelanggan..." autocomplete="off">
               <div class="autocomplete-dropdown" id="customerAutocomplete"></div>
+            </div>
+            <!-- Form Tambah Pelanggan Inline -->
+            <div class="new-customer-form" id="newCustomerForm" style="display:none;">
+              <input type="text" class="form-input" id="newCustomerName" placeholder="Nama pelanggan baru" style="margin-bottom:0.5rem;font-size:0.9rem;padding:0.625rem 0.875rem;">
+              <input type="tel" class="form-input" id="newCustomerPhone" placeholder="No. Telepon (opsional)" style="margin-bottom:0.75rem;font-size:0.9rem;padding:0.625rem 0.875rem;">
+              <div style="display:flex;gap:0.5rem;">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="toggleAddCustomerForm()" style="flex:1;font-size:0.8rem;">Batal</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="saveNewCustomerFromKasir()" style="flex:1;font-size:0.8rem;">
+                  <i class="fas fa-save"></i> Simpan
+                </button>
+              </div>
             </div>
           </div>
           <div class="form-group">
@@ -2764,6 +2811,57 @@ document.getElementById('btnMinimizeCart').addEventListener('click', () => {
       if (piutangNameInput) piutangNameInput.value = name;
       if (autocompleteBox) autocompleteBox.style.display = 'none';
     };
+
+        // ===== TAMBAH PELANGGAN BARU DARI KASIR =====
+    function toggleAddCustomerForm() {
+      const form = document.getElementById('newCustomerForm');
+      const isVisible = form.style.display === 'block';
+      form.style.display = isVisible ? 'none' : 'block';
+      
+      // Hide autocomplete kalau form dibuka
+      if (!isVisible) {
+        document.getElementById('customerAutocomplete').style.display = 'none';
+        document.getElementById('newCustomerName').value = '';
+        document.getElementById('newCustomerPhone').value = '';
+        setTimeout(() => document.getElementById('newCustomerName').focus(), 100);
+      }
+    }
+
+    async function saveNewCustomerFromKasir() {
+      const name = document.getElementById('newCustomerName').value.trim();
+      const phone = document.getElementById('newCustomerPhone').value.trim();
+      
+      if (!name) {
+        showToast('Nama pelanggan wajib diisi', 'error');
+        return;
+      }
+      
+      try {
+        const db = firebase.database();
+        const newId = 'cust_' + Date.now();
+        
+        await db.ref('customers/' + newId).set({
+          name: name,
+          phone: phone || null,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        });
+        
+        // Update cache lokal supaya autocomplete langsung kenal
+        customers[newId] = { name, phone: phone || null };
+        
+        // Auto-fill ke input nama piutang
+        document.getElementById('piutangName').value = name;
+        
+        // Tutup form inline
+        toggleAddCustomerForm();
+        
+        showToast(`Pelanggan "${name}" berhasil ditambahkan`, 'success');
+      } catch (e) {
+        console.error('Error save customer:', e);
+        showToast('Gagal menyimpan pelanggan', 'error');
+      }
+    }
 
 // ===== VIEW TOGGLE =====
 document.querySelectorAll('.view-btn').forEach(btn => {
