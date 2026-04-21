@@ -1713,10 +1713,13 @@ if (namaDisplay) {
           Object.values(transactions).forEach(trans => {
   if (trans.status !== 'cancelled' && trans.status !== 'voided') {
     switch (trans.type) {
-      case 'penjualan':
+            case 'penjualan':
         todayStats.penjualan += trans.total || 0;
         todayStats.laba += trans.profit || 0;
-        todayStats.transaksiCount++;
+        // ⭐ Hanya count kalau BUKAN dari menu Hutang
+        if (trans.source !== 'hutang_page') {
+          todayStats.transaksiCount++;
+        }
         break;
         
       case 'topup':
