@@ -2578,6 +2578,31 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
             sourceTransactionId: transactionId
           });
 
+                    // 2b. Jika ada pembayaran sebagian, catat sebagai kas masuk
+          if (piutangPayment > 0) {
+            const kasId = 'kas_' + Date.now();
+            await db.ref(`kas_harian/${todayStr}/${kasId}`).set({
+              id: kasId,
+              type: 'masuk',
+              category: 'penjualan_hutang',
+              amount: piutangPayment,
+              note: `Pembayaran sebagian dari ${piutangName} | Sisa hutang: ${formatRupiah(remainingDebt)}`,
+              userId: user ? user.uid : 'unknown',
+              userName: document.getElementById('userName').textContent,
+              timestamp: Date.now(),
+              sourceTransactionId: transactionId
+            });
+
+            // Update saldo kas global (kalau path kas/saldo ada)
+            try {
+              const kasSnap = await db.ref('kas/saldo').once('value');
+              const currentSaldo = kasSnap.val() || 0;
+              await db.ref('kas/saldo').set(currentSaldo + piutangPayment);
+            } catch (kasErr) {
+              console.log('Kas saldo path tidak tersedia, skip update saldo global');
+            }
+          }
+
           // 3. Update stok (barang tetap keluar)
           for (const item of cart) {
             const ref = db.ref(`products/${item.productId}`);
