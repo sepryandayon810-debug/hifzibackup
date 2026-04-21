@@ -1294,14 +1294,14 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
           </div>
           
           <div class="stat-card">
-            <div class="stat-icon orange">
-              <i class="fas fa-clock"></i>
-            </div>
-            <div class="stat-content">
-              <div class="stat-label">Shift</div>
-              <div class="stat-value" id="shiftInfo">-</div>
-            </div>
-          </div>
+  <div class="stat-icon orange">
+    <i class="fas fa-user"></i>
+  </div>
+  <div class="stat-content" style="min-width:0;">
+    <div class="stat-label">Nama</div>
+    <div class="stat-value" id="namaUserDisplay" style="font-size:1.15rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">-</div>
+  </div>
+</div>
           
           <div class="stat-card">
             <div class="stat-icon pink">
@@ -1449,6 +1449,11 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     <span id="shiftBtnText">Tutup Shift</span>
   </button>
 
+    <a href="page-closing.html" class="quick-action-btn" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: var(--warning);">
+    <i class="fas fa-calculator" style="color: var(--warning);"></i>
+    <span>Closing Shift</span>
+</a>
+
 <button class="quick-action-btn" id="btnTransferShift" disabled style="background: rgba(99, 102, 241, 0.1); border-color: var(--primary); color: var(--primary); opacity: 0.5;">
   <i class="fas fa-exchange-alt"></i>
   <span>Serahkan Shift</span>
@@ -1586,21 +1591,12 @@ function setupUIBasedOnRole() {
   const user = Auth.getCurrentUser();
   const btnTransfer = document.getElementById('btnTransferShift');
 
-  console.log('setupUIBasedOnRole called:', user?.role, 'btnTransfer:', btnTransfer); //
-  
   if (!user) return;
   
-  // Sembunyikan tombol transfer untuk kasir, TAMPILKAN untuk owner/admin
   if (user.role === 'kasir' && btnTransfer) {
     btnTransfer.style.display = 'none';
   } else if (btnTransfer) {
-    // PASTIKAN TOMBOL MUNCUL untuk owner/admin
     btnTransfer.style.display = 'flex';
-  }
-  
-  // Update label shift info berdasarkan role
-  if (user.role === 'kasir') {
-    document.getElementById('shiftInfo').textContent = 'Kasir Mode';
   }
 }
         
@@ -1618,9 +1614,27 @@ function setupUIBasedOnRole() {
             avatar.textContent = initials;
           }
         }
-      }
 
-      
+        // Update nama di stats grid (adaptive font)
+const namaDisplay = document.getElementById('namaUserDisplay');
+if (namaDisplay) {
+  const displayName = user.name || user.email.split('@')[0];
+  namaDisplay.textContent = displayName;
+  
+  // Adaptive font size
+  if (displayName.length > 25) {
+    namaDisplay.style.fontSize = '0.8rem';
+  } else if (displayName.length > 18) {
+    namaDisplay.style.fontSize = '0.95rem';
+  } else if (displayName.length > 12) {
+    namaDisplay.style.fontSize = '1.05rem';
+  } else {
+    namaDisplay.style.fontSize = '1.15rem';
+  }
+}
+}
+
+              
       // Toggle sidebar
       menuToggle.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
@@ -1798,39 +1812,31 @@ function setupUIBasedOnRole() {
 function updateShiftUI() {
   const shiftStatus = document.getElementById('shiftStatus');
   const shiftText = document.getElementById('shiftText');
-  const shiftInfo = document.getElementById('shiftInfo');
   const shiftBtnText = document.getElementById('shiftBtnText');
   const btnIcon = btnToggleShift.querySelector('i');
   const btnTransfer = document.getElementById('btnTransferShift');
-  
-  console.log('Updating shift UI:', isShiftOpen, 'User:', Auth.getCurrentUser()?.role); // DEBUG
   
   if (isShiftOpen) {
     shiftStatus.classList.remove('closed');
     shiftStatus.classList.add('open');
     shiftText.textContent = 'Buka';
-    shiftInfo.textContent = 'Shift Aktif';
     shiftBtnText.textContent = 'Tutup Shift';
     btnIcon.className = 'fas fa-store-slash';
     
-    // Enable tombol transfer jika owner/admin
     const user = Auth.getCurrentUser();
     if (btnTransfer && user && (user.role === 'owner' || user.role === 'admin')) {
       btnTransfer.disabled = false;
       btnTransfer.style.opacity = '1';
       btnTransfer.style.cursor = 'pointer';
-      btnTransfer.style.display = 'flex'; // ⭐ PASTIKAN VISIBLE
-      console.log('Transfer button ENABLED for owner/admin'); // DEBUG
+      btnTransfer.style.display = 'flex';
     }
   } else {
     shiftStatus.classList.remove('open');
     shiftStatus.classList.add('closed');
     shiftText.textContent = 'Tutup';
-    shiftInfo.textContent = '-';
     shiftBtnText.textContent = 'Buka Shift';
     btnIcon.className = 'fas fa-store';
     
-    // Disable tombol transfer
     if (btnTransfer) {
       btnTransfer.disabled = true;
       btnTransfer.style.opacity = '0.5';
