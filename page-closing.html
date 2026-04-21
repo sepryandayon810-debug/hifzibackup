@@ -1066,15 +1066,16 @@ async function loadUserSidebar(user) {
       function initClosing() {
         // State
         let isShiftOpen = true;
-         let todayStats = {
+        let todayStats = {
           modalAwal: 0,
           penjualan: 0,
           topup: 0,
           tarik: 0,
           kasMasuk: 0,
           kasKeluar: 0,
-          piutang: 0,        // ← ⭐ TAMBAH
-          topupAdminFee: 0,  // ← ⭐ TAMBAH
+          piutang: 0,
+          topupAdminFee: 0,
+          tarikAdminFee: 0,   // ← ⭐ TAMBAH
           laba: 0,
           uangGlobal: 0
         };
@@ -1275,9 +1276,11 @@ async function loadUserSidebar(user) {
                     break;
                   case 'topup':
                     todayStats.topup += trans.amount || 0;
+                    todayStats.topupAdminFee += trans.adminFee || 0;  // ← ⭐ TAMBAH
                     break;
                   case 'tarik':
                     todayStats.tarik += trans.amount || 0;
+                    todayStats.tarikAdminFee += trans.adminFee || 0;  // ← ⭐ TAMBAH
                     break;
                   case 'kas_masuk':
                     todayStats.kasMasuk += trans.amount || 0;
@@ -1328,6 +1331,7 @@ async function loadUserSidebar(user) {
                                     todayStats.topup +
                                     todayStats.topupAdminFee -  // ← ⭐ TAMBAH
                                     todayStats.tarik;
+                                    todayStats.tarikAdminFee;
             
             // Update UI
             document.getElementById('sistemModal').textContent = Utils.formatRupiah(todayStats.modalAwal);
@@ -1407,6 +1411,7 @@ async function loadUserSidebar(user) {
                   topup: todayStats.topup,
                   topupAdminFee: todayStats.topupAdminFee,  // ← ⭐ TAMBAH
                   tarik: todayStats.tarik,
+                  tarikAdminFee: todayStats.tarikAdminFee,
                   uangGlobal: todayStats.uangGlobal
                 },
                 selisih: selisih,
