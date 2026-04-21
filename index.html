@@ -1717,10 +1717,6 @@ if (namaDisplay) {
         todayStats.penjualan += trans.total || 0;
         todayStats.laba += trans.profit || 0;
         todayStats.transaksiCount++;
-        /* ⭐ TAMBAH: Kalau hutang, catat sisa piutang sebagai pengurang kas */
-        if (trans.paymentMethod === 'hutang') {
-          todayStats.piutang += trans.remainingPiutang || (trans.total - (trans.paymentAmount || 0)) || 0;
-        }
         break;
         
       case 'topup':
@@ -1758,6 +1754,20 @@ if (namaDisplay) {
           const modalSnapshot = await database.ref('modal/' + today + '/' + user.uid).once('value');
           const modalData = modalSnapshot.val();
           todayStats.modalAwal = modalData ? modalData.amount : 0;
+
+          let totalPiutang = 0;
+          try {
+            const debtsSnapshot = await database.ref('debts').once('value');
+            const debtsData = debtsSnapshot.val() || {};
+            Object.values(debtsData).forEach(d => {
+              if (d.status === 'active' && d.type === 'piutang') {
+                totalPiutang += d.remaining || 0;
+              }
+            });
+          } catch (e) {
+            console.error('Error loading debts:', e);
+          }
+          todayStats.piutang = totalPiutang;
 
           // Calculate Uang Global
           // Formula: Modal Awal + Uang Masuk - Uang Keluar + Penjualan + Top Up - Tarik Tunai
