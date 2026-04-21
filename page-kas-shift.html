@@ -672,14 +672,14 @@
           console.error('Error loading debts:', e);
         }
 
-        const kasSistem = (modalData ? modalData.amount : 0) + 
+                const kasSistem = (modalData ? modalData.amount : 0) + 
                           kasMasuk - 
                           kasKeluar + 
                           penjualan - 
                           totalPiutang + 
                           topup + 
                           topupAdminFee - 
-                          tarik;
+                          tarik +
                           tarikAdminFee;
         const selisih = kasAkhir - kasSistem;
         let statusSelisih = 'pas';
@@ -749,7 +749,8 @@ const kasSistemSummary = (modalData ? modalData.amount : 0) +
                                  kasMasuk - kasKeluar + 
                                  penjualan - totalPiutang + 
                                  topup + topupAdminFee - 
-                                 tarik + tarikAdminFee;        document.getElementById('summaryModal').textContent = Utils.formatRupiah(modalData ? modalData.amount : 0);
+                                 tarik + tarikAdminFee;
+        document.getElementById('summaryModal').textContent = Utils.formatRupiah(modalData ? modalData.amount : 0);
         document.getElementById('summaryPenjualan').textContent = Utils.formatRupiah(penjualan);
         document.getElementById('summaryPiutang').textContent = '-' + Utils.formatRupiah(totalPiutang);
         document.getElementById('summaryKasMasuk').textContent = Utils.formatRupiah(kasMasuk);
