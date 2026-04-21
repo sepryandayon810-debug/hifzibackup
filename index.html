@@ -1765,8 +1765,8 @@ if (namaDisplay) {
           const uangGlobal = todayStats.modalAwal + 
                             todayStats.kasMasuk - 
                             todayStats.kasKeluar + 
-                            todayStats.penjualan + 
-                            todayStats.piutang +
+                            todayStats.penjualan - 
+                            todayStats.piutang +        // ← ✅ DIKURANG
                             todayStats.topup +
                             todayStats.topupAdminFee -
                             todayStats.tarik;
