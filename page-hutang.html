@@ -2299,6 +2299,7 @@ filteredItems.forEach(item => {
       await database.ref('transactions/' + today + '/' + transId).set({
         type: 'penjualan',
         paymentMethod: 'hutang',
+        source: 'hutang_page',
         total: amount,
         paymentAmount: 0,
         remainingPiutang: amount,
