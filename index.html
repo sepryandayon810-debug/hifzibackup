@@ -1759,6 +1759,29 @@ if (namaDisplay) {
           const modalData = modalSnapshot.val();
           todayStats.modalAwal = modalData ? modalData.amount : 0;
 
+                    // ⭐ Load piutang HARI INI saja dari debts/
+          let totalPiutang = 0;
+          try {
+            const todayStart = new Date(today + 'T00:00:00').getTime();
+            const todayEnd = todayStart + 86400000; // +24 jam
+            
+            const debtsSnapshot = await database.ref('debts').once('value');
+            const debtsData = debtsSnapshot.val() || {};
+            
+            Object.values(debtsData).forEach(d => {
+              if (d.status === 'active' && d.type === 'piutang') {
+                const createdAt = d.createdAt || 0;
+                // ✅ HANYA hitung yang dibuat hari ini
+                if (createdAt >= todayStart && createdAt < todayEnd) {
+                  totalPiutang += d.remaining || 0;
+                }
+              }
+            });
+          } catch (e) {
+            console.error('Error loading debts:', e);
+          }
+          todayStats.piutang = totalPiutang;
+          
           // Calculate Uang Global
           // Formula: Modal Awal + Uang Masuk - Uang Keluar + Penjualan + Top Up - Tarik Tunai
           // Note: Top Up include admin fee, Tarik exclude admin fee (admin masuk ke laba)
