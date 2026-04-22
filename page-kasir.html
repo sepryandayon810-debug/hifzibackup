@@ -1489,11 +1489,11 @@ html, body {
   </div>
   <div style="display:flex;gap:0.5rem;align-items:center;">
     <div class="sort-toggle">
-      <button class="sort-btn active" data-sort="default" title="Default">
+      <button class="sort-btn" data-sort="default" title="Default">
         <i class="fas fa-sort"></i>
         <span class="d-md-inline">Default</span>
       </button>
-      <button class="sort-btn" data-sort="az" title="A - Z">
+      <button class="sort-btn active" data-sort="az" title="A - Z">
         <i class="fas fa-sort-alpha-down"></i>
         <span class="d-md-inline">A-Z</span>
       </button>
@@ -1502,11 +1502,11 @@ html, body {
         <span class="d-md-inline">Z-A</span>
       </button>
     </div>
-    <div class="view-toggle">
-      <button class="view-btn active" data-view="grid" title="Grid View">
+     <div class="view-toggle">
+      <button class="view-btn" data-view="grid" title="Grid View">
         <i class="fas fa-th-large"></i>
       </button>
-      <button class="view-btn" data-view="list" title="List View">
+      <button class="view-btn active" data-view="list" title="List View">
         <i class="fas fa-list"></i>
       </button>
     </div>
@@ -1715,7 +1715,7 @@ html, body {
             <label class="form-label">Jumlah Diterima Sekarang</label>
             <div class="input-prefix">
               <span class="prefix">Rp</span>
-              <input type="text" class="form-input" id="piutangPayment" placeholder="0" value="0" oninput="updatePiutangDisplay()">
+              <input type="text" class="form-input" id="piutangPayment" placeholder="0" value="" oninput="updatePiutangDisplay()">
             </div>
           </div>
           <div class="amount-display" id="sisaPiutangDisplay" style="background:rgba(245,158,11,.08);border:2px solid var(--warning);margin-top:0.5rem;">
@@ -1818,7 +1818,7 @@ html, body {
 
   <!-- Scripts -->
   <script src="js/firebase-config.js?v=2"></script>
-  <script src="js/utils.js"></script>
+   <script src="js/utils.js?v=3"></script>
   <script src="js/auth.js"></script>
   <script src="js/sidebar-filter.js"></script>
 
@@ -1974,8 +1974,8 @@ document.addEventListener('click', (e) => {
     let cart = [];
     let discount = 0;
     let currentCategory = 'all';
-    let currentSort = 'default'; // 'default', 'az', 'za'
-    let currentView = 'grid'
+    let currentSort = 'az'; // 'default', 'az', 'za'
+    let currentView = 'list'
     let paymentAmount = 0;
     let paymentMethod = 'cash';
     let customers = {};
@@ -2470,6 +2470,14 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
     showToast(`Urutan: ${btn.querySelector('span').textContent}`, 'info');
   });
 });
+
+    // ===== UPDATE PAYMENT DISPLAY =====
+function updatePaymentDisplay() {
+  const total = calculateTotal();
+  document.getElementById('paymentInput').textContent = formatRupiah(paymentAmount);
+  const change = paymentAmount - total;
+  document.getElementById('paymentChange').textContent = formatRupiah(change > 0 ? change : 0);
+}
 
         function updatePiutangDisplay() {
       const total = calculateTotal();
