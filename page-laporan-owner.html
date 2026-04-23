@@ -594,12 +594,12 @@ body{background:linear-gradient(180deg,#f0fdf4 0%,#ecfdf5 50%,#fff 100%);backgro
     });
 
     // === LOAD DATA ===
-    async function loadMonthData() {
+       async function loadMonthData() {
       Utils.showLoading();
       try {
         const user = Auth.getCurrentUser();
         const monthKey = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
-        const path = `owner_finance/${currentYear}/${monthKey}`;
+        const path = `users/${user.uid}/owner_finance/${currentYear}/${monthKey}`;
 
         // 1. Load owner finance data
         const snap = await database.ref(path).once('value');
@@ -701,11 +701,11 @@ body{background:linear-gradient(180deg,#f0fdf4 0%,#ecfdf5 50%,#fff 100%);backgro
       }
     }
 
-    // === SAVE ===
+        // === SAVE ===
     document.getElementById('btnSaveOwnerFinance').addEventListener('click', async () => {
       const user = Auth.getCurrentUser();
       const monthKey = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
-      const path = `owner_finance/${currentYear}/${monthKey}`;
+      const path = `users/${user.uid}/owner_finance/${currentYear}/${monthKey}`;
 
       const payload = {
         incomeHusband: parseInt(inputs.incomeHusband.value) || 0,
@@ -729,7 +729,11 @@ body{background:linear-gradient(180deg,#f0fdf4 0%,#ecfdf5 50%,#fff 100%);backgro
         await loadHistory();
       } catch(err) {
         console.error(err);
-        Utils.showToast('Gagal menyimpan data', 'error');
+        if(err.message && err.message.includes('permission_denied')) {
+          Utils.showToast('Gagal simpan: Permission Firebase denied. Hubungi admin untuk update Rules DB.', 'error', 5000);
+        } else {
+          Utils.showToast('Gagal menyimpan data: ' + err.message, 'error');
+        }
       }
       Utils.hideLoading();
     });
@@ -740,9 +744,10 @@ body{background:linear-gradient(180deg,#f0fdf4 0%,#ecfdf5 50%,#fff 100%);backgro
     });
 
     // === HISTORY ===
-    async function loadHistory() {
+        async function loadHistory() {
       try {
-        const snap = await database.ref('owner_finance').once('value');
+        const user = Auth.getCurrentUser();
+        const snap = await database.ref(`users/${user.uid}/owner_finance`).once('value');
         const yearsData = snap.val() || {};
         let rows = [];
 
