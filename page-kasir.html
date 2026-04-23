@@ -539,98 +539,103 @@ html,body{overflow-x:hidden;max-width:100vw}
 .manual-modal .checkbox-wrapper{display:flex;align-items:center;gap:0.5rem;margin:1rem 0;padding:0.75rem;background:var(--bg-secondary);border-radius:var(--radius-md);cursor:pointer}
 .manual-modal .checkbox-wrapper input[type="checkbox"]{width:20px;height:20px;accent-color:var(--primary)}
 .manual-modal .checkbox-wrapper label{font-size:0.85rem;color:var(--text-secondary);cursor:pointer;flex:1}
-
-/* List View Mode */
-./* ===== LIST VIEW COMPACT ===== */
+    
+/* ===== LIST VIEW - BARIS PENUH ===== */
 .products-grid.list-view {
   grid-template-columns: 1fr !important;
-  gap: 0.5rem !important;
+  gap: 0.625rem !important;
 }
 
 .products-grid.list-view .product-card {
   display: flex;
   flex-direction: row;
   align-items: center;
-  height: 56px;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.75rem;
+  height: 68px;
+  padding: 0 1rem;
+  border-radius: 0.875rem;
   border: 1px solid var(--border-color);
   background: var(--bg-card);
-  box-shadow: none;
+  box-shadow: 0 1px 3px rgba(5,150,105,0.04);
+  gap: 0.875rem;
 }
 
 .products-grid.list-view .product-card:hover {
-  transform: translateX(4px);
-  box-shadow: 0 2px 8px rgba(5,150,105,0.08);
-  border-color: rgba(5,150,105,0.3);
+  transform: translateX(6px);
+  box-shadow: 0 4px 12px rgba(5,150,105,0.1);
+  border-color: rgba(5,150,105,0.25);
 }
 
+/* Image / Icon Kecil di Kiri */
 .products-grid.list-view .product-card-image {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  border-radius: 0.5rem;
-  aspect-ratio: auto;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 0.625rem;
   background: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .products-grid.list-view .product-card-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 0.5rem;
+  border-radius: 0.625rem;
 }
 
 .products-grid.list-view .product-card-image i {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   color: var(--text-muted);
 }
 
+/* Badge stok di pojok icon */
 .products-grid.list-view .product-stock-badge {
-  position: static;
-  display: inline-flex;
-  margin-left: 0.5rem;
+  position: absolute;
+  top: -6px;
+  right: -6px;
   padding: 0.15rem 0.4rem;
   font-size: 0.6rem;
   border-radius: 50px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
 
+/* Info Tengah: Nama + Kode */
 .products-grid.list-view .product-card-info {
   flex: 1;
-  padding: 0 0.75rem;
+  padding: 0;
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  justify-content: center;
   min-width: 0;
-  gap: 0.5rem;
+  gap: 0.15rem;
 }
 
 .products-grid.list-view .product-card-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  flex: 1;
   margin-bottom: 0;
 }
 
+.products-grid.list-view .product-card-code {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* Harga di Kanan */
 .products-grid.list-view .product-card-price {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--primary);
   white-space: nowrap;
+  margin-left: auto;
 }
-
-.products-grid.list-view .product-card-code {
-  display: none;
-}
-
 /* Sort Toggle */
 .sort-toggle{display:flex;align-items:center;gap:0.25rem;background:var(--bg-secondary);padding:0.25rem;border-radius:var(--radius-lg)}
 .sort-btn{padding:0.5rem 0.75rem;border:none;background:transparent;color:var(--text-muted);border-radius:var(--radius-md);cursor:pointer;font-size:0.8rem;font-weight:600;transition:all 0.15s;display:flex;align-items:center;gap:0.35rem;white-space:nowrap}
