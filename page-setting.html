@@ -797,6 +797,25 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
             </div>
           </div>
 
+                    <!-- Menu & Akses -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title"><i class="fas fa-user-tie"></i> Menu & Akses</h3>
+            </div>
+            <div class="card-body">
+              <div class="setting-item">
+                <div class="setting-info">
+                  <div class="setting-label">Tampilkan Menu Keuangan Owner</div>
+                  <div class="setting-desc">Menu laporan keuangan pribadi owner (hanya role Owner)</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="settingOwnerFinance">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
           <!-- Store Settings -->
           <div class="card">
             <div class="card-header">
@@ -1018,6 +1037,31 @@ themeGrid.innerHTML = allThemes.map(theme => `
 
         // Load store settings
         loadStoreSettings();
+
+                // Load system settings (owner menu toggle)
+        loadSystemSettings();
+
+        async function loadSystemSettings() {
+          try {
+            const snapshot = await database.ref('settings/system').once('value');
+            const sys = snapshot.val() || {};
+            document.getElementById('settingOwnerFinance').checked = sys.ownerFinanceMenu !== false;
+          } catch(e) {
+            // Fallback localStorage kalau Firebase error
+            const saved = Utils.getStorage('setting_ownerFinanceMenu');
+            document.getElementById('settingOwnerFinance').checked = saved !== 'false';
+          }
+        }
+
+        // Event listener toggle owner finance menu
+        document.getElementById('settingOwnerFinance').addEventListener('change', async (e) => {
+          const val = e.target.checked;
+          Utils.setStorage('setting_ownerFinanceMenu', val ? 'true' : 'false');
+          try {
+            await database.ref('settings/system/ownerFinanceMenu').set(val);
+          } catch(err) { console.error(err); }
+          Utils.showToast(val ? 'Menu Keuangan Owner diaktifkan' : 'Menu Keuangan Owner dinonaktifkan', 'success');
+        });
 
         async function loadStoreSettings() {
           try {
