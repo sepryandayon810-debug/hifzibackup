@@ -691,7 +691,7 @@ body{
         }
       });
 
-                   // Sinkron tema antar tab/page real-time
+       // Sinkron tema antar tab/page real-time
       window.addEventListener('storage', (e) => {
         if (e.key === 'webpos_theme') {
           const newTheme = e.newValue || 'light';
@@ -699,6 +699,17 @@ body{
           const icon = document.querySelector('#btnTheme i');
           if(icon) icon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
         }
+      });
+
+      // Theme toggle
+      document.getElementById('btnTheme').addEventListener('click', () => {
+        const html = document.documentElement;
+        const current = html.getAttribute('data-theme') || 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('webpos_theme', next);
+        const icon = document.querySelector('#btnTheme i');
+        if(icon) icon.className = next === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
       });
 
       // Filter buttons (termasuk custom date)
