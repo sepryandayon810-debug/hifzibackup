@@ -1152,10 +1152,13 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     }
 
     function updateStats() {
-      const total = products.length;
-      const low = products.filter(p => p.stock > 0 && p.stock <= 5).length;
-      const empty = products.filter(p => !p.stock || p.stock === 0).length;
-      const ok = products.filter(p => p.stock > 5).length;
+  const total = products.length;
+  const unlimited = products.filter(p => p.isUnlimited === true).length;
+  const normalProducts = products.filter(p => p.isUnlimited !== true);
+  
+  const low = normalProducts.filter(p => p.stock > 0 && p.stock <= 5).length;
+  const empty = normalProducts.filter(p => !p.stock || p.stock === 0).length;
+  const ok = normalProducts.filter(p => p.stock > 5).length;
       
       animateValue('totalProduk', total);
       animateValue('stokAman', ok);
@@ -1249,13 +1252,15 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         let statusBadge = '';
         let stockClass = '';
         
-        if (!p.stock || p.stock === 0) {
+        const isUnlimited = p.isUnlimited === true;
+        
+        if (isUnlimited) {
+          statusBadge = '<span class="badge badge-primary"><i class="fas fa-infinity" style="font-size:0.7rem;"></i> Unlimited</span>';
+          stockClass = 'stock-ok';
+        } else if (!p.stock || p.stock === 0) {
           statusBadge = '<span class="badge badge-danger"><i class="fas fa-times-circle" style="font-size:0.7rem;"></i> Habis</span>';
           stockClass = 'stock-low';
         } else if (p.stock <= 5) {
-          statusBadge = '<span class="badge badge-warning"><i class="fas fa-exclamation-circle" style="font-size:0.7rem;"></i> Rendah</span>';
-          stockClass = 'stock-low';
-        } else {
           statusBadge = '<span class="badge badge-success"><i class="fas fa-check-circle" style="font-size:0.7rem;"></i> Aman</span>';
           stockClass = 'stock-ok';
         }
@@ -1583,8 +1588,9 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       
       products.forEach(p => {
         const cat = categories.find(c => c.id === p.categoryId);
-        let status = 'Aman';
-        if (!p.stock || p.stock === 0) status = 'Habis';
+                let status = 'Aman';
+        if (p.isUnlimited === true) status = 'Unlimited';
+        else if (!p.stock || p.stock === 0) status = 'Habis';
         else if (p.stock <= 5) status = 'Rendah';
         
         csv += `"${p.name}","${p.code || '-'}","${cat ? cat.name : '-'}",${p.stock || 0},"${p.unit || 'pcs'}","${status}"\n`;
