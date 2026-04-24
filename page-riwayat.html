@@ -948,10 +948,12 @@ if (mobileToggle) {
   });
 }
 
-// Tutup sidebar saat klik link di mobile (sama seperti Kasir)
+// Tutup sidebar saat klik link NAVIGASI (bukan dropdown toggle)
 document.querySelectorAll('.nav-link').forEach(link => {
-  link.addEventListener('click', () => {
-    if (window.innerWidth <= 1024) {
+  link.addEventListener('click', (e) => {
+    // Jangan tutup sidebar kalau ini dropdown toggle (hanya expand/collapse submenu)
+    if(link.classList.contains('nav-dropdown-toggle')) return;
+    if(window.innerWidth <= 1024){
       el('sidebar').classList.remove('mobile-open');
     }
   });
