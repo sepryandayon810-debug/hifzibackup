@@ -470,6 +470,128 @@ html, body{
   overflow-x:hidden;
   max-width:100vw;
 }
+
+/* ============================================
+   OVERRIDE: Selaraskan Tampilan dengan Kasir
+   ============================================ */
+
+/* ----- BODY GRADIENT ----- */
+body {
+  background: linear-gradient(180deg, var(--bg-primary) 0%, #ffffff 100%) !important;
+  background-attachment: fixed !important;
+}
+
+/* ----- SIDEBAR GLASSMORPHISM ----- */
+.sidebar {
+  background: rgba(255,255,255,0.9) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-right: 1px solid rgba(255,255,255,0.6) !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important;
+}
+[data-theme="dark"] .sidebar {
+  background: rgba(15,23,42,0.9) !important;
+  border-right: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+/* Hilangkan garis bawah header & search sidebar */
+.sidebar-header { border-bottom: none !important; }
+.sidebar-search  { border-bottom: none !important; }
+
+/* Search input seperti kasir */
+.search-input {
+  border: 1.5px solid var(--border-color) !important;
+  border-radius: 0.75rem !important;
+  transition: all .2s !important;
+}
+.search-input:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.1) !important;
+  background: #fff !important;
+}
+
+/* ----- NAV LINK MODERN ----- */
+.nav-link {
+  margin: 0 0.25rem !important;
+  border-radius: 0.75rem !important;
+  transition: all .15s !important;
+}
+.nav-link:hover {
+  background: rgba(99,102,241,0.06) !important;
+  color: var(--primary) !important;
+  transform: translateX(4px) !important;
+}
+.nav-link.active {
+  background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important;
+  border-radius: 12px !important;
+}
+/* Sembunyikan strip biru kiri saat active */
+.nav-link.active::before {
+  transform: scaleY(0) !important;
+}
+
+/* ----- HEADER GLASSMORPHISM ----- */
+.main-header {
+  background: rgba(255,255,255,0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.5) !important;
+}
+[data-theme="dark"] .main-header {
+  background: rgba(15,23,42,0.8) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+/* ----- CARD MODERN ----- */
+.card {
+  border-radius: 1.25rem !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06) !important;
+  transition: all .25s !important;
+}
+.card:hover {
+  box-shadow: 0 12px 30px rgba(0,0,0,0.1) !important;
+}
+
+/* ----- BUTTON PRIMARY GRADIENT ----- */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15) !important;
+}
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2) !important;
+}
+
+/* ----- MOBILE NAV GLASSMORPHISM ----- */
+.mobile-nav {
+  background: rgba(255,255,255,0.9) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-top: 1px solid rgba(255,255,255,0.6) !important;
+}
+[data-theme="dark"] .mobile-nav {
+  background: rgba(15,23,42,0.9) !important;
+  border-top: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+/* ----- PRODUK CARD HOVER (serupa kasir) ----- */
+.produk-card {
+  border-radius: 1.25rem !important;
+  transition: all .25s !important;
+}
+.produk-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.12) !important;
+  border-color: var(--primary) !important;
+}
+
+/* ----- SCROLLBAR KASIR STYLE ----- */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 9999px; opacity: .3; }
     
   </style>
 
