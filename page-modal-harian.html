@@ -559,26 +559,54 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 .w-full{width:100%!important}
 
 /* ===== MOBILE RESPONSIVE ===== */
-@media(max-width:768px){
-  html,body{max-width:100vw!important;overflow-x:hidden!important}
-  .page-content{padding:.5rem!important;padding-bottom:calc(var(--bottom-nav-height) + .5rem)!important;max-width:100vw!important;overflow-x:hidden!important}
-  .header-title{font-size:1rem!important}
-
-  .summary-value{font-size:1.75rem!important}
-  .history-list{max-height:300px!important}
-
-  .card-header{padding:.75rem 1rem!important}
-  .card-title{font-size:.9rem!important}
-  .card-body{padding:1rem .75rem!important;overflow-x:hidden!important;max-width:100%!important}
-
-  .modal-content{max-width:95%!important;border-radius:1.25rem!important}
-
-  .table-container{margin:0 -.75rem;border-radius:0;border-left:none;border-right:none}
-  .table{font-size:.82rem!important;width:100%!important;max-width:100%!important;table-layout:auto!important}
-  .table th,.table td{padding:.625rem .5rem!important;white-space:normal!important;word-break:break-word!important}
-  .table th{font-size:.7rem!important;white-space:nowrap!important}
-
-  .sidebar-footer{display:none}
+  /* Fix header riwayat modal di mobile */
+  .modal-history-card .card-header{
+    flex-direction:column !important;
+    align-items:flex-start !important;
+    gap:.5rem !important;
+    padding:.75rem 1rem !important;
+  }
+  .modal-history-card .card-title{
+    font-size:.9rem !important;
+  }
+  
+  /* Date filter di mobile: full width, input lebih kecil */
+  .date-filter{
+    width:100% !important;
+    margin-bottom:0 !important;
+  }
+  .date-filter input{
+    padding:.5rem !important;
+    font-size:.8rem !important;
+    min-width:0 !important;
+  }
+  
+  /* Filter chips lebih rapat tapi tidak overflow */
+  .filter-chips{
+    padding:.75rem 1rem .25rem !important;
+    gap:.35rem !important;
+  }
+  .filter-chip{
+    padding:.25rem .65rem !important;
+    font-size:.75rem !important;
+  }
+  
+  /* History item lebih padat */
+  .history-item{
+    padding:.75rem 1rem !important;
+    gap:.5rem;
+  }
+  .history-date{
+    font-size:.85rem !important;
+  }
+  .history-amount{
+    font-size:1rem !important;
+    white-space:nowrap;
+  }
+  .history-info{
+    min-width:0;
+    overflow:hidden;
+  }
 }
 
 @media(max-width:375px){
