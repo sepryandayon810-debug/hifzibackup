@@ -924,6 +924,36 @@ body {
   box-shadow: 0 4px 12px rgba(5,150,105,0.25) !important;
   font-weight: 600 !important;
 }
+
+    /* ============================================
+   FIX: Pills Bisa Geser Kiri-Kanan
+   ============================================ */
+
+/* Parent tidak boleh wrap, semua filter jadi 1 baris scrollable */
+.produk-filters {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  gap: 0.5rem !important;
+  padding-bottom: 0.25rem !important;
+}
+.produk-filters::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Pills tidak perlu scroll sendiri, biar parent yang handle */
+.category-pills {
+  overflow-x: visible !important;
+  flex-shrink: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Select & view toggle tidak boleh nge-shrink */
+.produk-filters .filter-select,
+.produk-filters .view-toggle {
+  flex-shrink: 0 !important;
+}
     
   </style>
 
