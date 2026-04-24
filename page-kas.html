@@ -533,11 +533,11 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   .kas-actions{flex-direction:column!important;gap:.5rem!important}
   .kas-actions .btn{width:100%!important;justify-content:center!important;padding:.75rem!important;font-size:.875rem!important}
 
-  /* Table */
-  .table-container{margin:0 -.75rem;border-radius:0;border-left:none;border-right:none}
-  .table{font-size:.82rem!important;width:100%!important;max-width:100%!important;table-layout:fixed!important}
-  .table th,.table td{padding:.625rem .5rem!important;white-space:nowrap!important}
-  .table th{font-size:.7rem!important}
+    /* Table - fix overlap */
+  .table-container{margin:0 -.75rem;border-radius:0;border-left:none;border-right:none;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .table{font-size:.82rem;width:100%;min-width:600px;table-layout:auto}
+  .table th,.table td{padding:.625rem .5rem;white-space:normal;word-break:break-word}
+  .table th{font-size:.7rem;white-space:nowrap}
 
   /* Card */
   .card-header{padding:.75rem 1rem!important}
@@ -568,6 +568,32 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     .page-content{padding-top:calc(.5rem + env(safe-area-inset-top))!important}
   }
 }   
+
+  /* ===== EXPAND ROW ===== */
+.expand-btn{
+  width:28px;height:28px;border:none;border-radius:.5rem;
+  background:var(--bg-secondary);color:var(--text-muted);
+  cursor:pointer;transition:all .2s;display:flex;
+  align-items:center;justify-content:center;font-size:.75rem;
+}
+.expand-btn:hover,.expand-btn.open{background:rgba(5,150,105,.1);color:var(--primary)}
+.expand-btn.open i{transform:rotate(180deg)}
+.expand-btn i{transition:transform .2s}
+.detail-row{display:none}
+.detail-row.open{display:table-row}
+.detail-row td{padding:0!important;background:var(--bg-secondary);border-bottom:2px solid var(--primary)!important}
+.detail-panel{padding:1.25rem 1.5rem}
+.detail-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-bottom:1rem;
+}
+.detail-grid label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:.25rem;display:block}
+.detail-grid div{font-size:.85rem;font-weight:600;color:var(--text-primary)}
+.detail-actions{display:flex;gap:.5rem;justify-content:flex-end}
+@media(max-width:768px){
+  .detail-panel{padding:.75rem}
+  .detail-grid{grid-template-columns:1fr}
+}
+    
   </style>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -812,6 +838,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     <table class="table">
               <thead>
                 <tr>
+                  <th style="width:32px"></th>
                   <th>Tanggal</th>
                   <th>Tipe</th>
                   <th>Keterangan</th>
@@ -821,7 +848,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
               </thead>
               <tbody id="kasHistory">
                 <tr>
-                  <td colspan="5" style="text-align: center; padding: 3rem;">
+                  <td colspan="6" style="text-align: center; padding: 3rem;">
                     <div class="empty-state">
                       <div class="empty-state-icon"><i class="fas fa-wallet"></i></div>
                       <p>Belum ada transaksi kas</p>
@@ -997,7 +1024,7 @@ document.addEventListener('click', (e) => {
           if (kasHistory.length === 0) {
             tbody.innerHTML = `
               <tr>
-                <td colspan="5" style="text-align: center; padding: 3rem;">
+                <td colspan="6" style="text-align: center; padding: 3rem;">
                   <div class="empty-state">
                     <div class="empty-state-icon"><i class="fas fa-wallet"></i></div>
                     <p>Belum ada transaksi kas</p>
@@ -1005,7 +1032,7 @@ document.addEventListener('click', (e) => {
                 </td>
               </tr>
             `;
-          } else {
+                    } else {
             tbody.innerHTML = kasHistory.slice(0, 20).map(t => {
               const isIncome = ['topup', 'kas_masuk', 'penjualan'].includes(t.type);
               const typeLabels = {
@@ -1015,11 +1042,11 @@ document.addEventListener('click', (e) => {
                 kas_keluar: 'Kas Keluar',
                 penjualan: 'Penjualan'
               };
-              
               const adminFeeInfo = t.adminFee > 0 ? `<br><small style="color: var(--success);">+Admin: ${Utils.formatRupiah(t.adminFee)}</small>` : '';
               
               return `
-                <tr>
+                <tr class="data-row">
+                  <td><button class="expand-btn" data-id="${t.id}" onclick="toggleDetail('${t.id}')"><i class="fas fa-chevron-down"></i></button></td>
                   <td>${Utils.formatDateTime(t.timestamp)}</td>
                   <td>
                     <span class="transaction-type-badge ${isIncome ? 'income' : 'expense'}">
@@ -1033,6 +1060,23 @@ document.addEventListener('click', (e) => {
                   </td>
                   <td>${t.cashierName || '-'}</td>
                 </tr>
+                <tr class="detail-row" id="detail-${t.id}">
+                  <td colspan="6">
+                    <div class="detail-panel">
+                      <div class="detail-grid">
+                        <div><label>ID Transaksi</label><div>${t.id}</div></div>
+                        <div><label>Tanggal</label><div>${Utils.formatDateTime(t.timestamp)}</div></div>
+                        <div><label>Tipe</label><div>${typeLabels[t.type] || t.type}</div></div>
+                        <div><label>Jumlah</label><div style="color: ${isIncome ? 'var(--success)' : 'var(--danger)'}">${isIncome ? '+' : '-'} ${Utils.formatRupiah(t.total || t.amount || 0)}</div></div>
+                        <div><label>Keterangan</label><div>${t.note || '-'}</div></div>
+                        <div><label>Kasir</label><div>${t.cashierName || '-'}</div></div>
+                      </div>
+                      <div class="detail-actions">
+                        <button class="btn btn-danger btn-sm" onclick="deleteTransaction('${t.id}')"><i class="fas fa-trash"></i> Hapus Transaksi</button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
               `;
             }).join('');
           }
@@ -1044,9 +1088,37 @@ document.addEventListener('click', (e) => {
         }
       }
 
-       loadKasData();
+        loadKasData();
+       
+       // Expose ke window agar deleteTransaction bisa refresh tabel
+       window.loadKasData = loadKasData;
       }
-      }); // ← tutup auth.onAuthStateChanged
+
+      // Toggle detail row
+      window.toggleDetail = function(id) {
+        const btn = document.querySelector(`button[data-id="${id}"]`);
+        const row = document.getElementById('detail-' + id);
+        if (!btn || !row) return;
+        btn.classList.toggle('open');
+        row.classList.toggle('open');
+      };
+
+      // Hapus transaksi
+      window.deleteTransaction = async function(id) {
+        if (!confirm('Yakin ingin menghapus transaksi ini?')) return;
+        try {
+          Utils.showLoading();
+          const today = Utils.getTodayString();
+          await database.ref('transactions/' + today + '/' + id).remove();
+          Utils.toast('Transaksi berhasil dihapus', 'success');
+          loadKasData();
+        } catch (error) {
+          console.error('Error deleting:', error);
+          Utils.toast('Gagal menghapus transaksi', 'error');
+          Utils.hideLoading();
+        }
+      };
+    });   // ← tutup DOMContentLoaded
   </script>
 </body>
 </html>
