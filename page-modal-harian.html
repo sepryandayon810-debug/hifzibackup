@@ -542,6 +542,44 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   box-shadow: 0 4px 14px rgba(5,150,105,0.3);
 }
 
+.expand-btn{
+  width:28px;height:28px;border:none;border-radius:.5rem;
+  background:var(--bg-secondary);color:var(--text-muted);
+  cursor:pointer;transition:all .2s;display:flex;
+  align-items:center;justify-content:center;font-size:.75rem;
+  margin-right:.5rem;flex-shrink:0;
+}
+.expand-btn:hover,.expand-btn.open{background:rgba(5,150,105,.1);color:var(--primary)}
+.expand-btn.open i{transform:rotate(180deg)}
+.expand-btn i{transition:transform .2s}
+
+.detail-row{display:none;background:var(--bg-secondary)}
+.detail-row.open{display:block}
+.detail-panel{padding:1rem 1.5rem}
+.detail-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-bottom:1rem;
+}
+.detail-grid label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:.25rem;display:block}
+.detail-grid div{font-size:.85rem;font-weight:600;color:var(--text-primary)}
+.detail-actions{display:flex;gap:.5rem;justify-content:flex-end}
+
+/* Mobile fix history + detail */
+@media(max-width:768px){
+  .history-item{gap:.5rem !important}
+  .history-item .history-info{min-width:0 !important;overflow:hidden}
+  .history-date{font-size:.82rem !important}
+  .history-amount{font-size:.95rem !important;white-space:nowrap}
+  .detail-panel{padding:.75rem !important}
+  .detail-grid{grid-template-columns:1fr !important}
+  .modal-history-card .card-header{
+    flex-direction:column !important;align-items:flex-start !important;gap:.5rem !important;padding:.75rem 1rem !important;
+  }
+  .date-filter{width:100% !important;margin-bottom:0 !important}
+  .date-filter input{padding:.5rem !important;font-size:.8rem !important;min-width:0 !important}
+  .filter-chips{padding:.75rem 1rem .25rem !important;gap:.35rem !important}
+  .filter-chip{padding:.25rem .65rem !important;font-size:.75rem !important}
+}
+
 /* ===== UTILITIES ===== */
 .d-none{display:none!important}
 .d-block{display:block!important}
@@ -557,70 +595,6 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 .mb-0{margin-bottom:0!important}
 .mb-2{margin-bottom:1rem!important}
 .w-full{width:100%!important}
-
-/* ===== MOBILE RESPONSIVE ===== */
-  /* Fix header riwayat modal di mobile */
-  .modal-history-card .card-header{
-    flex-direction:column !important;
-    align-items:flex-start !important;
-    gap:.5rem !important;
-    padding:.75rem 1rem !important;
-  }
-  .modal-history-card .card-title{
-    font-size:.9rem !important;
-  }
-  
-  /* Date filter di mobile: full width, input lebih kecil */
-  .date-filter{
-    width:100% !important;
-    margin-bottom:0 !important;
-  }
-  .date-filter input{
-    padding:.5rem !important;
-    font-size:.8rem !important;
-    min-width:0 !important;
-  }
-  
-  /* Filter chips lebih rapat tapi tidak overflow */
-  .filter-chips{
-    padding:.75rem 1rem .25rem !important;
-    gap:.35rem !important;
-  }
-  .filter-chip{
-    padding:.25rem .65rem !important;
-    font-size:.75rem !important;
-  }
-  
-  /* History item lebih padat */
-  .history-item{
-    padding:.75rem 1rem !important;
-    gap:.5rem;
-  }
-  .history-date{
-    font-size:.85rem !important;
-  }
-  .history-amount{
-    font-size:1rem !important;
-    white-space:nowrap;
-  }
-  .history-info{
-    min-width:0;
-    overflow:hidden;
-  }
-}
-
-@media(max-width:375px){
-  .summary-value{font-size:1.5rem!important}
-  .history-amount{font-size:1rem!important}
-  .table th,.table td{padding:.5rem .375rem!important;font-size:.75rem!important}
-}
-
-@supports(padding-top:env(safe-area-inset-top)){
-  @media(max-width:768px){
-    .main-header{padding-top:env(safe-area-inset-top)!important;height:calc(var(--header-height) + env(safe-area-inset-top))!important}
-    .page-content{padding-top:calc(.5rem + env(safe-area-inset-top))!important}
-  }
-}
 
   </style>
   
@@ -1153,6 +1127,35 @@ document.addEventListener('click', (e) => {
             Auth.logout();
           });
         });
+
+                // Toggle detail row
+        window.toggleDetail = function(id) {
+          const btn = document.querySelector(`button[data-id="${id}"]`);
+          const row = document.getElementById('detail-' + id);
+          if (!row) return;
+          if (btn) btn.classList.toggle('open');
+          row.classList.toggle('open');
+        };
+
+        // Hapus modal
+        window.deleteTransaction = async function(date) {
+          if (!confirm('Yakin ingin menghapus modal tanggal ' + date + '?')) return;
+          try {
+            Utils.showLoading('Menghapus...');
+            const user = Auth.getCurrentUser();
+            await database.ref('modal/' + date + '/' + user.uid).remove();
+            Utils.hideLoading();
+            Utils.showToast('Modal berhasil dihapus', 'success');
+            loadModalHistory();
+          } catch (error) {
+            Utils.hideLoading();
+            console.error('Error deleting modal:', error);
+            Utils.showToast('Gagal menghapus modal', 'error');
+          }
+        };
+
+        // Expose ke window agar bisa refresh
+        window.loadModalHistory = loadModalHistory;
       }
 
       async function loadTodayModal() {
@@ -1283,14 +1286,32 @@ document.addEventListener('click', (e) => {
           day: 'numeric'
         });
         
-        html += `
-          <div class="history-item">
-            <div class="history-info">
-              <span class="history-date">${formattedDate}</span>
-              <span class="history-user">${modal.userName || 'Unknown'}</span>
-              ${modal.note ? `<span style="font-size: 0.75rem; color: var(--text-muted);">${modal.note}</span>` : ''}
+                html += `
+          <div class="history-item data-row" style="cursor:pointer;" onclick="toggleDetail('${modal.date}')">
+            <div style="display:flex;align-items:center;flex:1;min-width:0;">
+              <button class="expand-btn" data-id="${modal.date}" onclick="event.stopPropagation();toggleDetail('${modal.date}')"><i class="fas fa-chevron-down"></i></button>
+              <div class="history-info" style="min-width:0;">
+                <span class="history-date">${formattedDate}</span>
+                <span class="history-user">${modal.userName || 'Unknown'}</span>
+                ${modal.note ? `<span style="font-size: 0.75rem; color: var(--text-muted);">${modal.note}</span>` : ''}
+              </div>
             </div>
             <span class="history-amount">${Utils.formatRupiah(modal.amount)}</span>
+          </div>
+          <div class="detail-row" id="detail-${modal.date}">
+            <div class="detail-panel">
+              <div class="detail-grid">
+                <div><label>Tanggal</label><div>${formattedDate}</div></div>
+                <div><label>Jumlah</label><div style="color:var(--success)">${Utils.formatRupiah(modal.amount)}</div></div>
+                <div><label>Kasir</label><div>${modal.userName || '-'}</div></div>
+                <div><label>Catatan</label><div>${modal.note || '-'}</div></div>
+                <div><label>User ID</label><div>${modal.userId || '-'}</div></div>
+                <div><label>Timestamp</label><div>${modal.timestamp ? new Date(modal.timestamp).toLocaleString('id-ID') : '-'}</div></div>
+              </div>
+              <div class="detail-actions">
+                <button class="btn btn-danger btn-sm" onclick="deleteTransaction('${modal.date}')"><i class="fas fa-trash"></i> Hapus Modal</button>
+              </div>
+            </div>
           </div>
         `;
       });
