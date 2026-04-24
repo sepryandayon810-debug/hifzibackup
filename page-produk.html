@@ -820,6 +820,15 @@ html, body{
               <span>Produk Aktif</span>
             </label>
           </div>
+          <div class="form-group">
+  <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer">
+    <input type="checkbox" id="produkUnlimited">
+    <span>Produk Unlimited (Digital / Pulsa / Token — tanpa batas stok)</span>
+  </label>
+  <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem;margin-left:1.5rem;">
+    Centang jika produk ini tidak perlu mengurangi stok saat transaksi
+  </p>
+</div>
         </form>
       </div>
       <div class="modal-footer">
@@ -1199,13 +1208,7 @@ document.querySelectorAll('.nav-link').forEach(function(link){
           else html += '<i class="fas fa-box"></i>';
           html += '<span class="produk-status ' + (product.status === "active" ? "active" : "inactive") + '">' + (product.status === "active" ? "Aktif" : "Nonaktif") + '</span>';
 // ⭐ Tambahkan deteksi unlimited
-var catId = (product.categoryId || '').toString().toLowerCase();
-var prodName = (product.name || '').toString().toLowerCase();
-var isDigital = ['digital', 'pulsa', 'token', 'voucher', 'kuota', 'listrik', 'games'].includes(catId) || 
-                ['pulsa', 'token', 'voucher', 'digital', 'games', 'game', 'diamond', 'steam', 'top up', 'topup'].some(function(keyword){ 
-                  return prodName.indexOf(keyword) !== -1; 
-                });
-var isUnlimited = product.isUnlimited || isDigital || product.stock === 999999;
+var isUnlimited = product.isUnlimited === true;
 
 var stockBadge = '';
 if(isUnlimited){
@@ -1330,14 +1333,8 @@ html += stockBadge;
           if(product.image) html += '<img src="' + product.image + '" alt="' + escapeHtml(product.name) + '">';
           else html += '<i class="fas fa-box"></i>';
           html += '<span class="produk-status ' + (product.status === "active" ? "active" : "inactive") + '">' + (product.status === "active" ? "Aktif" : "Nonaktif") + '</span>';
-// ⭐ Tambahkan deteksi unlimited
-var catId = (product.categoryId || '').toString().toLowerCase();
-var prodName = (product.name || '').toString().toLowerCase();
-var isDigital = ['digital', 'pulsa', 'token', 'voucher', 'kuota', 'listrik', 'games'].includes(catId) || 
-                ['pulsa', 'token', 'voucher', 'digital', 'games', 'game', 'diamond', 'steam', 'top up', 'topup'].some(function(keyword){ 
-                  return prodName.indexOf(keyword) !== -1; 
-                });
-var isUnlimited = product.isUnlimited || isDigital || product.stock === 999999;
+
+var isUnlimited = product.isUnlimited === true;
 
 var stockBadge = '';
 if(isUnlimited){
@@ -1549,6 +1546,7 @@ html += stockBadge;
       currentProduct = null;
       document.getElementById("modalTitle").textContent = "Tambah Produk";
       document.getElementById("produkForm").reset();
+      document.getElementById("produkUnlimited").checked = false;
       document.getElementById("produkId").value = "";
       document.getElementById("imagePreview").style.display = "none";
       document.getElementById("produkCode").value = generateProductCode();
@@ -1583,6 +1581,7 @@ html += stockBadge;
         minStock: parseInt(document.getElementById("produkMinStock").value) || 5,
         description: document.getElementById("produkDesc").value,
         status: document.getElementById("produkStatus").checked ? "active" : "inactive",
+         isUnlimited: document.getElementById("produkUnlimited").checked,
         updatedAt: firebase.database.ServerValue.TIMESTAMP
       };
 
@@ -1648,6 +1647,7 @@ html += stockBadge;
       document.getElementById("produkMinStock").value = product.minStock || 5;
       document.getElementById("produkDesc").value = product.description || "";
       document.getElementById("produkStatus").checked = product.status !== "inactive";
+      document.getElementById("produkUnlimited").checked = product.isUnlimited === true;
       var preview = document.getElementById("imagePreview");
 var btnHapus = document.getElementById("btnHapusGambar");
 if(product.image){ 
