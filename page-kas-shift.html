@@ -319,26 +319,52 @@ body{
 .mb-2{margin-bottom:1rem!important}
 .w-full{width:100%!important}
 
-/* ===== DARK MODE FIXES ===== */
-[data-theme="dark"] .nav-link{color:var(--text-primary)}
-[data-theme="dark"] .nav-link:hover{background:rgba(255,255,255,.08);color:var(--primary)}
-[data-theme="dark"] .nav-section-title{color:var(--text-muted)}
-[data-theme="dark"] .search-input{background:var(--bg-secondary);border-color:var(--border-color);color:var(--text-primary)}
-[data-theme="dark"] .search-input:focus{background:var(--bg-card);box-shadow:0 0 0 4px rgba(5,150,105,.2)}
-[data-theme="dark"] .logo-text{-webkit-text-fill-color:var(--text-primary)}
-[data-theme="dark"] .summary-item{background:#064e3b;border-color:#047857}
-[data-theme="dark"] .summary-label{color:#34d399}
-[data-theme="dark"] .summary-value{color:#ecfdf5}
-[data-theme="dark"] .status-card{background:#065f46;border-color:#047857}
+/* ===== DARK MODE SHIFT SPECIFIC ===== */
+[data-theme="dark"] body{background:linear-gradient(180deg,#022c22 0%,#064e3b 50%,#065f46 100%)}
+[data-theme="dark"] .shift-item{border-bottom-color:#047857}
+[data-theme="dark"] .shift-date{color:#ecfdf5}
+[data-theme="dark"] .shift-badge.open{background:rgba(16,185,129,.15)}
+[data-theme="dark"] .shift-badge.closed{background:rgba(239,68,68,.15)}
+[data-theme="dark"] .btn-shift.open{box-shadow:0 4px 14px rgba(0,0,0,.3)}
+[data-theme="dark"] .btn-shift.close{box-shadow:0 4px 14px rgba(0,0,0,.3)}
+[data-theme="dark"] .status-card .status-time{color:#34d399}
+[data-theme="dark"] .empty-state i{color:#34d399}
+[data-theme="dark"] .form-input::placeholder{color:#6ee7b7}
+[data-theme="dark"] .form-textarea{background:#064e3b;border-color:#047857;color:#ecfdf5}
+[data-theme="dark"] .card-header{border-bottom-color:#047857}
+[data-theme="dark"] .modal-header{border-bottom-color:#047857}
+[data-theme="dark"] .modal-footer{border-top-color:#047857;background:#064e3b}
+[data-theme="dark"] .btn-secondary{background:#064e3b;border-color:#047857;color:#6ee7b7}
+[data-theme="dark"] .btn-outline{border-color:#047857;color:#6ee7b7}
+[data-theme="dark"] .btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+[data-theme="dark"] .date-range-info{background:#064e3b;border-bottom-color:#047857;color:#6ee7b7}
+[data-theme="dark"] .filter-stats{background:#064e3b;border-bottom-color:#047857}
+[data-theme="dark"] .filter-stat-value{color:#6ee7b7}
+[data-theme="dark"] .filter-stat-label{color:#34d399}
+[data-theme="dark"] .summary-grid .summary-item{background:#065f46;border-color:#047857}
+[data-theme="dark"] .summary-grid .summary-label{color:#34d399}
+[data-theme="dark"] .summary-grid .summary-value{color:#ecfdf5}
 [data-theme="dark"] .history-card{background:#065f46;border-color:#047857}
-[data-theme="dark"] .shift-item:hover{background:#064e3b}
-[data-theme="dark"] .filter-btn{background:#065f46;border-color:#047857;color:#6ee7b7}
-[data-theme="dark"] .filter-btn.active{color:#fff}
-[data-theme="dark"] .filter-stat-item{background:#065f46;border-color:#047857}
-[data-theme="dark"] .date-filter-row .form-input{background:#064e3b;border-color:#047857;color:#ecfdf5}
-[data-theme="dark"] .btn-primary{box-shadow:0 4px 14px rgba(0,0,0,0.3)}
-[data-theme="dark"] .loading-overlay{background:rgba(2,44,34,0.8)}
-[data-theme="dark"] .loading-text{color:var(--text-primary)}
+[data-theme="dark"] .history-list .shift-item:hover{background:#064e3b}
+[data-theme="dark"] .filter-bar{background:#064e3b}
+[data-theme="dark"] .mobile-nav-item{color:#6ee7b7}
+[data-theme="dark"] .mobile-nav-item.active{color:#34d399}
+[data-theme="dark"] .user-name{color:#ecfdf5}
+[data-theme="dark"] .user-role{color:#34d399}
+[data-theme="dark"] .btn-icon{background:#064e3b;border-color:#047857;color:#6ee7b7}
+[data-theme="dark"] .btn-icon:hover{background:rgba(255,255,255,.08);color:#34d399}
+[data-theme="dark"] .search-input-wrapper i{color:#34d399}
+[data-theme="dark"] .shift-duration{color:#34d399}
+[data-theme="dark"] .shift-user{color:#6ee7b7}
+[data-theme="dark"] .shift-time{color:#34d399}
+[data-theme="dark"] .empty-state-title{color:#ecfdf5}
+[data-theme="dark"] .empty-state p{color:#6ee7b7}
+[data-theme="dark"] .form-label{color:#6ee7b7}
+[data-theme="dark"] .modal-subtitle{color:#34d399}
+[data-theme="dark"] .status-text.open{color:#6ee7b7}
+[data-theme="dark"] .status-text.closed{color:#fca5a5}
+[data-theme="dark"] .logo-icon{box-shadow:0 4px 12px rgba(0,0,0,.3)}
+[data-theme="dark"] .menu-toggle{box-shadow:0 2px 8px rgba(0,0,0,.4)}
 
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -665,15 +691,14 @@ body{
         }
       });
 
-                    // Theme toggle
-      document.getElementById('btnTheme').addEventListener('click', () => {
-        const html = document.documentElement;
-        const current = html.getAttribute('data-theme') || 'light';
-        const next = current === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-theme', next);
-        localStorage.setItem('webpos_theme', next);
-        const icon = document.querySelector('#btnTheme i');
-        if(icon) icon.className = next === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+                   // Sinkron tema antar tab/page real-time
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'webpos_theme') {
+          const newTheme = e.newValue || 'light';
+          document.documentElement.setAttribute('data-theme', newTheme);
+          const icon = document.querySelector('#btnTheme i');
+          if(icon) icon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
       });
 
       // Filter buttons (termasuk custom date)
@@ -1044,7 +1069,7 @@ body{
 
                   document.addEventListener('DOMContentLoaded', () => {
       // Apply saved theme
-      const savedTheme = localStorage.getItem('webpos_theme');
+     const savedTheme = localStorage.getItem('webpos_theme');
       if (savedTheme) {
         document.documentElement.setAttribute('data-theme', savedTheme);
         const icon = document.querySelector('#btnTheme i');
