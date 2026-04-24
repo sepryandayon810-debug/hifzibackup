@@ -569,6 +569,12 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   }
 }   
   </style>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  
 </head>
 <body>
   <div class="app-container">
@@ -850,11 +856,12 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   <script src="js/sidebar-filter.js"></script>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-       // Fallback: pastikan auth & database tersedia
+        document.addEventListener('DOMContentLoaded', () => {
+      // Fallback: pastikan auth & database tersedia
       window.auth = window.auth || firebase.auth();
       window.database = window.database || firebase.database();
 
+      auth.onAuthStateChanged((user) => {
         if (!user && !Utils.getStorage('webpos_session')) {
           window.location.href = '../login.html';
           return;
@@ -1037,9 +1044,10 @@ document.addEventListener('click', (e) => {
         }
       }
 
-      loadKasData();
+       loadKasData();
       }
-    });
+      }); // ← tutup auth.onAuthStateChanged
+    });   // ← tutup DOMContentLoaded
   </script>
 </body>
 </html>
