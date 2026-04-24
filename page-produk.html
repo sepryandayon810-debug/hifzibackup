@@ -1450,15 +1450,16 @@ body {
   sidebar.classList.toggle("mobile-open");
 });
 
-// ⭐ TAMBAHKAN INI: Tutup sidebar saat klik link di mobile
+// ⭐ Tutup sidebar saat klik link NAVIGASI (bukan dropdown toggle)
 document.querySelectorAll('.nav-link').forEach(function(link){
-  link.addEventListener('click', function(){
+  link.addEventListener('click', function(e){
+    // Jangan tutup sidebar kalau ini dropdown toggle (hanya expand/collapse submenu)
+    if(link.classList.contains('nav-dropdown-toggle')) return;
     if(window.innerWidth <= 1024){
       sidebar.classList.remove('mobile-open');
     }
   });
 });
-
       // Dropdown navigasi
       document.querySelectorAll("[data-dropdown]").forEach(function(dropdown){
         var toggle = dropdown.querySelector(".nav-dropdown-toggle");
