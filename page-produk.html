@@ -881,103 +881,6 @@ body {
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-secondary); }
 ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 9999px; opacity: .3; }
-
-/* ============================================
-   KATEGORI PILLS (Sama Persis Kasir)
-   ============================================ */
-.category-pills {
-  display: flex !important;
-  gap: 0.5rem !important;
-  overflow-x: auto !important;
-  padding-bottom: 0.5rem !important;
-  scrollbar-width: none !important;
-  flex-wrap: nowrap !important;
-  -webkit-overflow-scrolling: touch;
-}
-.category-pills::-webkit-scrollbar {
-  display: none !important;
-}
-.category-pill {
-  padding: 0.5rem 1rem !important;
-  border: 1px solid var(--border-color) !important;
-  background: var(--bg-card) !important;
-  border-radius: 50px !important;
-  font-size: 0.875rem !important;
-  font-weight: 500 !important;
-  color: var(--text-secondary) !important;
-  cursor: pointer !important;
-  white-space: nowrap !important;
-  transition: all 0.15s !important;
-  flex-shrink: 0 !important;
-  font-family: inherit !important;
-}
-.category-pill:hover {
-  background: var(--primary) !important;
-  color: white !important;
-  border-color: var(--primary) !important;
-  box-shadow: 0 4px 12px rgba(5,150,105,0.25) !important;
-}
-.category-pill.active {
-  background: linear-gradient(135deg, var(--primary), var(--secondary)) !important;
-  color: white !important;
-  border-color: transparent !important;
-  box-shadow: 0 4px 12px rgba(5,150,105,0.25) !important;
-  font-weight: 600 !important;
-}
-
-   /* ============================================
-   FIX V2: Pills Scrollable Sendiri (Mirip Kasir)
-   ============================================ */
-
-/* 1. Pills: scrollable sendiri, mirip kasir */
-.category-pills {
-  display: flex !important;
-  gap: 0.5rem !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-  padding-bottom: 0.5rem !important;
-  scrollbar-width: none !important;
-  flex-wrap: nowrap !important;
-  -webkit-overflow-scrolling: touch !important;
-  touch-action: pan-x !important;
-  flex: 1 !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-}
-.category-pills::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-/* 2. Parent filters: TIDAK scroll, biar pills yang handle */
-.produk-filters {
-  flex-wrap: nowrap !important;
-  gap: 0.5rem !important;
-  overflow: visible !important;
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-/* 3. Select & toggle: tetap di sebelah pills, tidak nge-shrink */
-.produk-filters .filter-select,
-.produk-filters .view-toggle {
-  flex-shrink: 0 !important;
-}
-
-/* 4. Mobile: matikan scroll parent, pills yang aktif */
-@media(max-width:640px){
-  .produk-filters {
-    overflow-x: visible !important;
-    overflow-y: visible !important;
-    flex-wrap: nowrap !important;
-  }
-  .category-pills {
-    flex: 1 !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-  }
-}
     
   </style>
 
@@ -1163,9 +1066,7 @@ body {
               <input type="text" id="searchProduk" placeholder="Cari produk berdasarkan nama atau kode...">
             </div>
             <div class="produk-filters">
-              <div class="category-pills" id="categoryPills">
-  <button class="category-pill active" data-category="">Semua</button>
-</div>
+              <select class="filter-select" id="filterKategori"><option value="">Semua Kategori</option></select>
               <select class="filter-select" id="filterStatus">
   <option value="">Semua Status</option>
   <option value="active">Aktif</option>
@@ -1634,28 +1535,15 @@ document.querySelectorAll('.nav-link').forEach(function(link){
             if(cats.hasOwnProperty(id)) categories.push(Object.assign({id: id}, cats[id]));
           }
 
-          // Render category pills (sama seperti kasir)
-          var pillsContainer = document.getElementById("categoryPills");
-          var pillsHtml = '<button class="category-pill active" data-category="">Semua</button>';
-          categories.forEach(function(cat){
-            pillsHtml += '<button class="category-pill" data-category="' + cat.id + '">' + escapeHtml(cat.name) + '</button>';
-          });
-          pillsContainer.innerHTML = pillsHtml;
-
-          // Event listener untuk pills
-          pillsContainer.querySelectorAll(".category-pill").forEach(function(pill){
-            pill.addEventListener("click", function(){
-              pillsContainer.querySelectorAll(".category-pill").forEach(function(p){ p.classList.remove("active"); });
-              pill.classList.add("active");
-              applyFilters();
-            });
-          });
-
+          var filterSelect = document.getElementById("filterKategori");
           var produkSelect = document.getElementById("produkKategori");
+          var options = '<option value="">Semua Kategori</option>';
           var produkOptions = '<option value="">Pilih Kategori</option>';
           categories.forEach(function(cat){
+            options += '<option value="' + cat.id + '">' + escapeHtml(cat.name) + '</option>';
             produkOptions += '<option value="' + cat.id + '">' + escapeHtml(cat.name) + '</option>';
           });
+          filterSelect.innerHTML = options;
           produkSelect.innerHTML = produkOptions;
 
           renderCategories();
@@ -1949,10 +1837,10 @@ html += stockBadge;
       openKategoriDetail(card.dataset.id);
     }
   });
-            // Search & filter
+      // Search & filter
       var searchInput = document.getElementById("searchProduk");
       if(searchInput) searchInput.addEventListener("input", debounce(applyFilters, 300));
-      // filterKategori sudah diganti pills, event listener di-loadCategories()
+      document.getElementById("filterKategori").addEventListener("change", applyFilters);
       document.getElementById("filterStatus").addEventListener("change", applyFilters);
       document.getElementById("filterSort").addEventListener("change", applyFilters);
 
@@ -2028,8 +1916,7 @@ html += stockBadge;
     // ============================================================
     function applyFilters(){
   var search = (document.getElementById("searchProduk").value || "").toLowerCase();
-  var activePill = document.querySelector("#categoryPills .category-pill.active");
-      var category = activePill ? activePill.dataset.category : "";
+  var category = document.getElementById("filterKategori").value;
   var status = document.getElementById("filterStatus").value;
   var sort = document.getElementById("filterSort").value; // ⭐ Ambil nilai sorting
   
