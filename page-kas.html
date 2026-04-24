@@ -851,8 +851,10 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // Wait for Firebase auth to be ready
-      auth.onAuthStateChanged((user) => {
+       // Fallback: pastikan auth & database tersedia
+      window.auth = window.auth || firebase.auth();
+      window.database = window.database || firebase.database();
+
         if (!user && !Utils.getStorage('webpos_session')) {
           window.location.href = '../login.html';
           return;
