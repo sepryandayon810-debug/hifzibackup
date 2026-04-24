@@ -576,6 +576,13 @@ html,body{overflow-x:hidden;max-width:100vw}
   gap: 0.625rem !important;
   cursor: pointer;
 }
+[data-theme="dark"] .products-grid.list-view .product-card {
+  background: #064e3b !important;
+  border-bottom-color: rgba(255,255,255,0.08) !important;
+}
+[data-theme="dark"] .products-grid.list-view .product-card:hover {
+  background: #065f46 !important;
+}
 
 /* Baris terakhir tanpa garis bawah */
 .products-grid.list-view .product-card:last-child {
@@ -651,6 +658,12 @@ html,body{overflow-x:hidden;max-width:100vw}
   text-overflow: ellipsis !important;
   margin: 0 !important;
   line-height: 1 !important;
+}
+[data-theme="dark"] .products-grid.list-view .product-card-name {
+  color: #ecfdf5 !important;
+}
+[data-theme="dark"] .products-grid.list-view .product-card-price {
+  color: #6ee7b7 !important;
 }
 
 /* Kode produk: sembunyikan di list view */
