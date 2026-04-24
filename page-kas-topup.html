@@ -744,24 +744,28 @@ if (mobileToggle) {
   });
 }
 
-// Tutup sidebar saat klik link di mobile
-document.querySelectorAll('.nav-link').forEach(link => {
-  link.addEventListener('click', () => {
-    if (window.innerWidth <= 1024) {
+  // Tutup sidebar + dropdown saat klik link di mobile
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 1024) {
+        sidebar.classList.remove('mobile-open');
+        // ⭐ TAMBAH: tutup semua dropdown juga
+        document.querySelectorAll('.nav-dropdown.open').forEach(d => d.classList.remove('open'));
+      }
+    });
+  });
+
+  // Tutup sidebar + dropdown saat klik overlay
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 1024 && 
+        sidebar.classList.contains('mobile-open') &&
+        !sidebar.contains(e.target) && 
+        e.target !== mobileToggle) {
       sidebar.classList.remove('mobile-open');
+      // ⭐ TAMBAH: tutup semua dropdown juga
+      document.querySelectorAll('.nav-dropdown.open').forEach(d => d.classList.remove('open'));
     }
   });
-});
-
-// Tutup sidebar saat klik overlay (area gelap di luar sidebar)
-document.addEventListener('click', (e) => {
-  if (window.innerWidth <= 1024 && 
-      sidebar.classList.contains('mobile-open') &&
-      !sidebar.contains(e.target) && 
-      e.target !== mobileToggle) {
-    sidebar.classList.remove('mobile-open');
-  }
-});
 
       document.getElementById('btnLogout').addEventListener('click', () => {
         Utils.confirm('Yakin ingin logout?', () => Auth.logout());
