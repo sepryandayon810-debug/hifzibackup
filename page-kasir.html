@@ -684,44 +684,48 @@ html,body{overflow-x:hidden;max-width:100vw}
   }
 }
 
-/* ===== DARK MODE SIDEBAR — ULTIMATE FIX ===== */
-html[data-theme="dark"] .sidebar,
-html[data-theme="dark"] .sidebar-header,
-html[data-theme="dark"] .sidebar-search,
-html[data-theme="dark"] .sidebar-footer {
+/* ===== DARK MODE SIDEBAR — FINAL FIX ===== */
+[data-theme="dark"] .sidebar {
   background: rgba(6,78,59,0.95) !important;
+  border-right-color: rgba(255,255,255,0.05) !important;
+}
+[data-theme="dark"] .sidebar-header,
+[data-theme="dark"] .sidebar-search,
+[data-theme="dark"] .sidebar-footer {
+  background: transparent !important;
   border-color: rgba(255,255,255,0.05) !important;
 }
-html[data-theme="dark"] .sidebar .nav-link,
-html[data-theme="dark"] .sidebar .nav-submenu .nav-link {
-  color: var(--text-primary) !important;
+[data-theme="dark"] .nav-link {
+  color: #ecfdf5 !important;
 }
-html[data-theme="dark"] .sidebar .nav-link:hover,
-html[data-theme="dark"] .sidebar .nav-submenu .nav-link:hover {
+[data-theme="dark"] .nav-link:hover {
   background: rgba(255,255,255,.08) !important;
   color: #fff !important;
 }
-html[data-theme="dark"] .sidebar .nav-link.active,
-html[data-theme="dark"] .sidebar .nav-link.active span,
-html[data-theme="dark"] .sidebar .nav-link.active i {
+[data-theme="dark"] .nav-link.active,
+[data-theme="dark"] .nav-link.active span,
+[data-theme="dark"] .nav-link.active i {
   color: #fff !important;
 }
-html[data-theme="dark"] .sidebar .nav-section-title {
-  color: var(--text-muted) !important;
+[data-theme="dark"] .nav-section-title {
+  color: #34d399 !important;
 }
-html[data-theme="dark"] .sidebar .search-input {
-  background: var(--bg-secondary) !important;
-  border-color: var(--border-color) !important;
-  color: var(--text-primary) !important;
+[data-theme="dark"] .search-input {
+  background: #064e3b !important;
+  border-color: #047857 !important;
+  color: #ecfdf5 !important;
 }
-html[data-theme="dark"] .sidebar .logo-text {
-  -webkit-text-fill-color: var(--text-primary) !important;
+[data-theme="dark"] .logo-text {
+  -webkit-text-fill-color: #ecfdf5 !important;
 }
-html[data-theme="dark"] .sidebar .user-name {
-  color: var(--text-primary) !important;
+[data-theme="dark"] .user-name {
+  color: #ecfdf5 !important;
 }
-html[data-theme="dark"] .sidebar .user-role {
-  color: var(--text-muted) !important;
+[data-theme="dark"] .user-role {
+  color: #34d399 !important;
+}
+[data-theme="dark"] .dropdown-arrow {
+  color: #34d399 !important;
 }
     
 </style>
