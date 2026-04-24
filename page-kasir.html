@@ -1557,32 +1557,26 @@ function renderProducts() {
     return;
   }
 
-  container.innerHTML = filtered.map(p => {
-    // Deteksi produk unlimited (digital/pulsa/token/voucher)
-    const catId = (p.categoryId || '').toString().toLowerCase();
-    const prodName = (p.name || '').toLowerCase();
-    const isDigital = ['digital', 'pulsa', 'token', 'voucher', 'kuota', 'listrik', 'games'].includes(catId) || 
-                      ['pulsa', 'token', 'voucher', 'digital', 'games', 'game', 'diamond', 'steam', 'top up', 'topup'].some(keyword => prodName.includes(keyword));
-    const isUnlimited = p.isUnlimited || isDigital || p.stock === 999999;
+        container.innerHTML = filtered.map(p => {
+    const isUnlimited = p.isUnlimited === true;
     
-    // Tentukan tampilan badge stok
     let stockClass, stockText;
-    if (isUnlimited || p.stock === 999999) {
-      stockClass = ''; // Tidak ada class khusus (default hijau)
-      stockText = '∞'; // Infinity symbol
+    if (isUnlimited) {
+      stockClass = '';
+      stockText = '∞';
     } else if (p.stock <= 0) {
       stockClass = 'empty';
       stockText = 'Habis';
     } else if (p.stock <= 5) {
       stockClass = 'low';
-      stockText = `${p.stock} sisa`;
+      stockText = p.stock + ' sisa';
     } else {
       stockClass = '';
       stockText = p.stock;
     }
     
     return `
-      <div class="product-card" onclick="addToCart('${p.id}')" style="${p.stock <= 0 && !isUnlimited ? 'opacity:0.6;pointer-events:none;' : ''}">
+  <div class="product-card" onclick="addToCart('${p.id}')" style="${p.stock <= 0 && !isUnlimited ? 'opacity:0.6;pointer-events:none;' : ''}">
         <div class="product-card-image">
           ${p.image ? `<img src="${p.image}" alt="${p.name}">` : '<i class="fas fa-box"></i>'}
           <span class="product-stock-badge ${stockClass}">${stockText}</span>
@@ -1608,13 +1602,9 @@ function renderProducts() {
   const product = products.find(p => p.id === productId);
   if (!product) return;
 
-  // Cek stok - sekarang support unlimited (stok 0 atau isUnlimited = true tetap bisa)
-const prodCatId = (product.categoryId || '').toString().toLowerCase();
-const prodCat = (product.category || '').toString().toLowerCase();
-const isUnlimited = product.isUnlimited || 
-                    (product.stock === 0 && ['digital', 'games'].includes(prodCat)) ||
-                    prodCatId === 'games' ||
-                    ['digital', 'games', 'pulsa', 'token'].includes(prodCatId);  
+    // Cek stok - hanya produk dengan flag isUnlimited eksplisit yang unlimited
+ const isUnlimited = product.isUnlimited === true;
+  
   if (!isUnlimited && product.stock <= 0) {
     showToast('Produk habis', 'warning');
     return;
