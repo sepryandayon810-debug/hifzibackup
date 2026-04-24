@@ -684,44 +684,43 @@ html,body{overflow-x:hidden;max-width:100vw}
   }
 }
 
-/* ===== DARK MODE SIDEBAR READABILITY FIX - ENHANCED ===== */
-html[data-theme="dark"] .sidebar {
+/* ===== DARK MODE SIDEBAR — ULTIMATE FIX ===== */
+html[data-theme="dark"] .sidebar,
+html[data-theme="dark"] .sidebar-header,
+html[data-theme="dark"] .sidebar-search,
+html[data-theme="dark"] .sidebar-footer {
   background: rgba(6,78,59,0.95) !important;
-  border-right-color: rgba(255,255,255,0.05) !important;
+  border-color: rgba(255,255,255,0.05) !important;
 }
-html[data-theme="dark"] .nav-link {
+html[data-theme="dark"] .sidebar .nav-link,
+html[data-theme="dark"] .sidebar .nav-submenu .nav-link {
   color: var(--text-primary) !important;
 }
-html[data-theme="dark"] .nav-link:hover {
+html[data-theme="dark"] .sidebar .nav-link:hover,
+html[data-theme="dark"] .sidebar .nav-submenu .nav-link:hover {
   background: rgba(255,255,255,.08) !important;
   color: #fff !important;
 }
-html[data-theme="dark"] .nav-link.active {
+html[data-theme="dark"] .sidebar .nav-link.active,
+html[data-theme="dark"] .sidebar .nav-link.active span,
+html[data-theme="dark"] .sidebar .nav-link.active i {
   color: #fff !important;
 }
-html[data-theme="dark"] .nav-section-title {
+html[data-theme="dark"] .sidebar .nav-section-title {
   color: var(--text-muted) !important;
 }
-html[data-theme="dark"] .search-input {
+html[data-theme="dark"] .sidebar .search-input {
   background: var(--bg-secondary) !important;
   border-color: var(--border-color) !important;
   color: var(--text-primary) !important;
 }
-html[data-theme="dark"] .search-input:focus {
-  background: var(--bg-card) !important;
-  box-shadow: 0 0 0 4px rgba(5,150,105,.2) !important;
-}
-html[data-theme="dark"] .logo-text {
+html[data-theme="dark"] .sidebar .logo-text {
   -webkit-text-fill-color: var(--text-primary) !important;
 }
-html[data-theme="dark"] .sidebar-footer {
-  background: rgba(0,0,0,0.2) !important;
-  border-top-color: var(--border-color) !important;
-}
-html[data-theme="dark"] .user-name {
+html[data-theme="dark"] .sidebar .user-name {
   color: var(--text-primary) !important;
 }
-html[data-theme="dark"] .user-role {
+html[data-theme="dark"] .sidebar .user-role {
   color: var(--text-muted) !important;
 }
     
