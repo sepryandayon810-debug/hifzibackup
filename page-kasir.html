@@ -2944,19 +2944,44 @@ document.addEventListener('DOMContentLoaded', () => {
       loadProducts(); loadHeaderStats();
     });
     
-    // ===== INISIALISASI =====
-    firebase.auth().onAuthStateChanged(user => {
-      if (!user) {
-        window.location.href = 'login.html';
-        return;
-      }
+        // ===== INISIALISASI =====
+    function runInit() {
       loadUserData();
       loadCategories();
       loadProducts();
       loadCart();
       loadHeaderStats();
-       applyCurrentView();
-    });
+      applyCurrentView();
+      // ⭐ Safety: matikan loading overlay
+      document.getElementById('loadingOverlay').classList.remove('active');
+    }
+
+    // ⭐ OFFLINE: pakai currentUser sync, jangan nunggu listener
+    if (!navigator.onLine) {
+      const user = firebase.auth().currentUser;
+      if (user) {
+        runInit();
+      } else {
+        window.location.href = 'login.html';
+      }
+    } else {
+      firebase.auth().onAuthStateChanged(user => {
+        if (!user) {
+          window.location.href = 'login.html';
+          return;
+        }
+        runInit();
+      });
+    }
+
+    // ⭐ SAFETY TIMEOUT: kalau dalam 5 detik masih loading, paksa jalan (fallback)
+    setTimeout(() => {
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay && overlay.classList.contains('active')) {
+        console.warn('Safety init triggered - forcing init');
+        runInit();
+      }
+    }, 5000);
     
   </script>
     <!-- Edit Cart Modal -->
