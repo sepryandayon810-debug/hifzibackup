@@ -766,22 +766,48 @@ body{
         </div>
         <div class="card-body">
           <p style="color:var(--text-secondary);font-size:.9rem;line-height:1.6;margin-bottom:1.25rem">
-            Data otomatis di-backup ke Google Sheets setiap malam pukul 00:00 via <strong>Apps Script Trigger</strong>. 
+            Data otomatis di-backup ke Google Sheets setiap malam pukul 00:00. 
             Tidak perlu klik apa pun — jalan sendiri di background.
           </p>
-          <div style="display:flex;gap:1rem;flex-wrap:wrap;width:100%">
-            <div class="form-group" style="flex:1;min-width:0;width:100%">
-              <label class="form-label">Sheet ID Backup</label>
-              <input type="text" class="form-input" id="sheetIdInput" placeholder="1A2B3C..." style="max-width:100%">
-            </div>
-            <div class="form-group" style="flex:1;min-width:0;width:100%">
-              <label class="form-label">Firebase DB URL</label>
-              <input type="text" class="form-input" id="dbUrlInput" placeholder="https://xxx.firebaseio.com" style="max-width:100%">
-            </div>
+
+          <!-- Sheet ID (Hidden) -->
+          <div class="form-group" style="margin-bottom:1rem">
+            <label class="form-label" style="display:flex;align-items:center;gap:.5rem">
+              <i class="fas fa-id-card" style="font-size:.8rem;color:var(--text-muted)"></i>
+              Sheet ID Backup
+              <button type="button" class="btn-icon" style="width:28px;height:28px;margin-left:auto" onclick="toggleVisibility('sheetIdInput','sheetIdEye')" title="Tampilkan/Sembunyikan">
+                <i class="fas fa-eye" id="sheetIdEye"></i>
+              </button>
+            </label>
+            <input type="password" class="form-input" id="sheetIdInput" placeholder="••••••••••••••••••••••••••" style="max-width:100%;font-family:monospace;letter-spacing:.05em" readonly>
+            <small style="color:var(--text-muted);font-size:.75rem;margin-top:.25rem;display:block">
+              <i class="fas fa-lock"></i> Data disimpan aman di localStorage device kamu
+            </small>
           </div>
-          <button class="btn btn-outline" style="margin-top:.5rem" onclick="saveSettings()">
-            <i class="fas fa-save"></i> Simpan Setting
-          </button>
+
+          <!-- Firebase URL (Hidden) -->
+          <div class="form-group" style="margin-bottom:1rem">
+            <label class="form-label" style="display:flex;align-items:center;gap:.5rem">
+              <i class="fas fa-database" style="font-size:.8rem;color:var(--text-muted)"></i>
+              Firebase DB URL
+              <button type="button" class="btn-icon" style="width:28px;height:28px;margin-left:auto" onclick="toggleVisibility('dbUrlInput','dbUrlEye')" title="Tampilkan/Sembunyikan">
+                <i class="fas fa-eye" id="dbUrlEye"></i>
+              </button>
+            </label>
+            <input type="password" class="form-input" id="dbUrlInput" placeholder="••••••••••••••••••••••••••" style="max-width:100%;font-family:monospace;letter-spacing:.05em" readonly>
+          </div>
+
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+            <button class="btn btn-outline" onclick="saveSettings()">
+              <i class="fas fa-save"></i> Simpan
+            </button>
+            <button class="btn btn-outline" onclick="editSettings()">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <button class="btn btn-danger" style="background:rgba(239,68,68,.1);color:var(--danger);border:1.5px solid rgba(239,68,68,.2)" onclick="clearSettings()">
+              <i class="fas fa-trash"></i> Hapus
+            </button>
+          </div>
         </div>
       </div>
 
@@ -941,6 +967,9 @@ const savedSheetId = localStorage.getItem('backup_sheet_id') || '';
 const savedDbUrl = localStorage.getItem('backup_db_url') || '';
 document.getElementById('sheetIdInput').value = savedSheetId;
 document.getElementById('dbUrlInput').value = savedDbUrl;
+// Fields selalu readonly & password type by default
+if (savedSheetId) document.getElementById('sheetIdInput').readOnly = true;
+if (savedDbUrl) document.getElementById('dbUrlInput').readOnly = true;
 
 /* ================================
    UTILS
@@ -1121,12 +1150,56 @@ function renderLog(logs) {
 }
 
 /* ================================
+   TOGGLE VISIBILITY
+   ================================ */
+function toggleVisibility(inputId, eyeId) {
+  const input = document.getElementById(inputId);
+  const eye = document.getElementById(eyeId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    eye.className = 'fas fa-eye-slash';
+  } else {
+    input.type = 'password';
+    eye.className = 'fas fa-eye';
+  }
+}
+
+/* ================================
    SETTINGS
    ================================ */
 function saveSettings() {
-  localStorage.setItem('backup_sheet_id', document.getElementById('sheetIdInput').value.trim());
-  localStorage.setItem('backup_db_url', document.getElementById('dbUrlInput').value.trim());
+  const sheetId = document.getElementById('sheetIdInput').value.trim();
+  const dbUrl = document.getElementById('dbUrlInput').value.trim();
+  if (sheetId) localStorage.setItem('backup_sheet_id', sheetId);
+  if (dbUrl) localStorage.setItem('backup_db_url', dbUrl);
+
+  // Lock fields again
+  document.getElementById('sheetIdInput').readOnly = true;
+  document.getElementById('dbUrlInput').readOnly = true;
+  document.getElementById('sheetIdInput').type = 'password';
+  document.getElementById('dbUrlInput').type = 'password';
+  document.getElementById('sheetIdEye').className = 'fas fa-eye';
+  document.getElementById('dbUrlEye').className = 'fas fa-eye';
+
   showToast('Setting tersimpan!');
+}
+
+function editSettings() {
+  document.getElementById('sheetIdInput').readOnly = false;
+  document.getElementById('dbUrlInput').readOnly = false;
+  document.getElementById('sheetIdInput').type = 'text';
+  document.getElementById('dbUrlInput').type = 'text';
+  document.getElementById('sheetIdInput').focus();
+  showToast('Mode edit aktif — ubah lalu klik Simpan', 'info');
+}
+
+function clearSettings() {
+  if (!confirm('Hapus semua setting backup? Data tidak bisa dipulihkan.')) return;
+  localStorage.removeItem('backup_sheet_id');
+  localStorage.removeItem('backup_db_url');
+  document.getElementById('sheetIdInput').value = '';
+  document.getElementById('dbUrlInput').value = '';
+  showToast('Setting dihapus');
 }
 
 /* ================================
