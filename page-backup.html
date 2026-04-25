@@ -12,18 +12,18 @@
 <style>
 /* ===== MINT FRESH THEME (sama persis dashboard) ===== */
 :root{
-  --primary:#059669;        /* Emerald 600 */
+  --primary:#059669;
   --primary-dark:#047857;
-  --secondary:#84cc16;      /* Lime 500 */
+  --secondary:#84cc16;
   --success:#10b981;
   --warning:#f59e0b;
   --danger:#ef4444;
   --info:#06b6d4;
 
-  --bg-primary:#f0fdf4;     /* Emerald 50 */
-  --bg-secondary:#ecfdf5;    /* Emerald 100 */
+  --bg-primary:#f0fdf4;
+  --bg-secondary:#ecfdf5;
   --bg-card:#ffffff;
-  --text-primary:#064e3b;     /* Emerald 900 */
+  --text-primary:#064e3b;
   --text-secondary:#065f46;
   --text-muted:#10b981;
   --border-color:#d1fae5;
@@ -180,7 +180,7 @@ body{
 .sidebar.collapsed .nav-link span{display:none}
 
 .nav-dropdown{position:relative}
-.nav-dropdown-toggle{justify-content:space-between}
+.nav-dropdown-toggle{justify-content:space-between;cursor:pointer}
 .nav-dropdown-toggle .dropdown-arrow{transition:transform .2s;font-size:.7rem;margin-left:auto}
 .nav-dropdown.open .nav-dropdown-toggle .dropdown-arrow{transform:rotate(180deg)}
 .nav-submenu{list-style:none;padding-left:2.5rem;max-height:0;overflow:hidden;transition:max-height .3s ease}
@@ -518,13 +518,6 @@ body{
 .mobile-nav-item i{font-size:1.15rem}
 .mobile-nav-item.active,.mobile-nav-item:hover{color:var(--primary)}
 .mobile-nav-item.active i{transform:scale(1.1)}
-@media(max-width:768px){
-  .mobile-nav{display:flex}
-  .page-content{padding-bottom:calc(var(--bottom-nav-height) + 1rem)}
-  .stats-grid{grid-template-columns:1fr;gap:.75rem}
-  .stat-card{padding:1.125rem}
-  .stat-icon{width:44px;height:44px;font-size:1.1rem}
-}
 
 /* ===== DARK MODE SIDEBAR FIX ===== */
 [data-theme="dark"] .nav-link{color:var(--text-primary)}
@@ -533,6 +526,64 @@ body{
 [data-theme="dark"] .search-input{background:var(--bg-secondary);border-color:var(--border-color);color:var(--text-primary)}
 [data-theme="dark"] .search-input:focus{background:var(--bg-card);box-shadow:0 0 0 4px rgba(5,150,105,.2)}
 [data-theme="dark"] .logo-text{-webkit-text-fill-color:var(--text-primary)}
+
+/* ===== MOBILE RESPONSIVE FIXES ===== */
+@media(max-width:768px){
+  .mobile-nav{display:flex}
+  .page-content{padding-bottom:calc(var(--bottom-nav-height) + 1rem)}
+
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:.75rem;margin-bottom:1rem}
+  .stat-card{padding:1.125rem;gap:.875rem}
+  .stat-icon{width:44px;height:44px;font-size:1.1rem}
+  .stat-value{font-size:1.15rem}
+  .stat-label{font-size:.65rem}
+
+  .card{border-radius:1.25rem}
+  .card-header{padding:1rem 1.25rem}
+  .card-body{padding:1rem}
+
+  .action-item{padding:.875rem 1rem}
+  .action-icon{width:40px;height:40px;font-size:1.1rem}
+  .action-name{font-size:.9rem}
+  .action-desc{font-size:.78rem}
+
+  .btn{padding:.5rem 1rem;font-size:.85rem}
+  .form-input,.form-select{padding:.65rem .875rem}
+
+  .table{font-size:.82rem}
+  .table th,.table td{padding:.625rem .875rem}
+
+  .modal-content{max-width:95%;border-radius:1.25rem}
+  .modal-body{padding:1.25rem}
+
+  .header-title{font-size:1.1rem}
+  .btn-icon{width:34px;height:34px}
+}
+
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:1fr}
+  .action-list{gap:.75rem}
+  .action-item{flex-direction:column;align-items:flex-start;gap:.5rem}
+  .action-arrow{align-self:flex-end;margin-top:-1.5rem}
+}
+
+@media(max-width:380px){
+  html{font-size:13px}
+  .stat-card{padding:1rem}
+  .stat-icon{width:36px;height:36px;font-size:1rem}
+}
+
+/* Landscape mobile */
+@media(max-width:768px) and (orientation:landscape){
+  .stats-grid{grid-template-columns:repeat(2,1fr)!important}
+}
+
+@supports(padding-top:env(safe-area-inset-top)){
+  @media(max-width:768px){
+    .main-header{padding-top:env(safe-area-inset-top)!important;height:calc(var(--header-height) + env(safe-area-inset-top))!important}
+    .page-content{padding-top:calc(.875rem + env(safe-area-inset-top))!important}
+  }
+}
 </style>
 
 <!-- Firebase -->
@@ -540,6 +591,7 @@ body{
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<base target="_blank">
 <base target="_blank">
 </head>
 <body>
@@ -759,7 +811,7 @@ body{
               </div>
               <i class="fas fa-chevron-right action-arrow"></i>
             </div>
-            <div class="action-item" onclick="Utils.showToast('Auto backup aktif tiap malam 00:00','info')">
+            <div class="action-item" onclick="showToast('Auto backup aktif tiap malam 00:00','info')">
               <div class="action-icon cloud"><i class="fas fa-cloud"></i></div>
               <div class="action-content">
                 <div class="action-name">Cek Status Auto Backup</div>
@@ -845,10 +897,14 @@ body{
 
 <script>
 /* ================================
+   FIREBASE DB FIX — ambil dari global atau buat baru
+   ================================ */
+const db = (typeof database !== 'undefined' && database) ? database : firebase.database();
+
+/* ================================
    STATE
    ================================ */
 let currentUser = null;
-// db & auth sudah dideklarasikan di js/firebase-config.js dan js/auth.js
 
 const savedSheetId = localStorage.getItem('backup_sheet_id') || '';
 const savedDbUrl = localStorage.getItem('backup_db_url') || '';
@@ -882,19 +938,36 @@ function setProgress(pct) {
 }
 
 /* ================================
-   THEME & UI
+   THEME & UI  (sama persis dashboard)
    ================================ */
 const btnTheme = document.getElementById('btnTheme');
-const savedTheme = localStorage.getItem('webpos_theme') || 'light';
-document.documentElement.setAttribute('data-theme', savedTheme);
-btnTheme.querySelector('i').className = savedTheme==='dark' ? 'fas fa-sun' : 'fas fa-moon';
-btnTheme.addEventListener('click', () => {
-  const cur = document.documentElement.getAttribute('data-theme');
-  const next = cur==='dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('webpos_theme', next);
-  btnTheme.querySelector('i').className = next==='dark' ? 'fas fa-sun' : 'fas fa-moon';
-});
+
+function initTheme() {
+  // Prioritaskan Utils.Theme jika tersedia (sama seperti dashboard)
+  if (typeof Utils !== 'undefined' && Utils.Theme) {
+    const isDark = Utils.Theme.isDarkMode();
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    btnTheme.querySelector('i').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+    btnTheme.addEventListener('click', () => {
+      const nowDark = Utils.Theme.toggleDarkMode();
+      document.documentElement.setAttribute('data-theme', nowDark ? 'dark' : 'light');
+      btnTheme.querySelector('i').className = nowDark ? 'fas fa-sun' : 'fas fa-moon';
+    });
+  } else {
+    // Fallback manual — pakai key yang sama dengan dashboard
+    const saved = localStorage.getItem('webpos_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+    btnTheme.querySelector('i').className = saved === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    btnTheme.addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme');
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('webpos_theme', next);
+      btnTheme.querySelector('i').className = next === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    });
+  }
+}
+initTheme();
 
 /* Sidebar toggle */
 document.getElementById('menuToggle').addEventListener('click', () => {
@@ -914,21 +987,28 @@ document.addEventListener('click', (e) => {
   }
 });
 
-document.querySelectorAll('.nav-link').forEach(link => {
-  link.addEventListener('click', () => {
-    if (window.innerWidth <= 1024) sidebar.classList.remove('mobile-open');
-  });
-});
-
-/* Dropdown */
+/* Dropdown — FIX: jangan tutup sidebar saat klik dropdown toggle */
 document.querySelectorAll('[data-dropdown]').forEach(dropdown => {
   const toggle = dropdown.querySelector('.nav-dropdown-toggle');
   if (toggle) {
     toggle.addEventListener('click', (e) => {
       e.preventDefault();
+      e.stopPropagation(); // ⭐ PENTING: jangan bubble ke document
       dropdown.classList.toggle('open');
     });
   }
+});
+
+/* Nav link — jangan tutup sidebar kalau ini dropdown toggle */
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', (e) => {
+    // ⭐ FIX: jangan tutup sidebar/mobile kalau link ini adalah dropdown toggle
+    if (link.classList.contains('nav-dropdown-toggle')) {
+      e.preventDefault();
+      return;
+    }
+    if (window.innerWidth <= 1024) sidebar.classList.remove('mobile-open');
+  });
 });
 
 /* Logout */
@@ -1168,7 +1248,7 @@ function clearHistory() {
 /* ================================
    INIT
    ================================ */
-auth.onAuthStateChanged(user => {
+firebase.auth().onAuthStateChanged(user => {
   if (!user) {
     window.location.href = 'login.html';
     return;
