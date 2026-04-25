@@ -1648,7 +1648,16 @@ document.addEventListener('click', (e) => {
     }
 
     // ===== LOAD HEADER STATS DARI FIREBASE =====
-    async function loadHeaderStats() {
+        async function loadHeaderStats() {
+      // ⭐ OFFLINE: pakai data tersimpan
+      if (!navigator.onLine) {
+        const savedPenjualan = localStorage.getItem('header_totalPenjualan');
+        const savedKas = localStorage.getItem('header_kasDitangan');
+        if (savedPenjualan) document.getElementById('totalPenjualan').textContent = savedPenjualan;
+        if (savedKas) document.getElementById('kasDitangan').textContent = savedKas;
+        return;
+      }
+
       const today = new Date();
       const todayStr = today.getFullYear() + '-' +
         String(today.getMonth() + 1).padStart(2, '0') + '-' +
@@ -1714,6 +1723,11 @@ document.addEventListener('click', (e) => {
         
         document.getElementById('totalPenjualan').textContent = formatRupiah(totalPenjualan);
         document.getElementById('kasDitangan').textContent = formatRupiah(kasDitangan);
+                // ⭐ Simpan ke localStorage untuk offline
+        try {
+          localStorage.setItem('header_totalPenjualan', formatRupiah(totalPenjualan));
+          localStorage.setItem('header_kasDitangan', formatRupiah(kasDitangan));
+        } catch(e) {}
       } catch (err) {
         console.error('Error loading header stats:', err);
       }
@@ -1750,8 +1764,35 @@ document.addEventListener('click', (e) => {
       } catch (e) {}
     }
 
+        function renderCategoryPills() {
+      const container = document.getElementById('categoryPills');
+      const pills = categories.map(c =>
+        `<button class="category-pill" data-category="${c.id}">${c.name}</button>`
+      ).join('');
+      container.innerHTML = `<button class="category-pill active" data-category="all">Semua</button>${pills}`;
+
+      container.querySelectorAll('.category-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          container.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          currentCategory = pill.dataset.category;
+          renderProducts();
+        });
+      });
+    }
+
     // ===== LOAD CATEGORIES =====
-    async function loadCategories() {
+        async function loadCategories() {
+      // ⭐ OFFLINE: ambil dari localStorage
+      if (!navigator.onLine) {
+        try {
+          const saved = localStorage.getItem('kasir_categories');
+          if (saved) categories = JSON.parse(saved);
+        } catch(e) {}
+        renderCategoryPills(); // render apa adanya
+        return;
+      }
+
       try {
         const snap = await firebase.database().ref('categories').once('value');
         const data = snap.val() || {};
@@ -1763,6 +1804,8 @@ document.addEventListener('click', (e) => {
         ).join('');
         container.innerHTML = `<button class="category-pill active" data-category="all">Semua</button>${pills}`;
 
+                // ⭐ Simpan ke localStorage untuk offline
+        try { localStorage.setItem('kasir_categories', JSON.stringify(categories)); } catch(err) {}
         container.querySelectorAll('.category-pill').forEach(pill => {
           pill.addEventListener('click', () => {
             container.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
@@ -1787,7 +1830,21 @@ async function loadCustomers() {
 }
 
     // ===== LOAD PRODUCTS =====
-    async function loadProducts() {
+       async function loadProducts() {
+      // ⭐ OFFLINE: langsung dari cache, skip Firebase
+      if (!navigator.onLine) {
+        const cached = await getProductsFromCache();
+        if (cached.length > 0) {
+          products = cached;
+          renderProducts();
+          showToast('Produk dari cache offline', 'warning');
+        } else {
+          renderProducts(); // kosongkan skeleton
+          showToast('Belum ada cache produk. Buka sekali saat online.', 'error');
+        }
+        return;
+      }
+
       try {
         const snap = await firebase.database().ref('products').once('value');
         const data = snap.val() || {};
