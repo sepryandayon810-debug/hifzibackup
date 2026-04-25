@@ -847,9 +847,8 @@ body{
 /* ================================
    STATE
    ================================ */
-const db = firebase.database();
-const auth = firebase.auth();
 let currentUser = null;
+// db & auth sudah dideklarasikan di js/firebase-config.js dan js/auth.js
 
 const savedSheetId = localStorage.getItem('backup_sheet_id') || '';
 const savedDbUrl = localStorage.getItem('backup_db_url') || '';
