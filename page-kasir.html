@@ -1568,6 +1568,7 @@ html,body{overflow-x:hidden;max-width:100vw}
   <script src="js/firebase-config.js?v=2"></script>
    <script src="js/utils.js?v=3"></script>
   <script src="js/auth.js"></script>
+  <script src="js/db-offline.js"></script>
   <script src="js/sidebar-filter.js"></script>
 
   <script>
@@ -1790,14 +1791,24 @@ async function loadCustomers() {
       try {
         const snap = await firebase.database().ref('products').once('value');
         const data = snap.val() || {};
-        products = Object.entries(data)
+         products = Object.entries(data)
           .map(([id, d]) => ({ id, ...d }))
           .filter(p => p.status !== 'inactive');
         renderProducts();
+        // ⭐ Simpan ke cache untuk offline
+        try { await saveProductsToCache(products); } catch(err) {}
       } catch (e) {
-        console.error('Error loading products:', e);
+      console.error('Error loading products:', e);
+      // ⭐ Fallback ke cache IndexedDB
+      const cached = await getProductsFromCache();
+      if (cached.length > 0) {
+        products = cached;
+        renderProducts();
+        showToast('Produk dari cache offline', 'warning');
+      } else {
         showToast('Gagal memuat produk', 'error');
       }
+    }
     }
 
     // ===== VIEW MODE HELPER =====
@@ -2226,9 +2237,59 @@ function updatePaymentDisplay() {
       document.getElementById('sisaPiutangValue').textContent = formatRupiah(remaining > 0 ? remaining : 0);
     }
 
-    // ===== PROSES BAYAR =====
+        // ===== PROSES BAYAR =====
     document.getElementById('btnConfirmPayment').addEventListener('click', async () => {
       const total = calculateTotal();
+
+      // ⭐ MODE OFFLINE
+      if (!navigator.onLine) {
+        if (cart.length === 0) {
+          showToast('Keranjang kosong', 'warning');
+          return;
+        }
+        if (paymentMethod === 'hutang') {
+          showToast('Piutang tidak bisa saat offline. Gunakan Tunai/Transfer.', 'error');
+          return;
+        }
+        try {
+          const transactionData = {
+            type: 'penjualan',
+            items: JSON.parse(JSON.stringify(cart)),
+            subtotal: cart.reduce((s, i) => s + i.total, 0),
+            total: total,
+            profit: cart.reduce((s, i) => s + ((i.price - i.cost) * i.quantity), 0),
+            paymentMethod: paymentMethod,
+            paymentAmount: total,
+            change: 0,
+            discount: discount,
+            note: localStorage.getItem('kasir_note') || '',
+            timestamp: Date.now(),
+            cashierName: document.getElementById('userName').textContent,
+            status: 'pending_sync'
+          };
+          await saveOfflineTransaction(transactionData);
+          
+          // Kurangi stok lokal
+          for (const item of cart) {
+            const prod = products.find(p => p.id === item.productId);
+            if (prod && !prod.isUnlimited) {
+              prod.stock = Math.max(0, (prod.stock || 0) - item.quantity);
+            }
+          }
+          await saveProductsToCache(products);
+          
+          cart = []; discount = 0;
+          localStorage.removeItem('kasir_note');
+          saveCart(); renderCart(); updateSummary();
+          paymentModal.classList.remove('active');
+          showToast('Transaksi tersimpan offline. Sync otomatis saat online.', 'warning');
+          loadHeaderStats();
+        } catch(err) {
+          console.error('Offline save error:', err);
+          showToast('Gagal menyimpan offline', 'error');
+        }
+        return;
+      }
 
       /* =========================================
          TAMBAHAN: MODE PIUTANG / HUTANG CUSTOMER
@@ -2795,6 +2856,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+      // ⭐ AUTO-SYNC SAAT ONLINE
+    window.addEventListener('online', async () => {
+      showToast('Internet kembali! Menyinkronkan...', 'info');
+      const pending = await getPendingTransactions();
+      if (pending.length === 0) return;
+      
+      document.getElementById('loadingOverlay').classList.add('active');
+      let synced = 0;
+      const db = firebase.database();
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      for (const item of pending) {
+        try {
+          const tx = item.data;
+          tx.id = tx.id || ('TRX_' + Date.now() + '_' + Math.random().toString(36).substr(2,5));
+          tx.syncedAt = Date.now();
+          tx.status = 'completed';
+          await db.ref('transactions/' + todayStr + '/' + tx.id).set(tx);
+          await removeSyncedTransaction(item.localId);
+          synced++;
+        } catch(e) {
+          console.error('Sync failed:', e);
+        }
+      }
+      
+      document.getElementById('loadingOverlay').classList.remove('active');
+      showToast(`${synced}/${pending.length} transaksi tersinkronkan`, synced > 0 ? 'success' : 'warning');
+      loadProducts(); loadHeaderStats();
+    });
     
     // ===== INISIALISASI =====
     firebase.auth().onAuthStateChanged(user => {
