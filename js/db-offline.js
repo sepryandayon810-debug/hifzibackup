@@ -1,76 +1,100 @@
+// ===== WEBPOS OFFLINE DATABASE (IndexedDB) =====
 const DB_NAME = 'WebPOS_Offline';
 const DB_VERSION = 1;
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => resolve(req.result);
-    req.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains('syncQueue')) {
-        db.createObjectStore('syncQueue', { keyPath: 'localId' });
-      }
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
       if (!db.objectStoreNames.contains('productsCache')) {
         db.createObjectStore('productsCache', { keyPath: 'id' });
       }
+      if (!db.objectStoreNames.contains('pendingTransactions')) {
+        db.createObjectStore('pendingTransactions', { keyPath: 'localId', autoIncrement: true });
+      }
     };
   });
 }
 
-// ===== SIMPAN TRANSAKSI OFFLINE =====
-async function saveOfflineTransaction(data) {
-  const db = await openDB();
-  const tx = db.transaction('syncQueue', 'readwrite');
-  const store = tx.objectStore('syncQueue');
-  const localId = 'OFF_' + Date.now();
-  await store.put({ localId, data, createdAt: Date.now(), synced: false });
-  db.close();
-  return localId;
-}
-
-// ===== AMBIL TRANSAKSI PENDING =====
-async function getPendingTransactions() {
-  const db = await openDB();
-  const tx = db.transaction('syncQueue', 'readonly');
-  const store = tx.objectStore('syncQueue');
-  return new Promise((resolve) => {
-    const req = store.getAll();
-    req.onsuccess = () => {
-      db.close();
-      resolve(req.result.filter(item => !item.synced));
-    };
-  });
-}
-
-// ===== HAPUS SETELAH SUKSES SYNC =====
-async function removeSyncedTransaction(localId) {
-  const db = await openDB();
-  const tx = db.transaction('syncQueue', 'readwrite');
-  tx.objectStore('syncQueue').delete(localId);
-  db.close();
-}
-
-// ===== CACHE PRODUK UNTUK OFFLINE =====
+// ===== PRODUCTS CACHE =====
 async function saveProductsToCache(products) {
-  const db = await openDB();
-  const tx = db.transaction('productsCache', 'readwrite');
-  const store = tx.objectStore('productsCache');
-  for (const p of products) {
-    store.put(p);
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('productsCache', 'readwrite');
+      const store = tx.objectStore('productsCache');
+      store.clear();
+      products.forEach(p => store.put(p));
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch(e) {
+    console.error('saveProductsToCache error:', e);
   }
-  db.close();
 }
 
 async function getProductsFromCache() {
-  const db = await openDB();
-  const tx = db.transaction('productsCache', 'readonly');
-  const store = tx.objectStore('productsCache');
-  return new Promise((resolve) => {
-    const req = store.getAll();
-    req.onsuccess = () => {
-      db.close();
-      resolve(req.result || []);
-    };
-  });
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('productsCache', 'readonly');
+      const store = tx.objectStore('productsCache');
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  } catch(e) {
+    console.error('getProductsFromCache error:', e);
+    return [];
+  }
+}
+
+// ===== PENDING TRANSACTIONS (OFFLINE QUEUE) =====
+async function saveOfflineTransaction(transactionData) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('pendingTransactions', 'readwrite');
+      const store = tx.objectStore('pendingTransactions');
+      store.add({ data: transactionData, createdAt: Date.now() });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch(e) {
+    console.error('saveOfflineTransaction error:', e);
+    throw e;
+  }
+}
+
+async function getPendingTransactions() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('pendingTransactions', 'readonly');
+      const store = tx.objectStore('pendingTransactions');
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  } catch(e) {
+    return [];
+  }
+}
+
+async function removeSyncedTransaction(localId) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('pendingTransactions', 'readwrite');
+      const store = tx.objectStore('pendingTransactions');
+      store.delete(localId);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch(e) {
+    console.error('removeSyncedTransaction error:', e);
+  }
 }
