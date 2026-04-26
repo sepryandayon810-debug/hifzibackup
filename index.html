@@ -2390,14 +2390,16 @@ function updateShiftUI() {
         }
       };
         
-
-            // Initialize
+                // Initialize
       loadUserData();
       setupSecretOwnerAccess();
       setupUIBasedOnRole();
       loadDashboardData();
-      listenShiftStatus();  // ✅ Hanya 1 kali di sini
+      listenShiftStatus();
       updateShiftUI();
+      
+      // ⭐ TAMBAH 1 BARIS INI SAJA
+      applyMenuVisibility();
 
       
                  // Re-check shift status saat halaman kembali visible
