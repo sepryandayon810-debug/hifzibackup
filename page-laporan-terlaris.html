@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="light" data-theme-color="indigo">
+<html lang="id" data-theme-color="indigo">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -38,7 +38,7 @@
 
 *{margin:0;padding:0;box-sizing:border-box}
 html{font-size:16px;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif}
-body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-height:100vh}
+body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-height:100vh;overflow-x:hidden}
 
 /* Scrollbar */
 ::-webkit-scrollbar{width:8px}
@@ -226,6 +226,29 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 .product-name{font-weight:600;color:var(--text-primary)}
 .product-meta{font-size:.75rem;color:var(--text-muted)}
 
+/* ===== TABLET 768px - 1024px ===== */
+@media(max-width:1024px) and (min-width:769px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)!important}
+  .filter-section{grid-template-columns:repeat(2,1fr)!important}
+  .main-header{padding:0 1rem}
+  .header-title{font-size:1.15rem}
+}
+
+/* ===== SMALL PHONE ≤480px ===== */
+@media(max-width:480px){
+  .header-title{font-size:0.95rem}
+  .stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:0.375rem!important}
+  .stat-card{padding:0.625rem!important}
+  .stat-icon{width:32px!important;height:32px!important;font-size:0.95rem!important}
+  .stat-value{font-size:0.8rem!important}
+  .stat-label{font-size:0.55rem!important}
+  .card-header{padding:0.75rem 1rem!important}
+  .card-title{font-size:0.9rem!important}
+  .product-img{width:32px!important;height:32px!important;font-size:1rem!important}
+  .product-name{font-size:0.85rem!important}
+  .rank-badge{width:28px!important;height:28px!important;font-size:0.75rem!important}
+}
+
 /* Mobile Responsive - FINAL */
 @media(max-width:768px){
   *{box-sizing:border-box!important}
@@ -251,10 +274,41 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
   .filter-section > div:last-child{display:flex!important;flex-direction:row!important;gap:0.5rem!important}
   .filter-section .btn{flex:1!important;width:auto!important}
   
-  /* Card & Table */
+    /* Card & Table */
   .card{width:100%!important}
   .card-header{padding:0.75rem!important}
   .table-container{width:100%!important;overflow-x:auto!important}
+  
+  /* Table Ranking jadi Card Style */
+  .table thead{display:none}
+  .table tbody{display:flex;flex-direction:column;gap:0.5rem}
+  .table tbody tr{
+    display:grid;
+    grid-template-columns:auto 1fr auto;
+    gap:0.5rem;
+    padding:0.75rem;
+    background:var(--bg-card);
+    border:1px solid var(--border-color);
+    border-radius:var(--radius-md);
+    align-items:center;
+  }
+  .table tbody tr td{border:none;padding:0}
+  .table tbody tr td:nth-child(1){grid-row:1/3}
+  .table tbody tr td:nth-child(2){grid-column:2}
+  .table tbody tr td:nth-child(3){grid-column:2;text-align:left!important}
+  .table tbody tr td:nth-child(3) strong{font-size:1rem;color:var(--primary)}
+  .table tbody tr td:nth-child(4){grid-column:3;grid-row:1/3;text-align:right!important}
+  .table tbody tr td:nth-child(4) strong{display:block;font-size:0.9rem}
+  .product-info{gap:0.5rem}
+  .product-meta{font-size:0.65rem}
+  
+  /* Custom date range jadi 1 kolom di mobile */
+  #customDateRange{grid-template-columns:1fr!important}
+  
+  /* Filter section vertical rapat */
+  .filter-section{gap:0.5rem!important}
+  .filter-section > div:last-child{flex-direction:column!important}
+  .filter-section .btn{width:100%!important}
 }
   </style>
 
@@ -540,11 +594,13 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             <div class="filter-section">
               <div class="form-group" style="margin-bottom: 0;">
                 <label class="form-label">Rentang Waktu</label>
-                <select class="form-select" id="filterPeriod" onchange="loadReport()">
+                  <select class="form-select" id="filterPeriod" onchange="handlePeriodChange()">
                   <option value="today">Hari Ini</option>
+                  <option value="yesterday">Kemarin</option>
                   <option value="week">7 Hari Terakhir</option>
                   <option value="month" selected>30 Hari Terakhir</option>
                   <option value="year">Tahun Ini</option>
+                  <option value="custom">Custom Tanggal</option>
                   <option value="all">Semua Waktu</option>
                 </select>
               </div>
@@ -562,13 +618,25 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
                   <option value="50">Top 50</option>
                 </select>
               </div>
-              <div class="form-group" style="margin-bottom: 0; display: flex; align-items: flex-end; gap: 0.5rem; flex: 1;">
-  <button class="btn btn-primary" style="flex: 1;" onclick="loadReport()">
-    <i class="fas fa-sync-alt"></i> Refresh
-  </button>
+                            <div class="form-group" style="margin-bottom: 0; display: flex; align-items: flex-end; gap: 0.5rem; flex: 1;">
+                <button class="btn btn-primary" style="flex: 1;" onclick="loadReport()">
+                  <i class="fas fa-sync-alt"></i> Refresh
+                </button>
                 <button class="btn btn-outline" onclick="exportReport()" title="Export CSV">
                   <i class="fas fa-download"></i>
                 </button>
+              </div>
+              
+              <!-- Custom Date Range (muncul saat Custom dipilih) -->
+              <div id="customDateRange" style="display:none; grid-column:1 / -1; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">Dari Tanggal</label>
+                  <input type="date" class="form-input" id="customStartDate" onchange="loadReport()">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">Sampai Tanggal</label>
+                  <input type="date" class="form-input" id="customEndDate" onchange="loadReport()">
+                </div>
               </div>
             </div>
           </div>
@@ -755,18 +823,19 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           });
         }
       });
-      
-      document.addEventListener('click', (e) => {
+           document.addEventListener('click', (e) => {
         if (window.innerWidth <= 1024) {
-          if (!sidebar.contains(e.target) && !mobileMenuToggle.contains(e.target)) {
+          // ⭐ JANGAN tutup sidebar kalau klik di area dropdown
+          const isDropdownClick = e.target.closest('.nav-dropdown') || e.target.closest('.nav-submenu');
+          if (!sidebar.contains(e.target) && !mobileMenuToggle.contains(e.target) && !isDropdownClick) {
             sidebar.classList.remove('mobile-open');
           }
         }
       });
-    }
+        }
+      
 
-        function loadUserData() {
-      // Coba ambil dari Auth dulu (sama seperti Dashboard)
+            function loadUserData() {
       const user = Auth.getCurrentUser ? Auth.getCurrentUser() : null;
       
       if (user) {
@@ -775,7 +844,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) 
           : 'Administrator';
         
-        // Set avatar dengan inisial
         const avatar = document.getElementById('userAvatar');
         if (user.name) {
           const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -784,7 +852,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           avatar.textContent = user.email.charAt(0).toUpperCase();
         }
       } else {
-        // Fallback ke localStorage
         const savedUser = Utils.getStorage('webpos_session');
         if (savedUser) {
           document.getElementById('userName').textContent = savedUser.name || savedUser.email || 'Admin';
@@ -798,7 +865,6 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             avatar.textContent = (savedUser.email || 'A').charAt(0).toUpperCase();
           }
         } else {
-          // Fallback ke store name
           const storeData = Utils.getStorage('webpos_store') || {};
           document.getElementById('userName').textContent = storeData.storeName || 'Admin';
           document.getElementById('userRole').textContent = 'Administrator';
@@ -806,7 +872,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         }
       }
     }
-
+      
     function initEventListeners() {
       document.getElementById('btnLogout').addEventListener('click', () => {
         Utils.confirm('Apakah Anda yakin ingin logout?', () => {
@@ -870,6 +936,15 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       console.log('📂 Kategori dari produk:', cats.length);
     }
 
+    function handlePeriodChange() {
+      const period = document.getElementById('filterPeriod').value;
+      const customDiv = document.getElementById('customDateRange');
+      if (customDiv) {
+        customDiv.style.display = period === 'custom' ? 'grid' : 'none';
+      }
+      loadReport();
+    }
+      
     function loadReport() {
       Utils.showLoading();
       
@@ -883,8 +958,13 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         const now = new Date();
         let startDate, endDate;
         
-        if (period === 'today') {
+                 if (period === 'today') {
           startDate = endDate = new Date(now);
+        } else if (period === 'yesterday') {
+          const yest = new Date(now);
+          yest.setDate(yest.getDate() - 1);
+          startDate = new Date(yest);
+          endDate = new Date(yest);
         } else if (period === 'week') {
           startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
           endDate = new Date(now);
@@ -894,6 +974,16 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         } else if (period === 'year') {
           startDate = new Date(now.getFullYear(), 0, 1);
           endDate = new Date(now);
+        } else if (period === 'custom') {
+          const startVal = document.getElementById('customStartDate').value;
+          const endVal = document.getElementById('customEndDate').value;
+          if (!startVal || !endVal) {
+            Utils.showToast('Pilih rentang tanggal custom', 'warning');
+            Utils.hideLoading();
+            return;
+          }
+          startDate = new Date(startVal);
+          endDate = new Date(endVal);
         } else {
           startDate = new Date(now.getFullYear() - 1, 0, 1);
           endDate = new Date(now);
