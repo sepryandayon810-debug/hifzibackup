@@ -1450,6 +1450,9 @@ themeGrid.innerHTML = allThemes.map(theme => `
             });
           });
         })();
+
+         // ⭐ TAMBAH 1 BARIS INI
+        applyMenuVisibility();
         
         // Dropdown menus
         document.querySelectorAll('[data-dropdown]').forEach(dropdown => {
