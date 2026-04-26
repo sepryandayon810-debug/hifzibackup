@@ -961,19 +961,16 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
         const themeGrid = document.getElementById('themeGrid');
         const currentTheme = Utils.Theme.getColor();
         
-                const allThemes = [
-  {id:'indigo',name:'Indigo',class:'theme-indigo'},
-  {id:'blue',name:'Blue',class:'theme-blue'},
-  {id:'green',name:'Green',class:'theme-green'},
-  {id:'orange',name:'Orange',class:'theme-orange'},
-  {id:'purple',name:'Purple',class:'theme-purple'},
-  {id:'red',name:'Red',class:'theme-red'},
-  {id:'pink',name:'Pink',class:'theme-pink'},
-  {id:'teal',name:'Teal',class:'theme-teal'},
-  {id:'ocean',name:'Ocean',class:'theme-ocean'},
-  {id:'sunset',name:'Sunset',class:'theme-sunset'},
-  {id:'midnight',name:'Midnight',class:'theme-midnight'}
-];
+                      // Template Tema Lengkap (bukan sekadar warna accent)
+        const allThemes = [
+          {id:'indigo',name:'Indigo (Default)',class:'theme-indigo'},
+          {id:'mint',name:'Mint Fresh',class:'theme-green'},
+          {id:'ocean',name:'Ocean',class:'theme-ocean'},
+          {id:'sunset',name:'Sunset',class:'theme-sunset'},
+          {id:'midnight',name:'Midnight',class:'theme-midnight'}
+        ];
+        
+        const currentTemplate = localStorage.getItem('webpos_theme_template') || 'indigo';
 
   console.log('Theme grid found:', themeGrid);
         console.log('Current theme:', currentTheme);
@@ -981,20 +978,27 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
         console.log('Theme IDs:', allThemes.map(t => t.id));
         
 themeGrid.innerHTML = allThemes.map(theme => `
-  <div class="theme-option ${theme.id === currentTheme ? 'active' : ''}" data-theme="${theme.id}">
+  <div class="theme-option ${theme.id === currentTemplate ? 'active' : ''}" data-theme="${theme.id}">
     <div class="theme-color ${theme.class}"></div>
     <span class="theme-name">${theme.name}</span>
   </div>
 `).join('');
         
-        // Theme click handlers
+               // Template click handlers
         themeGrid.querySelectorAll('.theme-option').forEach(option => {
           option.addEventListener('click', () => {
             themeGrid.querySelectorAll('.theme-option').forEach(o => o.classList.remove('active'));
             option.classList.add('active');
-            Utils.Theme.setColor(option.dataset.theme);
+            const tpl = option.dataset.theme;
+            localStorage.setItem('webpos_theme_template', tpl);
+            localStorage.setItem('webpos_theme_broadcast', Date.now().toString());
+            Utils.Theme.loadTemplate(); // Apply langsung di page ini
+            Utils.showToast(`Tema ${option.querySelector('.theme-name').textContent} diterapkan`, 'success');
           });
         });
+        
+        // Apply template saat load setting page
+        Utils.Theme.loadTemplate();
 
         // Sidebar toggle - Desktop (collapse/expand)
         document.getElementById('menuToggle').addEventListener('click', () => {
