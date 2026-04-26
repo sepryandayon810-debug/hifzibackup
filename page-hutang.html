@@ -2004,31 +2004,40 @@ document.addEventListener('DOMContentLoaded', () => {
           });
         }
 
-        // Tutup sidebar saat klik link di mobile
+                // Tutup sidebar saat klik link di mobile
         document.querySelectorAll('.nav-link').forEach(link => {
-          link.addEventListener('click', () => {
+          link.addEventListener('click', (e) => {
+            // ⭐ JANGAN tutup sidebar kalau yang diklik adalah dropdown toggle
+            if (link.classList.contains('nav-dropdown-toggle')) {
+              e.stopPropagation();
+              return;
+            }
             if (window.innerWidth <= 1024) {
               sidebar.classList.remove('mobile-open');
             }
           });
         });
 
-        // Tutup sidebar saat klik overlay (area gelap di luar sidebar)
+                // Tutup sidebar saat klik overlay (area gelap di luar sidebar)
         document.addEventListener('click', (e) => {
+          // ⭐ JANGAN tutup sidebar kalau klik di dalam dropdown area
+          const isDropdownClick = e.target.closest('.nav-dropdown') || e.target.closest('.nav-submenu');
           if (window.innerWidth <= 1024 && 
               sidebar.classList.contains('mobile-open') &&
               !sidebar.contains(e.target) && 
-              e.target !== mobileToggle) {
+              e.target !== mobileToggle &&
+              !isDropdownClick) {
             sidebar.classList.remove('mobile-open');
           }
         });
 
-        // Dropdown menus
+                // Dropdown menus
         document.querySelectorAll('[data-dropdown]').forEach(dropdown => {
           const toggle = dropdown.querySelector('.nav-dropdown-toggle');
           if (toggle) {
             toggle.addEventListener('click', (e) => {
               e.preventDefault();
+              e.stopPropagation(); // ⭐ Penting: jangan bubble ke document click
               dropdown.classList.toggle('open');
             });
           }
