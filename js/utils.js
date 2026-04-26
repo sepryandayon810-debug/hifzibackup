@@ -147,10 +147,8 @@ const Utils = {
         _navHover: 'rgba(255,255,255,.05)', _logo: 'linear-gradient(135deg,#64748b,#94a3b8)',
         _sbBorder: '1px solid var(--border-color)', _hdBorder: '1px solid var(--border-color)',
         _blur: false
-      }
     },
-
-          berry: {
+    berry: {
         '--primary': '#be185d', '--primary-dark': '#9d174d', '--secondary': '#f43f5e',
         '--bg-primary': '#fdf2f8', '--bg-secondary': '#fce7f3', '--bg-card': '#ffffff',
         '--text-primary': '#831843', '--text-secondary': '#9d174d', '--text-muted': '#f472b6',
@@ -201,6 +199,7 @@ const Utils = {
         _navHover: 'rgba(225,29,72,0.06)', _logo: 'linear-gradient(135deg,#e11d48,#fb7185)',
         _sbBorder: '1px solid rgba(255,255,255,0.6)', _hdBorder: '1px solid rgba(255,255,255,0.5)',
         _blur: true
+        }
       },
 
     loadTemplate: function() {
@@ -219,7 +218,7 @@ const Utils = {
         document.documentElement.style.setProperty(k, v);
       });
       
-      // 2. Inject structural overrides
+            // 2. Inject structural overrides
       let el = document.getElementById('theme-template-overrides');
       if (!el) {
         el = document.createElement('style');
@@ -231,10 +230,17 @@ const Utils = {
       const blurHeader = t._blur ? 'backdrop-filter:blur(12px)!important;-webkit-backdrop-filter:blur(12px)!important;' : '';
       const fixed = t._body.includes('gradient') ? 'background-attachment:fixed!important;' : '';
       
+      // Dark mode protection untuk structural CSS
+      const bodyBg = (isDark && name !== 'midnight') ? 'var(--bg-primary)' : t._body;
+      const sidebarBg = (isDark && name !== 'midnight') ? 'var(--bg-card)' : t._sidebar;
+      const headerBg = (isDark && name !== 'midnight') ? 'var(--bg-card)' : t._header;
+      const sbBorder = (isDark && name !== 'midnight') ? '1px solid var(--border-color)' : t._sbBorder;
+      const hdBorder = (isDark && name !== 'midnight') ? '1px solid var(--border-color)' : t._hdBorder;
+      
       el.textContent = `
-        body{background:${t._body}!important;${fixed}}
-        .sidebar{background:${t._sidebar}!important;${blurSidebar}border-right:${t._sbBorder}!important;}
-        .main-header{background:${t._header}!important;${blurHeader}border-bottom:${t._hdBorder}!important;}
+        body{background:${bodyBg}!important;${fixed}}
+        .sidebar{background:${sidebarBg}!important;${blurSidebar}border-right:${sbBorder}!important;}
+        .main-header{background:${headerBg}!important;${blurHeader}border-bottom:${hdBorder}!important;}
         .logo-icon{background:${t._logo}!important;}
         .logo-text{background:${t._logo}!important;-webkit-background-clip:text!important;-webkit-text-fill-color:transparent!important;}
         .nav-link.active{background:${t._navActive}!important;color:${t._navActiveColor}!important;box-shadow:none!important;}
@@ -243,7 +249,7 @@ const Utils = {
         .nav-link.active::before{display:none!important;}
         .btn-primary{background:var(--primary)!important;}
         .spinner{border-top-color:var(--primary)!important;}
-        .mobile-nav{background:${t._sidebar}!important;${blurSidebar}}
+        .mobile-nav{background:${sidebarBg}!important;${blurSidebar}}
         .theme-option.active{border-color:var(--primary)!important;background:${t._navHover}!important;}
         input:checked+.toggle-slider{background:var(--primary)!important;border-color:var(--primary)!important;}
       `;
@@ -796,13 +802,6 @@ window.applyMenuVisibility = function(){
     });
   });
 };
-
-// Auto-apply saat tab lain mengubah setting
-window.addEventListener('storage', e => {
-  if(e.key === 'webpos_menu_broadcast' || e.key === 'webpos_menu_config'){
-    applyMenuVisibility();
-  }
-});
 
 // Tambahkan di akhir js/utils.js
 
