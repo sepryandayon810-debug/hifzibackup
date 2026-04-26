@@ -748,7 +748,12 @@ document.addEventListener('visibilitychange', () => {
 // Initialize theme + template + menu visibility
 document.addEventListener('DOMContentLoaded', () => {
   Utils.Theme.init();
-  Utils.Theme.loadTemplate(); // ⭐ Apply tema lengkap saat startup
+  
+  // ⭐ Hanya apply template di halaman dengan app layout (sidebar)
+  // Login & Register tidak perlu template override
+  if (document.querySelector('.app-container')) {
+    Utils.Theme.loadTemplate(); // Apply tema lengkap saat startup
+  }
   
   // ⭐ TAMBAH INI: Apply menu visibility saat startup
   setTimeout(() => {
