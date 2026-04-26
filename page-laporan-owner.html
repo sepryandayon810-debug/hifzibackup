@@ -798,7 +798,6 @@ body{background:linear-gradient(180deg,#f0fdf4 0%,#ecfdf5 50%,#fff 100%);backgro
         });
       });
 
-    renderSidebar();
 
     // User profile
     function loadUserData() {
@@ -1068,6 +1067,41 @@ body{background:linear-gradient(180deg,#f0fdf4 0%,#ecfdf5 50%,#fff 100%);backgro
         console.error(e);
       }
     }
+
+        // === RENDER & SETUP UI ===
+    renderSidebar();
+    loadUserData();
+
+    // Sidebar toggle
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      menuToggle.querySelector('i').style.transform = sidebar.classList.contains('collapsed') ? 'rotate(180deg)' : 'rotate(0deg)';
+    });
+    mobileMenuToggle.addEventListener('click', () => sidebar.classList.toggle('mobile-open'));
+    
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth <= 1024 && 
+          sidebar.classList.contains('mobile-open') &&
+          !sidebar.contains(e.target) && 
+          !mobileMenuToggle.contains(e.target)) {
+        const isDropdownClick = e.target.closest('.nav-dropdown') || e.target.closest('.nav-submenu');
+        if (!isDropdownClick) {
+          sidebar.classList.remove('mobile-open');
+        }
+      }
+    });
+
+    // Theme
+    btnTheme.addEventListener('click', () => {
+      const isDark = Utils.Theme.toggleDarkMode();
+      btnTheme.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    });
+    if(Utils.Theme.isDarkMode()) btnTheme.innerHTML = '<i class="fas fa-sun"></i>';
+
+    // Logout
+    btnLogout.addEventListener('click', () => {
+      Utils.confirm('Apakah Anda yakin ingin logout?', () => Auth.logout());
+    });
 
     // === INIT ===
     updateMonthDisplay();
