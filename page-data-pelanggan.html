@@ -1395,10 +1395,14 @@ if (mobileToggle) {
   });
 }
 
-// Tutup sidebar saat klik link di mobile
+// Tutup sidebar saat klik link di mobile (KECUALI dropdown toggle & submenu)
 document.querySelectorAll('.nav-link').forEach(link => {
   link.addEventListener('click', () => {
     if (window.innerWidth <= 1024) {
+      // Jangan tutup sidebar kalau klik dropdown toggle
+      if (link.classList.contains('nav-dropdown-toggle')) return;
+      // Jangan tutup sidebar kalau klik submenu (Kas Masuk, Kas Keluar, dll)
+      if (link.closest('.nav-submenu')) return;
       sidebar.classList.remove('mobile-open');
     }
   });
@@ -1409,7 +1413,7 @@ document.addEventListener('click', (e) => {
   if (window.innerWidth <= 1024 && 
       sidebar.classList.contains('mobile-open') &&
       !sidebar.contains(e.target) && 
-      e.target !== mobileToggle) {
+      !mobileToggle.contains(e.target)) {
     sidebar.classList.remove('mobile-open');
   }
 });
