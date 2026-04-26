@@ -554,6 +554,181 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       display: block !important;
       visibility: visible !important;
     }
+
+    /* ============================================
+   RESPONSIVE FLEXIBLE — PAGE PENGATURAN
+   ============================================ */
+
+/* Tablet (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .settings-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1rem !important;
+  }
+  .theme-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+
+/* Mobile (max 768px) */
+@media (max-width: 768px) {
+  html { font-size: 14px !important; }
+  
+  :root {
+    --header-height: 52px;
+    --bottom-nav-height: 58px;
+    --sidebar-width: 260px;
+  }
+  
+  .main-header {
+    height: var(--header-height);
+    padding: 0 0.75rem;
+  }
+  
+  .header-title {
+    font-size: 1rem !important;
+    max-width: 160px;
+  }
+  
+  #mobileMenuToggle {
+    width: 34px !important;
+    height: 34px !important;
+  }
+  
+  .page-content {
+    padding: 0.75rem !important;
+    padding-bottom: calc(var(--bottom-nav-height) + 0.75rem) !important;
+  }
+  
+  .settings-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  .card-header {
+    padding: 1rem 1.25rem !important;
+  }
+  
+  .card-body {
+    padding: 1.25rem !important;
+  }
+  
+  .card-title {
+    font-size: 1rem !important;
+  }
+  
+  .setting-item {
+    padding: 0.875rem 0 !important;
+    gap: 0.75rem;
+  }
+  
+  .setting-label {
+    font-size: 0.85rem !important;
+  }
+  
+  .setting-desc {
+    font-size: 0.8rem !important;
+  }
+  
+  .theme-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+  
+  .theme-option {
+    padding: 0.75rem 0.5rem !important;
+  }
+  
+  .theme-color {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  
+  .theme-name {
+    font-size: 0.7rem !important;
+  }
+  
+  .form-input, .form-textarea {
+    padding: 0.625rem 0.875rem !important;
+    font-size: 0.9rem !important;
+  }
+  
+  .btn {
+    padding: 0.625rem 1.25rem !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .btn-block {
+    width: 100% !important;
+  }
+  
+  .danger-zone {
+    padding: 0.875rem !important;
+  }
+  
+  .danger-zone-title {
+    font-size: 0.9rem !important;
+  }
+  
+  /* Modal full width di mobile */
+  .modal-content {
+    max-width: 100% !important;
+    margin: 0.5rem !important;
+    border-radius: 1.25rem !important;
+  }
+  
+  .mobile-nav {
+    height: 58px !important;
+  }
+  
+  .mobile-nav-item {
+    font-size: 0.6rem !important;
+    gap: 0.15rem !important;
+  }
+  
+  .mobile-nav-item i {
+    font-size: 1.15rem !important;
+  }
+}
+
+/* Small phone (max 380px) */
+@media (max-width: 380px) {
+  html { font-size: 13px !important; }
+  
+  .header-title {
+    font-size: 0.9rem !important;
+    max-width: 120px;
+  }
+  
+  .theme-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  
+  .theme-color {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  
+  .settings-grid {
+    gap: 0.75rem !important;
+  }
+  
+  .card-body {
+    padding: 1rem !important;
+  }
+  
+  .setting-item {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+  }
+  
+  .toggle-switch {
+    align-self: flex-end;
+  }
+}
+    
   </style>
 </head>
 <body>
@@ -1040,25 +1215,27 @@ themeGrid.innerHTML = allThemes.map(theme => `
           });
         }
 
-        // Tutup sidebar saat klik link di mobile
+                // Tutup sidebar saat klik link di mobile (KECUALI dropdown toggle & submenu)
         document.querySelectorAll('.nav-link').forEach(link => {
           link.addEventListener('click', () => {
             if (window.innerWidth <= 1024) {
+              if (link.classList.contains('nav-dropdown-toggle')) return;
+              if (link.closest('.nav-submenu')) return;
               sidebar.classList.remove('mobile-open');
             }
           });
         });
 
-        // Tutup sidebar saat klik overlay (area gelap di luar sidebar)
+                // Tutup sidebar saat klik overlay (area gelap di luar sidebar)
         document.addEventListener('click', (e) => {
           if (window.innerWidth <= 1024 && 
               sidebar.classList.contains('mobile-open') &&
               !sidebar.contains(e.target) && 
-              e.target !== mobileToggle) {
+              !mobileToggle.contains(e.target)) {
             sidebar.classList.remove('mobile-open');
           }
         });
-
+        
         // Logout
         document.getElementById('btnLogout').addEventListener('click', () => {
           Utils.confirm('Yakin ingin logout?', () => Auth.logout());
