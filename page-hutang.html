@@ -543,9 +543,14 @@
       border-color: var(--primary);
     }
 
-    .hutang-list {
-      max-height: 500px;
+        .hutang-list {
+      max-height: min(500px, calc(100vh - 380px));
       overflow-y: auto;
+    }
+    @media (max-width: 768px) {
+      .hutang-list {
+        max-height: min(400px, calc(100vh - 320px));
+      }
     }
 
     .hutang-item {
@@ -1018,7 +1023,7 @@
 }
 
 .hutang-detail-row.show {
-  display: table-row;
+  display: block;
 }
 
 .hutang-detail-content {
@@ -2264,7 +2269,7 @@ filteredItems.forEach(item => {
                 
                 <!-- DETAIL PER TANGGAL -->
                 <div class="hutang-detail-row" id="detail-${groupId}" style="background: var(--bg-secondary);">
-                  <div class="hutang-detail-content" style="padding: 1rem;">
+                  <div class="hutang-detail-content">
                     <div style="font-weight: 600; margin-bottom: 0.75rem; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">
                       Detail Transaksi
                     </div>
@@ -2295,19 +2300,19 @@ filteredItems.forEach(item => {
                             </div>
                             <div style="display: flex; gap: 0.25rem; margin-left: 0.75rem;">
                               ${!isItemPaid ? `
-                                <button class="btn-icon-sm btn-pay" onclick="window.openPayment('${item.id}')" title="Bayar" style="width: 28px; height: 28px;">
-                                  <i class="fas fa-money-bill-wave" style="font-size: 0.75rem;"></i>
+                                <button class="btn-icon-sm btn-pay" onclick="window.openPayment('${item.id}')" title="Bayar" style="width: 36px; height: 36px; min-width: 36px;">
+                                  <i class="fas fa-money-bill-wave" style="font-size: 0.85rem;"></i>
                                 </button>
                               ` : `
-                                <button class="btn-icon-sm btn-restore" onclick="window.restoreHutang('${item.id}')" title="Restore" style="width: 28px; height: 28px;">
-                                  <i class="fas fa-undo" style="font-size: 0.75rem;"></i>
+                                <button class="btn-icon-sm btn-restore" onclick="window.restoreHutang('${item.id}')" title="Restore" style="width: 36px; height: 36px; min-width: 36px;">
+                                  <i class="fas fa-undo" style="font-size: 0.85rem;"></i>
                                 </button>
                               `}
-                              <button class="btn-icon-sm btn-edit" onclick="window.editHutang('${item.id}')" title="Edit" style="width: 28px; height: 28px;">
-                                <i class="fas fa-edit" style="font-size: 0.75rem;"></i>
-                              </button>
-                              <button class="btn-icon-sm btn-delete" onclick="window.deleteHutang('${item.id}')" title="Hapus" style="width: 28px; height: 28px;">
-                                <i class="fas fa-trash" style="font-size: 0.75rem;"></i>
+                              <button class="btn-icon-sm btn-edit" onclick="window.editHutang('${item.id}')" title="Edit" style="width: 36px; height: 36px; min-width: 36px;">
+  <i class="fas fa-edit" style="font-size: 0.85rem;"></i>
+</button>
+<button class="btn-icon-sm btn-delete" onclick="window.deleteHutang('${item.id}')" title="Hapus" style="width: 36px; height: 36px; min-width: 36px;">
+                                <i class="fas fa-trash" style="font-size: 0.85rem;"></i>
                               </button>
                             </div>
                           </div>
@@ -2383,9 +2388,7 @@ filteredItems.forEach(item => {
         debtId: hutangId
       });
     }
-    
-    Utils.showToast('Data berhasil disimpan', 'success');
-    
+
     Utils.showToast('Data berhasil disimpan', 'success');
     closeModal();
     loadAllData();
