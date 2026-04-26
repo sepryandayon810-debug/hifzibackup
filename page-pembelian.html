@@ -61,6 +61,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+   <script src="js/utils.js?v=3"></script>
+  <script>
+    // ⭐ Proteksi: Matikan loadTemplate() supaya tidak timpa CSS Mint Fresh
+    // Utils.Theme akan di-override setelah file utils.js selesai diparse
+    window.addEventListener('DOMContentLoaded', function() {
+      if (window.Utils && Utils.Theme) {
+        Utils.Theme.loadTemplate = function() {
+          console.log('[Pembelian] Theme template skipped - Mint Fresh active');
+        };
+      }
+    });
+  </script>
+
   <style>/* ============================================
    WEBPOS - TEMA MINT FRESH (Dashboard Style)
    ============================================ */
