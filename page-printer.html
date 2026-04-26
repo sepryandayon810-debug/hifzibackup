@@ -874,6 +874,9 @@
                 <button class="share-btn print" onclick="printReceipt()">
                   <i class="fas fa-print"></i> Print/Save PDF
                 </button>
+                <button class="share-btn print" onclick="printViaThermer()" style="background: #e11d48;">
+                <i class="fas fa-print"></i> Print Thermal (Thermer)
+                </button>
               </div>
 
               <!-- Info WebView -->
@@ -2029,6 +2032,134 @@ ${note}
       // ⭐ BROWSER BIASA
       window.open(waUrl, '_blank');
     }
+
+    function printViaThermer() {
+  const nominal = parseInt(document.getElementById('manualNominal')?.value) || 0;
+  if (nominal <= 0) {
+    showToast('Nominal harus diisi!', 'warning');
+    return;
+  }
+
+  // Format struk khusus lebar kertas 58mm (32 karakter per baris)
+  const strukText = generateStrukThermalText();
+
+  // Coba pakai Web Share API (buka native share sheet Android)
+  if (navigator.share) {
+    navigator.share({
+      title: 'Struk Thermal',
+      text: strukText
+    }).then(() => {
+      showToast('Pilih "Thermer" di daftar aplikasi', 'success');
+    }).catch((err) => {
+      // User cancel atau tidak ada target → fallback clipboard
+      fallbackToClipboard(strukText);
+    });
+  } else {
+    // Fallback: copy ke clipboard
+    fallbackToClipboard(strukText);
+  }
+}
+
+// Format teks struk khusus printer thermal 58mm
+function generateStrukThermalText() {
+  const storeName = document.getElementById('receiptStoreName')?.value || 'TOKO';
+  const address = document.getElementById('receiptAddress')?.value || '';
+  const phone = document.getElementById('receiptPhone')?.value || '';
+  const note = document.getElementById('receiptNote')?.value || 'Terima kasih';
+  const date = document.getElementById('manualDate')?.value || '';
+  const time = document.getElementById('manualTime')?.value || '';
+  const nominal = parseInt(document.getElementById('manualNominal')?.value) || 0;
+  const admin = parseInt(document.getElementById('manualAdmin')?.value) || 0;
+  const total = nominal + admin;
+  const trxId = currentReceiptType.substring(0,2).toUpperCase() + '-' + Date.now().toString().slice(-6);
+
+  // Helper: center text dalam 32 karakter
+  const center = (t) => {
+    const s = 32 - t.length;
+    const left = Math.floor(s / 2);
+    return ' '.repeat(Math.max(0, left)) + t.substring(0, 32);
+  };
+  // Helper: pad left number
+  const padLeft = (label, val) => {
+    const line = label + val;
+    return line.length > 32 ? line.substring(0, 32) : line + ' '.repeat(32 - line.length);
+  };
+
+  let text = '';
+
+  text += center(storeName.toUpperCase()) + '\n';
+  if (address) text += center(address.substring(0, 32)) + '\n';
+  if (phone) text += center('HP: ' + phone) + '\n';
+  text += '================================\n';
+  text += center(
+    currentReceiptType === 'transfer' ? 'BUKTI TRANSFER' :
+    currentReceiptType === 'tarik_tunai' ? 'TARIK TUNAI' : 'TOP UP'
+  ) + '\n';
+  text += 'No : ' + trxId + '\n';
+  text += 'Tgl: ' + date + ' ' + time + '\n';
+  text += '--------------------------------\n';
+
+  if (currentReceiptType === 'transfer') {
+    const sender = document.getElementById('manualSender')?.value || '-';
+    const senderAcc = document.getElementById('manualSenderAccount')?.value || '-';
+    const senderBank = document.getElementById('manualBankFrom')?.value || '';
+    const receiver = document.getElementById('manualReceiver')?.value || '-';
+    const receiverAcc = document.getElementById('manualReceiverAccount')?.value || '-';
+    const receiverBank = document.getElementById('manualBankTo')?.value || '';
+
+    text += 'PENGIRIM:\n';
+    text += (sender + ' ' + senderBank).substring(0, 32) + '\n';
+    text += senderAcc.substring(0, 32) + '\n';
+    text += '--------------------------------\n';
+    text += 'PENERIMA:\n';
+    text += (receiver + ' ' + receiverBank).substring(0, 32) + '\n';
+    text += receiverAcc.substring(0, 32) + '\n';
+    text += '--------------------------------\n';
+  } else if (currentReceiptType === 'tarik_tunai') {
+    const customer = document.getElementById('manualCustomer')?.value || '-';
+    const bank = document.getElementById('manualBank')?.value || '';
+    const account = document.getElementById('manualAccount')?.value || '-';
+    text += 'CUSTOMER: ' + customer.substring(0, 22) + '\n';
+    text += 'BANK    : ' + bank.substring(0, 22) + '\n';
+    text += 'NO REK  : ' + account.substring(0, 22) + '\n';
+    text += '--------------------------------\n';
+  } else {
+    const type = document.getElementById('manualTopUpType')?.value || '';
+    const target = document.getElementById('manualTarget')?.value || '-';
+    const customer = document.getElementById('manualCustomer')?.value || '-';
+    text += 'JENIS   : ' + type.substring(0, 22) + '\n';
+    text += 'NO TUJUAN:' + target.substring(0, 21) + '\n';
+    text += 'CUSTOMER: ' + customer.substring(0, 22) + '\n';
+    text += '--------------------------------\n';
+  }
+
+  text += padLeft('Nominal:', 'Rp ' + formatNumber(nominal)) + '\n';
+  text += padLeft('Admin:', 'Rp ' + formatNumber(admin)) + '\n';
+  text += '--------------------------------\n';
+  text += padLeft('TOTAL:', 'Rp ' + formatNumber(total)) + '\n';
+  text += '================================\n';
+  text += center(note.substring(0, 32)) + '\n';
+  text += center('Dibuat via WebPOS') + '\n';
+  text += '\n\n\n'; // Feed kertas supaya bisa tear-off
+
+  return text;
+}
+
+function fallbackToClipboard(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Struk disalin! Buka Thermer → Paste → Print', 'success');
+    });
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Struk disalin! Buka Thermer → Paste → Print', 'success');
+  }
+}
     
     function generateReceiptText() {
       const storeName = document.getElementById('receiptStoreName')?.value || 'NAMA TOKO';
