@@ -1,10 +1,24 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="light">
+<html lang="id">
 <head>
   <!-- THEME GLOBAL - HARUS PALING ATAS -->
   <script>
     (function() {
-      // Cek semua kemungkinan key yang dipakai page setting
+      // ===== 1. DARKMODE CHECK (Anti-FOUC) =====
+      const darkKeys = ['webpos_dark_mode', 'webpos_theme_mode', 'webpos_theme', 'darkMode', 'theme'];
+      let isDark = false;
+      for (let key of darkKeys) {
+        const val = localStorage.getItem(key);
+        if (val === 'dark' || val === 'true' || val === true) {
+          isDark = true;
+          console.log('🌙 Darkmode found from [' + key + ']');
+          break;
+        }
+      }
+      // Set data-theme SEBELUM CSS render
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+
+      // ===== 2. THEME COLOR CHECK =====
       const possibleKeys = [
         'webpos_theme_color',
         'webpos_primary_color',
@@ -20,7 +34,6 @@
       let themeColor = null;
       let foundKey = null;
       
-      // Coba cari tema di localStorage
       for (let key of possibleKeys) {
         const val = localStorage.getItem(key);
         if (val && val !== 'null' && val !== 'undefined') {
@@ -31,13 +44,11 @@
         }
       }
       
-      // Kalau tidak ketemu, default ORANGE (sesuai request)
       if (!themeColor) {
         themeColor = 'orange';
-        console.log('⚠️ No theme found in localStorage, defaulting to orange');
+        console.log('⚠️ No theme found, defaulting to orange');
       }
       
-      // Set attribute untuk referensi CSS
       document.documentElement.setAttribute('data-theme-color', themeColor);
       
       const colors = {
@@ -51,7 +62,7 @@
       
       const c = colors[themeColor] || colors.orange;
       
-      // Inject style dengan prioritas TINGGI (!important)
+      // ===== 3. INJECT STYLE =====
       const style = document.createElement('style');
       style.id = 'global-theme-style';
       style.textContent = `
@@ -85,7 +96,7 @@
       `;
       document.head.appendChild(style);
       
-      // Update meta theme-color untuk mobile browser
+      // Update meta theme-color
       let meta = document.querySelector('meta[name="theme-color"]');
       if (!meta) {
         meta = document.createElement('meta');
@@ -94,7 +105,7 @@
       }
       meta.content = c.primary;
       
-      console.log('🎨 Theme applied:', themeColor, c.primary);
+      console.log('🎨 Theme applied:', themeColor, '| Dark:', isDark, '| Primary:', c.primary);
     })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
