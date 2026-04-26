@@ -82,6 +82,116 @@ const Utils = {
     isDarkMode: () => {
       return document.documentElement.getAttribute('data-theme') === 'dark';
     },
+
+    // ===== THEME TEMPLATES (FULL PRESET) =====
+    templates: {
+      indigo: {
+        '--primary': '#6366f1', '--primary-dark': '#4f46e5', '--secondary': '#ec4899',
+        '--bg-primary': '#f8fafc', '--bg-secondary': '#f1f5f9', '--bg-card': '#ffffff',
+        '--text-primary': '#0f172a', '--text-secondary': '#475569', '--text-muted': '#94a3b8',
+        '--border-color': '#e2e8f0', '--shadow-lg': '0 10px 15px rgba(0,0,0,0.1)',
+        '--radius-lg': '0.75rem', '--radius-xl': '1rem',
+        _body: 'var(--bg-primary)', _sidebar: 'var(--bg-card)', _header: 'var(--bg-card)',
+        _navActive: 'rgba(99,102,241,.1)', _navActiveColor: 'var(--primary)',
+        _navHover: 'rgba(99,102,241,.05)', _logo: 'linear-gradient(135deg,#6366f1,#ec4899)',
+        _sbBorder: '1px solid var(--border-color)', _hdBorder: '1px solid var(--border-color)',
+        _blur: false
+      },
+      mint: {
+        '--primary': '#059669', '--primary-dark': '#047857', '--secondary': '#84cc16',
+        '--bg-primary': '#f0fdf4', '--bg-secondary': '#ecfdf5', '--bg-card': '#ffffff',
+        '--text-primary': '#064e3b', '--text-secondary': '#065f46', '--text-muted': '#10b981',
+        '--border-color': '#d1fae5', '--shadow-lg': '0 10px 30px rgba(5,150,105,0.12)',
+        '--radius-lg': '1rem', '--radius-xl': '1.5rem',
+        _body: 'linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%)',
+        _sidebar: 'rgba(255,255,255,0.9)', _header: 'rgba(255,255,255,0.7)',
+        _navActive: 'linear-gradient(135deg,#059669,#10b981)', _navActiveColor: '#fff',
+        _navHover: 'rgba(5,150,105,0.06)', _logo: 'linear-gradient(135deg,#059669,#84cc16)',
+        _sbBorder: '1px solid rgba(255,255,255,0.6)', _hdBorder: '1px solid rgba(255,255,255,0.5)',
+        _blur: true
+      },
+      ocean: {
+        '--primary': '#0ea5e9', '--primary-dark': '#0284c7', '--secondary': '#06b6d4',
+        '--bg-primary': '#f0f9ff', '--bg-secondary': '#e0f2fe', '--bg-card': '#ffffff',
+        '--text-primary': '#0c4a6e', '--text-secondary': '#075985', '--text-muted': '#38bdf8',
+        '--border-color': '#bae6fd', '--shadow-lg': '0 10px 30px rgba(14,165,233,0.12)',
+        '--radius-lg': '1rem', '--radius-xl': '1.5rem',
+        _body: 'linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 50%, #ffffff 100%)',
+        _sidebar: 'rgba(255,255,255,0.9)', _header: 'rgba(255,255,255,0.7)',
+        _navActive: 'linear-gradient(135deg,#0ea5e9,#06b6d4)', _navActiveColor: '#fff',
+        _navHover: 'rgba(14,165,233,0.06)', _logo: 'linear-gradient(135deg,#0ea5e9,#06b6d4)',
+        _sbBorder: '1px solid rgba(255,255,255,0.6)', _hdBorder: '1px solid rgba(255,255,255,0.5)',
+        _blur: true
+      },
+      sunset: {
+        '--primary': '#f97316', '--primary-dark': '#ea580c', '--secondary': '#c026d3',
+        '--bg-primary': '#fff7ed', '--bg-secondary': '#ffedd5', '--bg-card': '#ffffff',
+        '--text-primary': '#7c2d12', '--text-secondary': '#9a3412', '--text-muted': '#fb923c',
+        '--border-color': '#fed7aa', '--shadow-lg': '0 10px 30px rgba(249,115,22,0.12)',
+        '--radius-lg': '1rem', '--radius-xl': '1.5rem',
+        _body: 'linear-gradient(180deg, #fff7ed 0%, #ffedd5 50%, #ffffff 100%)',
+        _sidebar: 'rgba(255,255,255,0.9)', _header: 'rgba(255,255,255,0.7)',
+        _navActive: 'linear-gradient(135deg,#f97316,#c026d3)', _navActiveColor: '#fff',
+        _navHover: 'rgba(249,115,22,0.06)', _logo: 'linear-gradient(135deg,#f97316,#c026d3)',
+        _sbBorder: '1px solid rgba(255,255,255,0.6)', _hdBorder: '1px solid rgba(255,255,255,0.5)',
+        _blur: true
+      },
+      midnight: {
+        '--primary': '#64748b', '--primary-dark': '#475569', '--secondary': '#94a3b8',
+        '--bg-primary': '#0f172a', '--bg-secondary': '#1e293b', '--bg-card': '#1e293b',
+        '--text-primary': '#f8fafc', '--text-secondary': '#cbd5e1', '--text-muted': '#64748b',
+        '--border-color': '#334155', '--shadow-lg': '0 10px 30px rgba(0,0,0,0.3)',
+        '--radius-lg': '0.75rem', '--radius-xl': '1rem',
+        _body: 'var(--bg-primary)', _sidebar: 'rgba(30,41,59,0.95)', _header: 'rgba(15,23,42,0.9)',
+        _navActive: 'rgba(99,102,241,.2)', _navActiveColor: '#818cf8',
+        _navHover: 'rgba(255,255,255,.05)', _logo: 'linear-gradient(135deg,#64748b,#94a3b8)',
+        _sbBorder: '1px solid var(--border-color)', _hdBorder: '1px solid var(--border-color)',
+        _blur: false
+      }
+    },
+
+    loadTemplate: function() {
+      const name = localStorage.getItem('webpos_theme_template') || 'indigo';
+      const t = Utils.Theme.templates[name] || Utils.Theme.templates.indigo;
+      
+      // 1. Set CSS variables
+      Object.entries(t).forEach(([k, v]) => {
+        if (k.startsWith('--')) document.documentElement.style.setProperty(k, v);
+      });
+      
+      // 2. Inject structural overrides
+      let el = document.getElementById('theme-template-overrides');
+      if (!el) {
+        el = document.createElement('style');
+        el.id = 'theme-template-overrides';
+        document.head.appendChild(el);
+      }
+      
+      const blurSidebar = t._blur ? 'backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;' : '';
+      const blurHeader = t._blur ? 'backdrop-filter:blur(12px)!important;-webkit-backdrop-filter:blur(12px)!important;' : '';
+      const fixed = t._body.includes('gradient') ? 'background-attachment:fixed!important;' : '';
+      
+      el.textContent = `
+        body{background:${t._body}!important;${fixed}}
+        .sidebar{background:${t._sidebar}!important;${blurSidebar}border-right:${t._sbBorder}!important;}
+        .main-header{background:${t._header}!important;${blurHeader}border-bottom:${t._hdBorder}!important;}
+        .logo-icon{background:${t._logo}!important;}
+        .logo-text{background:${t._logo}!important;-webkit-background-clip:text!important;-webkit-text-fill-color:transparent!important;}
+        .nav-link.active{background:${t._navActive}!important;color:${t._navActiveColor}!important;box-shadow:none!important;}
+        .nav-link.active i,.nav-link.active span{color:${t._navActiveColor}!important;}
+        .nav-link:hover{background:${t._navHover}!important;color:var(--primary)!important;}
+        .nav-link.active::before{display:none!important;}
+        .btn-primary{background:var(--primary)!important;}
+        .spinner{border-top-color:var(--primary)!important;}
+        .mobile-nav{background:${t._sidebar}!important;${blurSidebar}}
+        .theme-option.active{border-color:var(--primary)!important;background:${t._navHover}!important;}
+        input:checked+.toggle-slider{background:var(--primary)!important;border-color:var(--primary)!important;}
+      `;
+      
+      document.documentElement.setAttribute('data-theme-template', name);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', t['--primary']);
+    },
     
     // Get all available themes with labels
     getThemes: () => [
@@ -569,9 +679,20 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// Initialize theme
+// Initialize theme + template
 document.addEventListener('DOMContentLoaded', () => {
   Utils.Theme.init();
+  Utils.Theme.loadTemplate(); // ⭐ Apply tema lengkap saat startup
+});
+
+// Sync antar tab (tema template + menu visibility)
+window.addEventListener('storage', (e) => {
+  if (e.key === 'webpos_theme_template' || e.key === 'webpos_theme_broadcast') {
+    Utils.Theme.loadTemplate();
+  }
+  if (e.key === 'webpos_menu_broadcast' || e.key === 'webpos_menu_config') {
+    applyMenuVisibility();
+  }
 });
 
 // Export for module usage
