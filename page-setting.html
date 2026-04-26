@@ -816,6 +816,22 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
             </div>
           </div>
 
+                    <!-- Pengaturan Menu Sidebar -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title"><i class="fas fa-th-list"></i> Menu Sidebar</h3>
+              <span class="badge badge-primary">Baru</span>
+            </div>
+            <div class="card-body">
+              <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem">
+                Centang menu yang ingin ditampilkan. Nonaktifkan yang tidak perlu untuk menyederhanakan tampilan.
+              </p>
+              <div id="menuConfigList">
+                <!-- Di-render oleh JS -->
+              </div>
+            </div>
+          </div>
+
           <!-- Store Settings -->
           <div class="card">
             <div class="card-header">
@@ -1369,6 +1385,68 @@ themeGrid.innerHTML = allThemes.map(theme => `
           });
         });
 
+                // ===== RENDER MENU SIDEBAR CONFIG =====
+        (function renderMenuConfig(){
+          const menuItems = [
+            { key: 'menu_kasir', label: 'Kasir', icon: 'fa-cash-register', def: true },
+            { key: 'menu_produk', label: 'Produk', icon: 'fa-box', def: true },
+            { key: 'menu_riwayat', label: 'Riwayat Transaksi', icon: 'fa-history', def: true },
+            { key: 'menu_kas', label: 'Kas Management', icon: 'fa-wallet', def: true },
+            { key: 'menu_pembelian', label: 'Pembelian / Restock', icon: 'fa-shopping-cart', def: true },
+            { key: 'menu_hutang', label: 'Hutang & Piutang', icon: 'fa-hand-holding-usd', def: true },
+            { key: 'menu_laporan', label: 'Laporan Penjualan', icon: 'fa-chart-bar', def: true },
+            { key: 'menu_laporan_stok', label: 'Laporan Stok', icon: 'fa-boxes', def: true },
+            { key: 'menu_terlaris', label: 'Barang Terlaris', icon: 'fa-crown', def: true },
+            { key: 'menu_telegram', label: 'Saldo Telegram', icon: 'fa-telegram', def: true },
+            { key: 'menu_pelanggan', label: 'Data Pelanggan', icon: 'fa-users', def: true },
+            { key: 'menu_pengguna', label: 'Pengguna', icon: 'fa-user-cog', def: false },
+            { key: 'menu_backup', label: 'Backup & Sync', icon: 'fa-cloud-upload-alt', def: true },
+            { key: 'menu_log', label: 'Log Aktivitas', icon: 'fa-history', def: false },
+            { key: 'menu_printer', label: 'Printer & Struk', icon: 'fa-print', def: true },
+            { key: 'menu_reset', label: 'Reset Data', icon: 'fa-trash-alt', def: false },
+            // Menu tambahan (default mati)
+            { key: 'menu_struk_digital', label: 'Struk Digital (WA/Telegram)', icon: 'fa-receipt', def: false, new: true },
+            { key: 'menu_stok_alert', label: 'Notifikasi Stok Menipis', icon: 'fa-bell', def: false, new: true },
+            { key: 'menu_member', label: 'Member & Poin', icon: 'fa-id-card', def: false, new: true },
+            { key: 'menu_supplier', label: 'Manajemen Supplier', icon: 'fa-truck', def: false, new: true },
+            { key: 'menu_katalog', label: 'Katalog Online', icon: 'fa-globe', def: false, new: true },
+            { key: 'menu_reservasi', label: 'Reservasi / Booking', icon: 'fa-calendar-check', def: false, new: true },
+            { key: 'menu_multi_cabang', label: 'Multi Cabang', icon: 'fa-store', def: false, new: true },
+            { key: 'menu_owner_keuangan', label: 'Laporan Keuangan (Owner)', icon: 'fa-lock', def: false, new: true }
+          ];
+
+          const box = document.getElementById('menuConfigList');
+          if(!box) return;
+          const saved = JSON.parse(localStorage.getItem('webpos_menu_config') || '{}');
+          
+          box.innerHTML = menuItems.map(it => {
+            const on = saved[it.key] !== undefined ? saved[it.key] : it.def;
+            return `
+              <div class="setting-item">
+                <div class="setting-info" style="display:flex;align-items:center;gap:0.75rem">
+                  <i class="fas ${it.icon}" style="color:var(--primary);width:20px;text-align:center"></i>
+                  <div>
+                    <div class="setting-label" style="margin-bottom:0">${it.label} ${it.new ? '<span style="font-size:0.65rem;background:var(--warning);color:#fff;padding:0.1rem 0.4rem;border-radius:0.25rem;margin-left:0.25rem">NEW</span>' : ''}</div>
+                  </div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" class="menu-cb" data-key="${it.key}" ${on ? 'checked' : ''}>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>`;
+          }).join('');
+          
+          box.querySelectorAll('.menu-cb').forEach(cb => {
+            cb.addEventListener('change', function(){
+              const cfg = JSON.parse(localStorage.getItem('webpos_menu_config') || '{}');
+              cfg[this.dataset.key] = this.checked;
+              localStorage.setItem('webpos_menu_config', JSON.stringify(cfg));
+              localStorage.setItem('webpos_menu_broadcast', Date.now().toString());
+              Utils.showToast(this.checked ? 'Menu diaktifkan' : 'Menu dinonaktifkan', 'success');
+            });
+          });
+        })();
+        
         // Dropdown menus
         document.querySelectorAll('[data-dropdown]').forEach(dropdown => {
           const toggle = dropdown.querySelector('.nav-dropdown-toggle');
