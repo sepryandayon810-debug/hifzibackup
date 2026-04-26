@@ -150,13 +150,73 @@ const Utils = {
       }
     },
 
+          berry: {
+        '--primary': '#be185d', '--primary-dark': '#9d174d', '--secondary': '#f43f5e',
+        '--bg-primary': '#fdf2f8', '--bg-secondary': '#fce7f3', '--bg-card': '#ffffff',
+        '--text-primary': '#831843', '--text-secondary': '#9d174d', '--text-muted': '#f472b6',
+        '--border-color': '#fbcfe8', '--shadow-lg': '0 10px 30px rgba(190,24,93,0.12)',
+        '--radius-lg': '1rem', '--radius-xl': '1.5rem',
+        _body: 'linear-gradient(180deg, #fdf2f8 0%, #fce7f3 50%, #ffffff 100%)',
+        _sidebar: 'rgba(255,255,255,0.9)', _header: 'rgba(255,255,255,0.7)',
+        _navActive: 'linear-gradient(135deg,#be185d,#f43f5e)', _navActiveColor: '#fff',
+        _navHover: 'rgba(190,24,93,0.06)', _logo: 'linear-gradient(135deg,#be185d,#f43f5e)',
+        _sbBorder: '1px solid rgba(255,255,255,0.6)', _hdBorder: '1px solid rgba(255,255,255,0.5)',
+        _blur: true
+      },
+      cyan: {
+        '--primary': '#0891b2', '--primary-dark': '#0e7490', '--secondary': '#06b6d4',
+        '--bg-primary': '#ecfeff', '--bg-secondary': '#cffafe', '--bg-card': '#ffffff',
+        '--text-primary': '#164e63', '--text-secondary': '#155e75', '--text-muted': '#22d3ee',
+        '--border-color': '#a5f3fc', '--shadow-lg': '0 10px 30px rgba(8,145,178,0.12)',
+        '--radius-lg': '1rem', '--radius-xl': '1.5rem',
+        _body: 'linear-gradient(180deg, #ecfeff 0%, #cffafe 50%, #ffffff 100%)',
+        _sidebar: 'rgba(255,255,255,0.9)', _header: 'rgba(255,255,255,0.7)',
+        _navActive: 'linear-gradient(135deg,#0891b2,#06b6d4)', _navActiveColor: '#fff',
+        _navHover: 'rgba(8,145,178,0.06)', _logo: 'linear-gradient(135deg,#0891b2,#06b6d4)',
+        _sbBorder: '1px solid rgba(255,255,255,0.6)', _hdBorder: '1px solid rgba(255,255,255,0.5)',
+        _blur: true
+      },
+      amber: {
+        '--primary': '#d97706', '--primary-dark': '#b45309', '--secondary': '#fbbf24',
+        '--bg-primary': '#fffbeb', '--bg-secondary': '#fef3c7', '--bg-card': '#ffffff',
+        '--text-primary': '#78350f', '--text-secondary': '#92400e', '--text-muted': '#fbbf24',
+        '--border-color': '#fde68a', '--shadow-lg': '0 10px 30px rgba(217,119,6,0.12)',
+        '--radius-lg': '1rem', '--radius-xl': '1.5rem',
+        _body: 'linear-gradient(180deg, #fffbeb 0%, #fef3c7 50%, #ffffff 100%)',
+        _sidebar: 'rgba(255,255,255,0.9)', _header: 'rgba(255,255,255,0.7)',
+        _navActive: 'linear-gradient(135deg,#d97706,#fbbf24)', _navActiveColor: '#fff',
+        _navHover: 'rgba(217,119,6,0.06)', _logo: 'linear-gradient(135deg,#d97706,#fbbf24)',
+        _sbBorder: '1px solid rgba(255,255,255,0.6)', _hdBorder: '1px solid rgba(255,255,255,0.5)',
+        _blur: true
+      },
+      rose: {
+        '--primary': '#e11d48', '--primary-dark': '#be123c', '--secondary': '#fb7185',
+        '--bg-primary': '#fff1f2', '--bg-secondary': '#ffe4e6', '--bg-card': '#ffffff',
+        '--text-primary': '#881337', '--text-secondary': '#9f1239', '--text-muted': '#fb7185',
+        '--border-color': '#fecdd3', '--shadow-lg': '0 10px 30px rgba(225,29,72,0.12)',
+        '--radius-lg': '1rem', '--radius-xl': '1.5rem',
+        _body: 'linear-gradient(180deg, #fff1f2 0%, #ffe4e6 50%, #ffffff 100%)',
+        _sidebar: 'rgba(255,255,255,0.9)', _header: 'rgba(255,255,255,0.7)',
+        _navActive: 'linear-gradient(135deg,#e11d48,#fb7185)', _navActiveColor: '#fff',
+        _navHover: 'rgba(225,29,72,0.06)', _logo: 'linear-gradient(135deg,#e11d48,#fb7185)',
+        _sbBorder: '1px solid rgba(255,255,255,0.6)', _hdBorder: '1px solid rgba(255,255,255,0.5)',
+        _blur: true
+      },
+
     loadTemplate: function() {
       const name = localStorage.getItem('webpos_theme_template') || 'indigo';
       const t = Utils.Theme.templates[name] || Utils.Theme.templates.indigo;
       
       // 1. Set CSS variables
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       Object.entries(t).forEach(([k, v]) => {
-        if (k.startsWith('--')) document.documentElement.style.setProperty(k, v);
+        if (!k.startsWith('--')) return;
+        // Dark mode protection: jangan override bg/text/border kalau dark mode aktif (kecuali midnight)
+        if (isDark && name !== 'midnight') {
+          const darkKeep = ['--bg-primary','--bg-secondary','--bg-card','--text-primary','--text-secondary','--text-muted','--border-color'];
+          if (darkKeep.includes(k)) return;
+        }
+        document.documentElement.style.setProperty(k, v);
       });
       
       // 2. Inject structural overrides
