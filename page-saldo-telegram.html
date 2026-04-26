@@ -1492,10 +1492,13 @@ if (mobileMenuToggle) {
   });
 }
 
-// Tutup sidebar saat klik link di mobile
+// Tutup sidebar saat klik link di mobile (KECUALI dropdown toggle)
 document.querySelectorAll('.nav-link').forEach(link => {
-  link.addEventListener('click', () => {
+  link.addEventListener('click', (e) => {
     if (window.innerWidth <= 1024) {
+      // Jangan tutup sidebar kalau klik dropdown toggle atau submenu
+      if (link.classList.contains('nav-dropdown-toggle')) return;
+      if (link.closest('.nav-submenu')) return;
       sidebar.classList.remove('mobile-open');
     }
   });
