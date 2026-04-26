@@ -875,6 +875,187 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     padding-right: 1.25rem !important;
   }
 }
+
+/* ============================================
+   RESPONSIVE FLEXIBLE — PAGE PENGGUNA
+   ============================================ */
+
+/* Tablet (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .pengguna-item {
+    padding: 0.875rem 1.25rem;
+  }
+  .modal-content {
+    max-width: 480px;
+  }
+}
+
+/* Mobile (max 768px) */
+@media (max-width: 768px) {
+  html { font-size: 14px !important; }
+  
+  :root {
+    --header-height: 52px;
+    --bottom-nav-height: 58px;
+    --sidebar-width: 260px;
+  }
+  
+  .main-header {
+    height: var(--header-height);
+    padding: 0 0.75rem;
+  }
+  
+  .header-title {
+    font-size: 1rem !important;
+    max-width: 160px;
+  }
+  
+  #mobileMenuToggle {
+    width: 34px !important;
+    height: 34px !important;
+  }
+  
+  .page-content {
+    padding: 0.75rem !important;
+    padding-bottom: calc(var(--bottom-nav-height) + 0.75rem) !important;
+  }
+  
+  /* Filter tabs scroll horizontal */
+  .filter-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0.2rem;
+  }
+  .filter-tabs::-webkit-scrollbar { display: none; }
+  .filter-tab {
+    white-space: nowrap;
+    padding: 0.4rem 0.875rem;
+    font-size: 0.8rem;
+  }
+  
+  /* Stats jadi 2 kolom */
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+  .stat-card {
+    padding: 0.875rem !important;
+  }
+  .stat-value {
+    font-size: 1.25rem !important;
+  }
+  .stat-label {
+    font-size: 0.6rem !important;
+  }
+  
+  /* Pengguna list compact */
+  .pengguna-list {
+    max-height: none;
+  }
+  .pengguna-item {
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+  }
+  .pengguna-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 0.875rem;
+  }
+  .pengguna-name {
+    font-size: 0.9rem;
+  }
+  .pengguna-username {
+    font-size: 0.75rem;
+  }
+  .pengguna-meta {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .pengguna-actions {
+    gap: 0.35rem;
+  }
+  .btn-icon-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+  
+  /* Card header */
+  .card-header {
+    padding: 1rem !important;
+  }
+  .card-title {
+    font-size: 0.95rem !important;
+  }
+  
+  /* Modal full width di mobile */
+  .modal-content {
+    max-width: 100% !important;
+    margin: 0.5rem !important;
+    border-radius: 1.25rem !important;
+  }
+  .modal-header, .modal-body, .modal-footer {
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+  
+  /* Permission grid 1 kolom */
+  .permission-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+    padding: 0.75rem !important;
+  }
+  .permission-item {
+    padding: 0.75rem !important;
+  }
+  
+  /* Bottom nav */
+  .mobile-nav {
+    height: 58px !important;
+  }
+  .mobile-nav-item {
+    font-size: 0.6rem !important;
+    gap: 0.15rem !important;
+  }
+  .mobile-nav-item i {
+    font-size: 1.15rem !important;
+  }
+}
+
+/* Small phone (max 380px) */
+@media (max-width: 380px) {
+  html { font-size: 13px !important; }
+  
+  .stats-row {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  
+  .header-title {
+    font-size: 0.9rem !important;
+    max-width: 120px;
+  }
+  
+  .pengguna-item {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.75rem;
+  }
+  .pengguna-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .filter-tab {
+    padding: 0.35rem 0.625rem;
+    font-size: 0.75rem;
+  }
+}
  
   </style>
 </head>
@@ -1542,24 +1723,26 @@ if (mobileToggle) {
   });
 }
 
-// Tutup sidebar saat klik link di mobile
-document.querySelectorAll('.nav-link').forEach(link => {
-  link.addEventListener('click', () => {
-    if (window.innerWidth <= 1024) {
-      sidebar.classList.remove('mobile-open');
-    }
-  });
-});
+        // Tutup sidebar saat klik link di mobile (KECUALI dropdown toggle & submenu)
+        document.querySelectorAll('.nav-link').forEach(link => {
+          link.addEventListener('click', () => {
+            if (window.innerWidth <= 1024) {
+              if (link.classList.contains('nav-dropdown-toggle')) return;
+              if (link.closest('.nav-submenu')) return;
+              sidebar.classList.remove('mobile-open');
+            }
+          });
+        });
 
-// Tutup sidebar saat klik overlay (area gelap di luar sidebar)
-document.addEventListener('click', (e) => {
-  if (window.innerWidth <= 1024 && 
-      sidebar.classList.contains('mobile-open') &&
-      !sidebar.contains(e.target) && 
-      e.target !== mobileToggle) {
-    sidebar.classList.remove('mobile-open');
-  }
-});
+        // Tutup sidebar saat klik overlay (area gelap di luar sidebar)
+        document.addEventListener('click', (e) => {
+          if (window.innerWidth <= 1024 && 
+              sidebar.classList.contains('mobile-open') &&
+              !sidebar.contains(e.target) && 
+              !mobileToggle.contains(e.target)) {
+            sidebar.classList.remove('mobile-open');
+          }
+        });
 
         // Dropdown menus
         document.querySelectorAll('[data-dropdown]').forEach(dropdown => {
