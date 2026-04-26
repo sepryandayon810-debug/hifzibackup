@@ -568,6 +568,271 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     font-size: 1.1rem !important;
   }
 }
+
+/* ============================================
+   RESPONSIVE FLEXIBLE — PAGE LAPORAN STOK
+   ============================================ */
+
+/* Desktop: sembunyikan burger menu */
+#mobileMenuToggle { display: none; }
+
+/* Tablet (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .main-header { padding: 0 1rem !important; }
+  .header-title { font-size: 1.15rem !important; }
+}
+
+/* Mobile (max 768px) */
+@media (max-width: 768px) {
+  html { font-size: 14px !important; }
+  
+  :root {
+    --header-height: 52px;
+    --bottom-nav-height: 58px;
+    --sidebar-width: 260px;
+  }
+  
+  /* Fix container overflow */
+  .app-container { overflow-x: hidden !important; }
+  .main-content { overflow-x: hidden !important; margin-left: 0 !important; }
+  .page-content {
+    padding: 0.75rem !important;
+    padding-bottom: calc(var(--bottom-nav-height) + 0.75rem) !important;
+    overflow-x: hidden !important;
+  }
+  
+  /* Header */
+  .main-header {
+    height: var(--header-height) !important;
+    padding: 0 0.75rem !important;
+  }
+  .header-title {
+    font-size: 0.95rem !important;
+    max-width: 150px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  #mobileMenuToggle {
+    display: flex !important;
+    width: 34px !important;
+    height: 34px !important;
+  }
+  
+  /* ===== STATS CARD — Fix overflow ===== */
+  .stats-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    margin: 0 0 1rem 0 !important;
+  }
+  .stat-card {
+    padding: 0.75rem !important;
+    gap: 0.5rem !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  .stat-icon {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 1rem !important;
+    flex-shrink: 0 !important;
+  }
+  .stat-info {
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  .stat-label {
+    font-size: 0.6rem !important;
+    line-height: 1.2 !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .stat-value {
+    font-size: 1rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  /* ===== CARD HEADER ===== */
+  .card {
+    width: 100% !important;
+    margin-bottom: 1rem !important;
+  }
+  .card-header {
+    padding: 0.875rem 1rem !important;
+    flex-wrap: wrap !important;
+    gap: 0.75rem !important;
+  }
+  .card-title {
+    font-size: 0.95rem !important;
+  }
+  .card-body {
+    padding: 1rem !important;
+  }
+  
+  /* Filter dropdown di card header */
+  .card-header > div:last-child {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+  .card-header .form-select {
+    flex: 1 !important;
+    min-width: 120px !important;
+    font-size: 0.8rem !important;
+    padding: 0.5rem 0.75rem !important;
+  }
+  
+  /* ===== TOOLBAR ===== */
+  .toolbar {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    width: 100% !important;
+  }
+  .search-box {
+    min-width: 100% !important;
+    width: 100% !important;
+  }
+  .search-box input {
+    padding: 0.625rem 1rem 0.625rem 2.25rem !important;
+    font-size: 0.875rem !important;
+    width: 100% !important;
+  }
+  .toolbar .btn {
+    width: 100% !important;
+    padding: 0.625rem !important;
+    font-size: 0.85rem !important;
+  }
+  
+  /* ===== TABLE — Scroll horizontal ===== */
+  .table-container {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 -1rem;
+    padding: 0 1rem;
+  }
+  .data-table {
+    min-width: 500px !important;
+    font-size: 0.85rem !important;
+  }
+  .data-table th,
+  .data-table td {
+    padding: 0.625rem 0.75rem !important;
+    white-space: nowrap !important;
+  }
+  .data-table th {
+    font-size: 0.7rem !important;
+  }
+  
+  /* Product info compact */
+  .code-tag {
+    font-size: 0.65rem !important;
+    padding: 0.125rem 0.375rem !important;
+  }
+  
+  /* Action buttons */
+  .action-btns {
+    gap: 0.375rem !important;
+  }
+  .btn-action {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  /* Modal */
+  .modal {
+    max-width: 95% !important;
+    margin: 0.5rem !important;
+  }
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  .modal-title {
+    font-size: 1.1rem !important;
+  }
+  
+  /* Adjustment preview */
+  .adjustment-preview {
+    padding: 0.75rem !important;
+  }
+  .adjustment-row {
+    font-size: 0.85rem !important;
+  }
+  
+  /* Buttons */
+  .btn {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.8rem !important;
+  }
+  .btn-icon {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 0.9rem !important;
+  }
+  
+  /* Bottom nav */
+  .mobile-nav {
+    height: 58px !important;
+  }
+  .mobile-nav-item {
+    font-size: 0.6rem !important;
+    gap: 0.15rem !important;
+  }
+  .mobile-nav-item i {
+    font-size: 1.15rem !important;
+  }
+}
+
+/* Small phone (max 380px) */
+@media (max-width: 380px) {
+  html { font-size: 13px !important; }
+  
+  .header-title {
+    font-size: 0.85rem !important;
+    max-width: 120px !important;
+  }
+  
+  .stats-grid {
+    gap: 0.4rem !important;
+  }
+  .stat-card {
+    padding: 0.625rem !important;
+  }
+  .stat-icon {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.9rem !important;
+  }
+  .stat-value {
+    font-size: 0.9rem !important;
+  }
+  
+  .data-table {
+    min-width: 450px !important;
+  }
+  
+  .card-header .form-select {
+    min-width: 100px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .toolbar .btn {
+    font-size: 0.8rem !important;
+  }
+}
   </style>
 </head>
 <body>
