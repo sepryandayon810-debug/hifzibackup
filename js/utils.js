@@ -679,10 +679,15 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// Initialize theme + template
+// Initialize theme + template + menu visibility
 document.addEventListener('DOMContentLoaded', () => {
   Utils.Theme.init();
   Utils.Theme.loadTemplate(); // ⭐ Apply tema lengkap saat startup
+  
+  // ⭐ TAMBAH INI: Apply menu visibility saat startup
+  setTimeout(() => {
+    if (typeof applyMenuVisibility === 'function') applyMenuVisibility();
+  }, 100);
 });
 
 // Sync antar tab (tema template + menu visibility)
