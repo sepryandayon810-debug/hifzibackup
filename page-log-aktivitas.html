@@ -230,17 +230,13 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
    RESPONSIVE FLEXIBLE — PAGE LOG AKTIVITAS
    ============================================ */
 
-/* Tablet (769px - 1024px) */
+/* === TABLET === */
 @media (min-width: 769px) and (max-width: 1024px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  .filter-section {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .filter-section { grid-template-columns: repeat(2, 1fr) !important; }
 }
 
-/* Mobile (max 768px) */
+/* === MOBILE (max 768px) === */
 @media (max-width: 768px) {
   html { font-size: 14px !important; }
   
@@ -250,147 +246,210 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     --sidebar-width: 260px;
   }
   
+  /* Fix container overflow */
+  .app-container { overflow-x: hidden !important; }
+  .main-content { overflow-x: hidden !important; }
+  .page-content { 
+    padding: 0.75rem !important; 
+    padding-bottom: calc(var(--bottom-nav-height) + 0.75rem) !important;
+    overflow-x: hidden !important;
+  }
+  
+  /* Header */
   .main-header {
     height: var(--header-height);
     padding: 0 0.75rem;
   }
-  
   .header-title {
-    font-size: 1rem !important;
-    max-width: 160px;
+    font-size: 0.95rem !important;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  
   #mobileMenuToggle {
     width: 34px !important;
     height: 34px !important;
     display: flex !important;
   }
   
-  .page-content {
-    padding: 0.75rem !important;
-    padding-bottom: calc(var(--bottom-nav-height) + 0.75rem) !important;
-  }
-  
+  /* ===== STATS CARD — Fix overflow ===== */
   .stats-grid {
+    display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 0.5rem !important;
     margin-bottom: 1rem !important;
+    width: 100% !important;
   }
-  
   .stat-card {
-    padding: 0.875rem !important;
-    gap: 0.75rem !important;
+    padding: 0.75rem !important;
+    gap: 0.5rem !important;
+    min-width: 0 !important;        /* ← PENTING: supaya tidak melebar */
+    overflow: hidden !important;
   }
-  
   .stat-icon {
-    width: 40px !important;
-    height: 40px !important;
-    font-size: 1.1rem !important;
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 1rem !important;
+    flex-shrink: 0 !important;
   }
-  
+  .stat-content {
+    min-width: 0 !important;        /* ← PENTING */
+    overflow: hidden !important;
+  }
+  .stat-label {
+    font-size: 0.6rem !important;
+    line-height: 1.2 !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .stat-value {
     font-size: 1.1rem !important;
   }
   
-  .stat-label {
-    font-size: 0.6rem !important;
-  }
-  
-  .filter-section {
-    grid-template-columns: 1fr !important;
-    gap: 0.75rem !important;
+  /* ===== FILTER CARD ===== */
+  .card {
     margin-bottom: 1rem !important;
   }
-  
   .card-header {
-    padding: 1rem 1.25rem !important;
+    padding: 0.875rem 1rem !important;
     flex-wrap: wrap !important;
+    gap: 0.75rem !important;
   }
-  
   .card-title {
-    font-size: 0.95rem !important;
+    font-size: 0.9rem !important;
   }
-  
   .card-body {
     padding: 1rem !important;
   }
   
+  .filter-section {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+    margin-bottom: 0 !important;
+    width: 100% !important;
+  }
+  .filter-section .form-group {
+    margin-bottom: 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .filter-section .form-label {
+    font-size: 0.8rem !important;
+    margin-bottom: 0.35rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .filter-section .form-select {
+    width: 100% !important;
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.85rem !important;
+    min-width: 0 !important;
+  }
+  
+  /* ===== TABLE — Scroll horizontal ===== */
+  .table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 0 !important;
+    margin: 0 -1rem;              /* ← Full width di mobile */
+    padding: 0 1rem;
+  }
+  .table {
+    min-width: 500px !important;   /* ← Supaya kolom tidak terlalu sempit */
+    font-size: 0.8rem !important;
+  }
   .table th,
   .table td {
     padding: 0.625rem 0.75rem !important;
-    font-size: 0.8rem !important;
+    white-space: nowrap !important;
   }
-  
   .table th {
     font-size: 0.7rem !important;
   }
   
+  /* Log action badge lebih kecil */
   .log-action {
     padding: 0.2rem 0.5rem !important;
     font-size: 0.65rem !important;
   }
   
+  /* Tombol hapus tidak terpotong */
+  .card-header .btn-sm {
+    padding: 0.35rem 0.625rem !important;
+    font-size: 0.75rem !important;
+    white-space: nowrap !important;
+  }
+  
+  /* Pagination */
   .pagination {
     padding: 0.75rem !important;
     gap: 0.35rem !important;
   }
-  
   .page-btn {
     padding: 0.4rem 0.75rem !important;
     font-size: 0.8rem !important;
   }
   
-  .btn-sm {
-    padding: 0.35rem 0.75rem !important;
-    font-size: 0.75rem !important;
-  }
-  
+  /* Button icon header */
   .btn-icon {
     width: 34px !important;
     height: 34px !important;
     font-size: 0.9rem !important;
   }
   
-  .form-select {
-    padding: 0.625rem 0.875rem !important;
-    font-size: 0.85rem !important;
-  }
-  
+  /* Bottom nav */
   .mobile-nav {
     height: 58px !important;
   }
-  
   .mobile-nav-item {
     font-size: 0.6rem !important;
     gap: 0.15rem !important;
   }
-  
   .mobile-nav-item i {
     font-size: 1.15rem !important;
   }
 }
 
-/* Small phone (max 380px) */
+/* === SMALL PHONE (max 380px) === */
 @media (max-width: 380px) {
   html { font-size: 13px !important; }
   
-  .stats-grid {
-    grid-template-columns: 1fr 1fr !important;
-  }
-  
   .header-title {
-    font-size: 0.9rem !important;
+    font-size: 0.85rem !important;
     max-width: 120px;
   }
   
-  .table th,
-  .table td {
-    padding: 0.5rem 0.625rem !important;
-    font-size: 0.75rem !important;
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.4rem !important;
   }
-  
+  .stat-card {
+    padding: 0.625rem !important;
+  }
+  .stat-icon {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.9rem !important;
+  }
   .stat-value {
     font-size: 1rem !important;
+  }
+  
+  .table {
+    min-width: 450px !important;
+  }
+  
+  .card-header .btn-sm {
+    font-size: 0.7rem !important;
+    padding: 0.3rem 0.5rem !important;
+  }
+  
+  .page-btn {
+    padding: 0.3rem 0.625rem !important;
   }
 }
     
