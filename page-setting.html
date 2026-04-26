@@ -366,12 +366,27 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     }
 
     /* Theme Color Grid */
-    .theme-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-      margin-top: 1rem;
-    }
+   .theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 480px) {
+  .theme-grid { grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+  .theme-option { padding: 0.75rem 0.5rem; }
+  .theme-color { width: 36px; height: 36px; }
+  .theme-name { font-size: 0.7rem; }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .theme-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 769px) {
+  .theme-grid { grid-template-columns: repeat(5, 1fr); }
+}
 
     .theme-option {
       display: flex;
@@ -419,6 +434,10 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     .theme-ocean { background: linear-gradient(135deg, #0ea5e9, #06b6d4); }
     .theme-sunset { background: linear-gradient(135deg, #f97316, #c026d3); }
     .theme-midnight { background: linear-gradient(135deg, #1e293b, #334155); }
+    .theme-berry { background: linear-gradient(135deg, #be185d, #f43f5e); }
+    .theme-cyan { background: linear-gradient(135deg, #0891b2, #06b6d4); }
+    .theme-amber { background: linear-gradient(135deg, #d97706, #fbbf24); }
+    .theme-rose { background: linear-gradient(135deg, #e11d48, #fb7185); }
 
     .danger-zone {
       border: 1px solid var(--danger);
@@ -962,12 +981,16 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
         const currentTheme = Utils.Theme.getColor();
         
                       // Template Tema Lengkap (bukan sekadar warna accent)
-        const allThemes = [
+                const allThemes = [
           {id:'indigo',name:'Indigo (Default)',class:'theme-indigo'},
           {id:'mint',name:'Mint Fresh',class:'theme-green'},
           {id:'ocean',name:'Ocean',class:'theme-ocean'},
           {id:'sunset',name:'Sunset',class:'theme-sunset'},
-          {id:'midnight',name:'Midnight',class:'theme-midnight'}
+          {id:'midnight',name:'Midnight',class:'theme-midnight'},
+          {id:'berry',name:'Berry',class:'theme-berry'},
+          {id:'cyan',name:'Cyan',class:'theme-cyan'},
+          {id:'amber',name:'Amber',class:'theme-amber'},
+          {id:'rose',name:'Rose',class:'theme-rose'}
         ];
         
         const currentTemplate = localStorage.getItem('webpos_theme_template') || 'indigo';
