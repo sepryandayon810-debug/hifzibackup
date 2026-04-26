@@ -579,6 +579,45 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = Utils;
 }
 
+// ===== MENU VISIBILITY (Universal) =====
+window.applyMenuVisibility = function(){
+  const cfg = JSON.parse(localStorage.getItem('webpos_menu_config') || '{}');
+  const map = {
+    'menu_kasir': '[data-menu="kasir"]',
+    'menu_produk': '[data-menu="produk"]',
+    'menu_riwayat': '[data-menu="riwayat"]',
+    'menu_kas': '.nav-dropdown[data-dropdown]',
+    'menu_pembelian': '[data-menu="pembelian"]',
+    'menu_hutang': '[data-menu="hutang"]',
+    'menu_laporan': '[data-menu="laporan"]',
+    'menu_laporan_stok': '[data-menu="laporan-stok"]',
+    'menu_terlaris': '[data-menu="laporan-terlaris"]',
+    'menu_telegram': '[data-menu="telegram"]',
+    'menu_pelanggan': '[data-menu="pelanggan"]',
+    'menu_pengguna': '[data-menu="pengguna"]',
+    'menu_backup': '[data-menu="backup"]',
+    'menu_log': '[data-menu="log-aktivitas"]',
+    'menu_printer': '[data-menu="printer"]',
+    'menu_reset': '[data-menu="reset"]'
+  };
+  
+  Object.entries(map).forEach(([key, sel]) => {
+    const els = document.querySelectorAll(sel);
+    const show = cfg[key] !== false;
+    els.forEach(el => {
+      const item = el.closest('.nav-item') || el.closest('.nav-dropdown') || el;
+      item.style.display = show ? '' : 'none';
+    });
+  });
+};
+
+// Auto-apply saat tab lain mengubah setting
+window.addEventListener('storage', e => {
+  if(e.key === 'webpos_menu_broadcast' || e.key === 'webpos_menu_config'){
+    applyMenuVisibility();
+  }
+});
+
 // Tambahkan di akhir js/utils.js
 
 // ============================================
