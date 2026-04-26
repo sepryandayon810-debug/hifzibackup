@@ -1068,7 +1068,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
               <div class="status-desc" id="statusDesc">Hubungkan dengan bot Telegram untuk melihat saldo</div>
               
                 <div class="balance-display" id="balanceDisplay" style="display: none;">
-                <div class="balance-label">Saldo Telegram</div>
+                               <div class="balance-label">Total Saldo Top Up</div>
                 <div class="balance-value" id="telegramBalance">Rp 0</div>
                 <div style="font-size:0.65rem;opacity:0.7;margin-top:0.25rem;">
                   Update: <span id="balanceUpdated">-</span>
@@ -1396,47 +1396,6 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
         initTelegram();
       }
     });
-
-    async function syncBalanceFromSheet() {
-      const SHEET_ID = localStorage.getItem('webpos_sheet_id'); // atau config.sheetId
-      const API_KEY = localStorage.getItem('webpos_api_key');   // atau config.apiKey
-      
-      if (!SHEET_ID) return;
-      
-      try {
-        // Ganti 'Sheet1' dengan nama sheet kamu
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Sheet1!A1:Z1000?key=${API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        
-        // Cari kolom saldo — sesuaikan index kolommu
-        // Misal: kolom ke-5 (index 4) adalah saldo telegram
-        let sheetBalance = 0;
-        if (data.values && data.values.length > 1) {
-          // Ambil dari baris terakhir atau baris summary
-          const lastRow = data.values[data.values.length - 1];
-          sheetBalance = parseFloat(lastRow[4]) || 0; // <-- sesuaikan index kolom saldo
-        }
-        
-        // Update tampilan
-        const saldoEl = document.getElementById('telegramBalance');
-        if (saldoEl) {
-          saldoEl.textContent = 'Rp ' + sheetBalance.toLocaleString('id-ID');
-        }
-        
-        // Update localStorage supaya tidak stale
-        localStorage.setItem('telegram_balance', sheetBalance);
-        localStorage.setItem('telegram_balance_updated', Date.now());
-        
-        console.log('✅ Saldo sync dari Sheet:', sheetBalance);
-      } catch (err) {
-        console.error('❌ Gagal sync saldo:', err);
-        // Fallback ke localStorage kalau sheet error
-        const fallback = parseFloat(localStorage.getItem('telegram_balance')) || 0;
-        const saldoEl = document.getElementById('telegramBalance');
-        if (saldoEl) saldoEl.textContent = 'Rp ' + fallback.toLocaleString('id-ID');
-      }
-    }
      
       function initTelegram() {
         let isConnected = false;
@@ -1445,10 +1404,10 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
         let currentTransaction = null;
         loadUserData();
 
-        // Load config
+               // Load config
         loadConfig();
         loadSyncLog();
-        syncBalanceFromSheet(); 
+        loadTelegramBalance(); 
 
         // Connect button
         document.getElementById('btnConnect').addEventListener('click', () => {
@@ -2145,8 +2104,9 @@ document.getElementById('btnSyncToSheet')?.addEventListener('click', syncUnsynce
           }
         }
 
-                async function loadTelegramBalance() {
+                               async function loadTelegramBalance() {
           let balance = 0;
+          let source = 'unknown';
           
           // 1. Coba ambil dari Sheet dulu (paling akurat)
           try {
@@ -2157,19 +2117,25 @@ document.getElementById('btnSyncToSheet')?.addEventListener('click', syncUnsynce
               const res = await fetch(url);
               const data = await res.json();
               if (data.values && data.values.length > 1) {
-                // Jumlahkan kolom SALDO TOP UP — sesuaikan index kolom (index 3 = kolom D)
                 for (let i = 1; i < data.values.length; i++) {
                   const row = data.values[i];
-                  const val = parseFloat(row[3]) || 0; // <-- ganti [3] sesuai kolom SALDO TOP UP di sheet
+                  const val = parseFloat(row[3]) || 0;
                   balance += val;
                 }
+                source = 'sheet';
+                addSyncLog(`Saldo di-load dari Sheet: ${Utils.formatRupiah(balance)}`, 'success');
+              } else {
+                addSyncLog('Sheet kosong atau tidak ada data saldo', 'warning');
               }
+            } else {
+              addSyncLog('Sheet ID atau API Key belum diatur', 'warning');
             }
           } catch (err) {
             console.log('Sheet fetch failed, fallback to Firebase:', err);
+            addSyncLog(`Gagal load dari Sheet: ${err.message}`, 'error');
           }
           
-          // 2. Kalau sheet gagal, hitung dari Firebase history
+          // 2. Kalau sheet gagal/tidak ada data, hitung dari Firebase history
           if (balance === 0) {
             try {
               const snap = await database.ref('telegram_topup_history')
@@ -2181,22 +2147,32 @@ document.getElementById('btnSyncToSheet')?.addEventListener('click', syncUnsynce
                 Object.values(data).forEach(item => {
                   balance += parseFloat(item['SALDO TOP UP']) || 0;
                 });
+                source = 'firebase';
+                addSyncLog(`Saldo di-load dari Firebase: ${Utils.formatRupiah(balance)}`, 'success');
+              } else {
+                addSyncLog('Firebase history kosong', 'warning');
               }
             } catch (err) {
               console.error('Firebase balance error:', err);
+              addSyncLog(`Gagal load dari Firebase: ${err.message}`, 'error');
             }
           }
           
           // 3. Fallback ke localStorage
           if (balance === 0) {
             balance = parseFloat(localStorage.getItem('telegram_balance')) || 0;
+            source = 'localStorage';
+            if (balance > 0) {
+              addSyncLog(`Saldo di-load dari localStorage: ${Utils.formatRupiah(balance)}`, 'success');
+            } else {
+              addSyncLog('Tidak ada data saldo tersimpan', 'warning');
+            }
           }
           
           // 4. Update tampilan + timestamp
           document.getElementById('telegramBalance').dataset.raw = balance;
           document.getElementById('telegramBalance').textContent = Utils.formatRupiah(balance);
           
-          // Update timestamp
           const tsEl = document.getElementById('balanceUpdated');
           if (tsEl) tsEl.textContent = new Date().toLocaleString('id-ID');
           
@@ -2204,7 +2180,7 @@ document.getElementById('btnSyncToSheet')?.addEventListener('click', syncUnsynce
           localStorage.setItem('telegram_balance', balance);
           localStorage.setItem('telegram_balance_updated', Date.now());
           
-          console.log('✅ Real balance loaded:', balance);
+          console.log('✅ Real balance loaded:', balance, 'from:', source);
         }
         
         function addSyncLog(message, status) {
