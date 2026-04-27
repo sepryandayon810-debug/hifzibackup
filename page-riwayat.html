@@ -352,6 +352,31 @@ body{
 .category-tab:hover{color:var(--primary)}
 .category-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
 
+    /* ===== SEARCH BOX RIWAYAT ===== */
+.riwayat-search-toolbar{
+  display:flex;gap:.75rem;margin-bottom:1.5rem;
+  align-items:center;flex-wrap:wrap;
+}
+.riwayat-search-box{
+  position:relative;flex:1;max-width:420px;
+}
+.riwayat-search-box i{
+  position:absolute;left:1rem;top:50%;transform:translateY(-50%);
+  color:var(--text-muted);font-size:.875rem;pointer-events:none;
+}
+.riwayat-search-box input{
+  width:100%;padding:.65rem 1rem .65rem 2.5rem;
+  border:1.5px solid var(--border-color);border-radius:var(--radius-lg);
+  background:var(--bg-secondary);color:var(--text-primary);
+  font-size:.875rem;font-family:inherit;transition:all .15s;
+}
+.riwayat-search-box input:focus{
+  outline:none;border-color:var(--primary);
+  box-shadow:0 0 0 3px rgba(5,150,105,.1);
+  background:var(--bg-card);
+}
+.riwayat-search-box input::placeholder{color:var(--text-muted)}
+
 /* ===== SUMMARY CARDS - MINT ===== */
 .summary-cards{
   display:grid;
@@ -377,6 +402,8 @@ body{
 .summary-card-trx::after{background:linear-gradient(180deg,var(--info),#6366f1)}
 .summary-card-laba::after{background:linear-gradient(180deg,var(--success),#059669)}
 .summary-card-pembelian::after{background:linear-gradient(180deg,var(--warning),#d97706)}
+.summary-card-hutang::after{background:linear-gradient(180deg,var(--danger),#f97316)}
+
 
 .summary-card-icon{
   width:56px;height:56px;border-radius:var(--radius-lg);
@@ -387,6 +414,8 @@ body{
 .summary-card-trx .summary-card-icon{background:rgba(59,130,246,.12);color:var(--info)}
 .summary-card-laba .summary-card-icon{background:rgba(16,185,129,.12);color:var(--success)}
 .summary-card-pembelian .summary-card-icon{background:rgba(245,158,11,.12);color:var(--warning)}
+.summary-card-hutang .summary-card-icon{background:rgba(239,68,68,.12);color:var(--danger)}
+.summary-card-hutang .summary-card-value{color:var(--danger)}
 
 .summary-card-content{flex:1;min-width:0}
 .summary-card-title{
@@ -502,6 +531,8 @@ body{
 .transaction-type.kas_masuk{background:rgba(16,185,129,.15);color:var(--success)}
 .transaction-type.kas_keluar{background:rgba(239,68,68,.15);color:var(--danger)}
 .transaction-type.pembelian{background:rgba(245,158,11,.15);color:var(--warning);}
+.transaction-type.hutang{background:rgba(239,68,68,.1);color:var(--danger)}
+.transaction-type.piutang{background:rgba(245,158,11,.1);color:var(--warning)}
 
 /* ===== MODALS - MINT GLASS ===== */
 .modal-overlay{
@@ -625,6 +656,8 @@ body{
   .date-filter{flex-direction:column!important;width:100%!important}
   .date-filter input,.date-filter button{width:100%!important;min-height:40px!important}
   .date-filter span{display:none!important}
+  .riwayat-search-toolbar{flex-direction:column!important;align-items:stretch!important;margin-bottom:1rem!important}
+  .riwayat-search-box{max-width:100%!important}
 
   .summary-cards{
     display:grid!important;
@@ -687,6 +720,8 @@ body{
 [data-theme="dark"] .search-input{background:var(--bg-secondary);border-color:var(--border-color);color:var(--text-primary)}
 [data-theme="dark"] .search-input:focus{background:var(--bg-card);box-shadow:0 0 0 4px rgba(5,150,105,.2)}
 [data-theme="dark"] .logo-text{-webkit-text-fill-color:var(--text-primary)}
+[data-theme="dark"] .riwayat-search-box input{background:var(--bg-secondary);border-color:var(--border-color);color:var(--text-primary)}
+[data-theme="dark"] .riwayat-search-box input:focus{background:var(--bg-card)}
     
   </style>
 </head>
@@ -854,8 +889,16 @@ body{
           <button class="category-tab" data-category="kas">Kas Masuk/Keluar</button>
           <button class="category-tab" data-category="topup_tarik">Top Up & Tarik</button>
           <button class="category-tab" data-category="pembelian">Pembelian</button>
-
+          <button class="category-tab" data-category="hutang_piutang">Hutang/Piutang</button>
         </div>
+
+        <!-- Search Box -->
+<div class="riwayat-search-toolbar">
+  <div class="riwayat-search-box">
+    <i class="fas fa-search"></i>
+    <input type="text" id="searchRiwayat" placeholder="Cari nama pelanggan, supplier, keterangan...">
+  </div>
+</div>
 
                <!-- Summary Cards - Redesign -->
         <div class="summary-cards">
@@ -901,6 +944,18 @@ body{
             </div>
           </div>
         </div>  <!-- ✅ Tutup summary-cards hanya 1x di sini -->
+
+        <!-- Card 5: Total Hutang/Piutang -->
+<div class="summary-card summary-card-hutang" style="display:none">
+  <div class="summary-card-icon" style="background:rgba(239,68,68,.12);color:var(--danger)">
+    <i class="fas fa-hand-holding-usd"></i>
+  </div>
+  <div class="summary-card-content">
+    <div class="summary-card-title">Hutang/Piutang</div>
+    <div class="summary-card-value" id="totalHutangPiutang" style="color:var(--danger)">Rp 0</div>
+    <div class="summary-card-sub" id="subHutangPiutang">dari transaksi hutang/piutang</div>
+  </div>
+</div>
 
         <!-- Transactions Table -->
         <div class="card">
@@ -998,6 +1053,7 @@ body{
     let currentFilter = 'all';
     let currentPeriod = 'today';
     let currentTransaction = null;
+    let currentSearch = '';
 
     const TYPE_LABELS = {
       penjualan: 'Penjualan',
@@ -1006,6 +1062,8 @@ body{
       kas_masuk: 'Kas Masuk',
       kas_keluar: 'Kas Keluar',
       pembelian: 'Pembelian',
+      hutang: 'Hutang',
+      piutang: 'Piutang',
     };
 
     const TYPE_ICONS = {
@@ -1015,6 +1073,8 @@ body{
       kas_masuk: 'fa-plus-circle',
       kas_keluar: 'fa-minus-circle',
       pembelian: 'fa-truck-loading',
+      hutang: 'fa-hand-holding-usd',
+      piutang: 'fa-hand-holding-usd',
     };
 
     // ========== THEME LOADER (ikuti pengaturan global) ==========
@@ -1138,6 +1198,15 @@ document.addEventListener('click', (e) => {
           filterAndRender();
         });
       });
+
+      // Search riwayat
+const searchInput = el('searchRiwayat');
+if (searchInput) {
+  searchInput.addEventListener('input', () => {
+    currentSearch = searchInput.value.toLowerCase().trim();
+    filterAndRender();
+  });
+}
 
       el('btnFilter').addEventListener('click', loadTransactions);
       el('btnExport').addEventListener('click', exportData);
@@ -1283,22 +1352,50 @@ document.addEventListener('click', (e) => {
 
     // ========== FILTER & RENDER ==========
     function filterAndRender() {
-      let filtered = allTransactions;
-      if (currentFilter !== 'all') {
-        filtered = allTransactions.filter(t => {
-          switch(currentFilter) {
-            case 'penjualan':    return t.type === 'penjualan';
-            case 'kas':          return t.type === 'kas_masuk' || t.type === 'kas_keluar';
-            case 'topup_tarik':  return t.type === 'topup' || t.type === 'tarik';
-            case 'pembelian':    return t.type === 'pembelian';
-
-            default:             return true;
-          }
-        });
+  let filtered = allTransactions;
+  
+  // Filter by category
+  if (currentFilter !== 'all') {
+    filtered = filtered.filter(t => {
+      switch(currentFilter) {
+        case 'penjualan':    return t.type === 'penjualan';
+        case 'kas':          return t.type === 'kas_masuk' || t.type === 'kas_keluar';
+        case 'topup_tarik':  return t.type === 'topup' || t.type === 'tarik';
+        case 'pembelian':    return t.type === 'pembelian';
+        case 'hutang_piutang': 
+          return (
+            ((t.type === 'kas_masuk' || t.type === 'kas_keluar') && 
+             ((t.description || '').toLowerCase().includes('hutang') || 
+              (t.description || '').toLowerCase().includes('piutang') ||
+              (t.note || '').toLowerCase().includes('hutang') || 
+              (t.note || '').toLowerCase().includes('piutang'))) ||
+            (t.type === 'penjualan' && t.paymentMethod === 'hutang') ||
+            !!t.debtId
+          );
+        default: return true;
       }
-      renderTable(filtered);
-      updateSummary(filtered);
-    }
+    });
+  }
+  
+  // Filter by search (nama pelanggan, supplier, keterangan, kasir)
+  if (currentSearch) {
+    filtered = filtered.filter(t => {
+      const desc = getTransactionDesc(t).toLowerCase();
+      const note = (t.note || t.description || '').toLowerCase();
+      const cashier = (t.cashierName || '').toLowerCase();
+      const customer = (t.customerName || '').toLowerCase();
+      const supplier = (t.supplierName || '').toLowerCase();
+      return desc.includes(currentSearch) || 
+             note.includes(currentSearch) || 
+             cashier.includes(currentSearch) ||
+             customer.includes(currentSearch) ||
+             supplier.includes(currentSearch);
+    });
+  }
+  
+  renderTable(filtered);
+  updateSummary(filtered);
+}
 
     // Ambil deskripsi singkat transaksi (produk pertama / keterangan)
         function getTransactionDesc(t) {
@@ -1508,12 +1605,14 @@ function calculateTotalFromItems(items) {
       }
     }
 
-    function updateSummary(transactions) {
+   function updateSummary(transactions) {
   let totalPenjualan = 0;
   let totalPembelian = 0;
+  let totalHutangPiutang = 0;
   let totalLaba = 0;
   let countPenjualan = 0;
   let countPembelian = 0;
+  let countHutangPiutang = 0;
 
   transactions.forEach(t => {
     if (t.type === 'penjualan') {
@@ -1522,23 +1621,28 @@ function calculateTotalFromItems(items) {
       totalLaba += t.profit || 0;
       countPenjualan++;
     }
-    // ✅ TAMBAHKAN INI:
     if (t.type === 'pembelian') {
       const transTotal = t.total || t.totalAmount || t.grandTotal || t.amount || calculateTotalFromItems(t.items);
       totalPembelian += transTotal;
       countPembelian++;
+    }
+    if (t.type === 'kas_masuk' || t.type === 'kas_keluar') {
+      const note = (t.description || t.note || '').toLowerCase();
+      if (note.includes('hutang') || note.includes('piutang')) {
+        totalHutangPiutang += (t.amount || t.total || 0);
+        countHutangPiutang++;
+      }
     }
     if ((t.type === 'topup' || t.type === 'tarik') && t.adminFee) {
       totalLaba += t.adminFee;
     }
   });
 
-  // Update DOM
   document.getElementById('totalPenjualan').textContent = formatRupiah(totalPenjualan);
   document.getElementById('totalTransaksi').textContent = transactions.length;
   document.getElementById('totalLaba').textContent = formatRupiah(totalLaba);
   
-  // ✅ TAMBAHKAN INI untuk update total pembelian:
+  // Pembelian card
   const totalPembelianEl = document.getElementById('totalPembelian');
   const subPembelianEl = document.getElementById('subPembelian');
   const cardPembelian = document.querySelector('.summary-card-pembelian');
@@ -1546,12 +1650,27 @@ function calculateTotalFromItems(items) {
   if (totalPembelianEl) totalPembelianEl.textContent = formatRupiah(totalPembelian);
   if (subPembelianEl) subPembelianEl.textContent = countPembelian + ' transaksi pembelian';
   
-  // ✅ Show/hide card pembelian berdasarkan filter
   if (cardPembelian) {
     if (currentFilter === 'pembelian' || currentFilter === 'all') {
       cardPembelian.style.display = 'flex';
     } else {
       cardPembelian.style.display = 'none';
+    }
+  }
+
+  // Hutang/Piutang card
+  const totalHutangPiutangEl = document.getElementById('totalHutangPiutang');
+  const subHutangPiutangEl = document.getElementById('subHutangPiutang');
+  const cardHutang = document.querySelector('.summary-card-hutang');
+  
+  if (totalHutangPiutangEl) totalHutangPiutangEl.textContent = formatRupiah(totalHutangPiutang);
+  if (subHutangPiutangEl) subHutangPiutangEl.textContent = countHutangPiutang + ' transaksi hutang/piutang';
+  
+  if (cardHutang) {
+    if (currentFilter === 'hutang_piutang' || currentFilter === 'all') {
+      cardHutang.style.display = 'flex';
+    } else {
+      cardHutang.style.display = 'none';
     }
   }
 
@@ -1562,7 +1681,6 @@ function calculateTotalFromItems(items) {
   if (subT) subT.textContent = transactions.length + ' dari semua jenis';
   if (subL) subL.textContent = totalLaba > 0 ? 'margin + fee admin' : 'belum ada laba';
 }
-
     // ========== EDIT ==========
     function editTransaction(id) {
       const t = allTransactions.find(tr => tr.id === id);
