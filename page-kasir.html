@@ -3094,7 +3094,6 @@ document.addEventListener('DOMContentLoaded', () => {
       c += 'Metode   : ' + (tx.paymentMethod || 'Tunai').toUpperCase() + FEED;
       c += '==============================';
       c += FEED + CENTER + note + FEED;
-      c += CENTER + '_WebPOS Digital_' + FEED;
       c += FEED + FEED + FEED + CUT;
 
       return c;
@@ -3137,7 +3136,6 @@ document.addEventListener('DOMContentLoaded', () => {
       lines.push('Metode   : ' + (tx.paymentMethod || 'Tunai').toUpperCase());
       lines.push('==============================');
       lines.push(note);
-      lines.push('_WebPOS Digital_');
 
       return lines.join('\n');
     }
