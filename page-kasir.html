@@ -970,6 +970,92 @@ html,body{overflow-x:hidden;max-width:100vw}
 [data-theme="dark"] .cart-clear {
   color: #f87171 !important;
 }
+
+    /* ==========================================
+       STRUK PENJUALAN MODAL (TAMBAHAN)
+       ========================================== */
+    .struk-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s;
+    }
+    .struk-modal-overlay.active { opacity: 1; visibility: visible; }
+    .struk-modal {
+      background: var(--bg-card);
+      border-radius: 1rem;
+      max-width: 420px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+    .struk-modal-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .struk-modal-title { font-weight: 700; font-size: 1.1rem; color: var(--text-primary); }
+    .struk-modal-close {
+      width: 32px; height: 32px;
+      border-radius: 0.5rem;
+      border: none;
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .struk-modal-body {
+      padding: 1.25rem;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .struk-paper {
+      background: #fff;
+      color: #000;
+      width: 280px;
+      padding: 12px;
+      font-family: 'Courier New', 'Courier', monospace;
+      font-size: 11px;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      word-break: break-word;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      border-radius: 2px;
+      position: relative;
+    }
+    .struk-paper::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 0; right: 0;
+      height: 10px;
+      background: repeating-linear-gradient(45deg, #fff, #fff 2px, #ddd 2px, #ddd 4px);
+    }
+    .struk-actions {
+      display: flex;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .struk-actions .btn { flex: 1; }
     
 </style>
 </head>
@@ -2204,7 +2290,7 @@ function renderCart() {
         const diterima = document.getElementById('paymentInput').parentElement;
         const kembalian = document.getElementById('paymentChange').parentElement;
 
-                if (paymentMethod === 'hutang') {
+              if (paymentMethod === 'hutang') {
           // Mode piutang: tampilkan form nama + numpad untuk input bayar separuh
           piutangSection.classList.add('active');
           quickAmounts.style.display = 'none';
@@ -2340,6 +2426,7 @@ function updatePaymentDisplay() {
           saveCart(); renderCart(); updateSummary();
           paymentModal.classList.remove('active');
           showToast('Transaksi tersimpan offline. Sync otomatis saat online.', 'warning');
+          showStrukModal(transactionData);
           loadHeaderStats();
         } catch(err) {
           console.error('Offline save error:', err);
@@ -2509,6 +2596,7 @@ function updatePaymentDisplay() {
 
           document.getElementById('loadingOverlay').classList.remove('active');
           showToast('Piutang berhasil dicatat! Silakan cek di Hutang/Piutang.', 'success');
+          showStrukModal(transaction);
 
           loadProducts();
           loadHeaderStats();
@@ -2588,6 +2676,7 @@ function updatePaymentDisplay() {
         document.getElementById('loadingOverlay').classList.remove('active');
         showToast('Transaksi berhasil!', 'success');
 
+        showStrukModal(transaction);
         // Reload produk & stats
         loadProducts();
         loadHeaderStats();
@@ -2943,6 +3032,176 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast(`${synced}/${pending.length} transaksi tersinkronkan`, synced > 0 ? 'success' : 'warning');
       loadProducts(); loadHeaderStats();
     });
+
+        // ==========================================
+    // CETAK STRUK PENJUALAN (TAMBAHAN)
+    // ==========================================
+    let lastTransactionData = null;
+
+    function loadReceiptHeader() {
+      try {
+        return JSON.parse(localStorage.getItem('receiptHeader')) || {};
+      } catch(e) {
+        return {};
+      }
+    }
+
+    function generateEscPosKasir(tx) {
+      const hdr = loadReceiptHeader();
+      const storeName = hdr.storeName || 'NAMA TOKO';
+      const address = hdr.address || '';
+      const phone = hdr.phone || '';
+      const note = hdr.note || 'Terima kasih';
+      const date = new Date(tx.timestamp).toLocaleDateString('id-ID');
+      const time = new Date(tx.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+
+      const ESC = '\x1B';
+      const GS = '\x1D';
+      const INIT = ESC + '\x40';
+      const CENTER = ESC + '\x61\x01';
+      const LEFT = ESC + '\x61\x00';
+      const BOLD_ON = ESC + '\x45\x01';
+      const BOLD_OFF = ESC + '\x45\x00';
+      const SIZE2 = ESC + '\x21\x10';
+      const SIZE1 = ESC + '\x21\x00';
+      const CUT = GS + '\x56\x41\x03';
+      const FEED = '\x0A';
+
+      let c = INIT;
+      c += CENTER + BOLD_ON + SIZE2 + storeName.toUpperCase() + SIZE1 + BOLD_OFF + FEED;
+      if (address) c += CENTER + address + FEED;
+      if (phone) c += CENTER + 'HP: ' + phone + FEED;
+      c += CENTER + '------------------------------' + FEED;
+      c += LEFT;
+      c += 'No   : ' + tx.id + FEED;
+      c += 'Tgl  : ' + date + ' ' + time + FEED;
+      c += 'Kasir: ' + (tx.cashierName || '-') + FEED;
+      c += '------------------------------' + FEED;
+
+      tx.items.forEach(item => {
+        c += item.name + FEED;
+        c += '  ' + item.quantity + ' x ' + formatRupiah(item.price) + ' = ' + formatRupiah(item.total) + FEED;
+      });
+
+      c += '------------------------------' + FEED;
+      c += 'Subtotal : ' + formatRupiah(tx.subtotal) + FEED;
+      if (tx.discount > 0) c += 'Diskon   : -' + formatRupiah(tx.discount) + FEED;
+      if (tx.tax > 0) c += 'PPN 11%  : ' + formatRupiah(tx.tax) + FEED;
+      c += BOLD_ON + 'TOTAL    : ' + formatRupiah(tx.total) + BOLD_OFF + FEED;
+      c += '------------------------------' + FEED;
+      c += 'Bayar    : ' + formatRupiah(tx.paymentAmount || tx.total) + FEED;
+      c += 'Kembali  : ' + formatRupiah(tx.change || 0) + FEED;
+      c += 'Metode   : ' + (tx.paymentMethod || 'Tunai').toUpperCase() + FEED;
+      c += '==============================';
+      c += FEED + CENTER + note + FEED;
+      c += CENTER + '_WebPOS Digital_' + FEED;
+      c += FEED + FEED + FEED + CUT;
+
+      return c;
+    }
+
+    function generateStrukPlain(tx) {
+      const hdr = loadReceiptHeader();
+      const storeName = hdr.storeName || 'NAMA TOKO';
+      const address = hdr.address || '';
+      const phone = hdr.phone || '';
+      const note = hdr.note || 'Terima kasih';
+      const date = new Date(tx.timestamp).toLocaleDateString('id-ID');
+      const time = new Date(tx.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+
+      let lines = [];
+      lines.push('================================');
+      lines.push('    ' + storeName.toUpperCase());
+      if (address) lines.push(address);
+      if (phone) lines.push('HP: ' + phone);
+      lines.push('================================');
+      lines.push('BUKTI PENJUALAN');
+      lines.push('No   : ' + tx.id);
+      lines.push('Tgl  : ' + date + ' ' + time);
+      lines.push('Kasir: ' + (tx.cashierName || '-'));
+      lines.push('--------------------------------');
+
+      tx.items.forEach(item => {
+        lines.push(item.name);
+        lines.push('  ' + item.quantity + ' x ' + formatRupiah(item.price) + ' = ' + formatRupiah(item.total));
+      });
+
+      lines.push('--------------------------------');
+      lines.push('Subtotal : ' + formatRupiah(tx.subtotal));
+      if (tx.discount > 0) lines.push('Diskon   : -' + formatRupiah(tx.discount));
+      if (tx.tax > 0) lines.push('PPN 11%  : ' + formatRupiah(tx.tax));
+      lines.push('TOTAL    : ' + formatRupiah(tx.total));
+      lines.push('--------------------------------');
+      lines.push('Bayar    : ' + formatRupiah(tx.paymentAmount || tx.total));
+      lines.push('Kembali  : ' + formatRupiah(tx.change || 0));
+      lines.push('Metode   : ' + (tx.paymentMethod || 'Tunai').toUpperCase());
+      lines.push('==============================');
+      lines.push(note);
+      lines.push('_WebPOS Digital_');
+
+      return lines.join('\n');
+    }
+
+    function showStrukModal(tx) {
+      lastTransactionData = tx;
+      const paper = document.getElementById('strukPaper');
+      paper.textContent = generateStrukPlain(tx);
+
+      // Disable tombol print kalau plugin bluetooth tidak ada
+      const btnPrint = document.getElementById('btnPrintStruk');
+      if (!window.bluetoothSerial) {
+        btnPrint.disabled = true;
+        btnPrint.innerHTML = '<i class="fas fa-print"></i> Bluetooth (APK Only)';
+      } else {
+        btnPrint.disabled = false;
+        btnPrint.innerHTML = '<i class="fas fa-print"></i> Cetak Thermal';
+      }
+
+      document.getElementById('strukModal').classList.add('active');
+    }
+
+    function closeStrukModal() {
+      document.getElementById('strukModal').classList.remove('active');
+      lastTransactionData = null;
+    }
+
+    async function printStrukBluetooth() {
+      if (!lastTransactionData) {
+        showToast('Tidak ada struk untuk dicetak', 'warning');
+        return;
+      }
+      if (!window.bluetoothSerial) {
+        showToast('Bluetooth hanya tersedia di APK Android', 'error');
+        return;
+      }
+
+      const mac = localStorage.getItem('webpos_printer_mac');
+      if (!mac) {
+        showToast('Pilih printer dulu di menu Printer & Struk', 'warning');
+        return;
+      }
+
+      showToast('Menghubungkan ke printer...', 'info');
+
+      try {
+        await new Promise((resolve, reject) => {
+          bluetoothSerial.connect(mac, resolve, reject);
+        });
+
+        const data = generateEscPosKasir(lastTransactionData);
+        await new Promise((resolve, reject) => {
+          bluetoothSerial.write(data, resolve, reject);
+        });
+
+        await new Promise((resolve) => {
+          bluetoothSerial.disconnect(resolve, resolve);
+        });
+
+        showToast('Struk berhasil dicetak!', 'success');
+      } catch (error) {
+        showToast('Gagal print: ' + error, 'error');
+      }
+    }
     
         // ===== INISIALISASI =====
     function runInit() {
@@ -3030,6 +3289,27 @@ document.addEventListener('DOMContentLoaded', () => {
         <button class="btn btn-secondary" onclick="closeEditCartModal()">Batal</button>
         <button class="btn btn-primary" onclick="confirmEditCart()">
           <i class="fas fa-save"></i> Simpan Perubahan
+        </button>
+      </div>
+    </div>
+  </div>
+
+    <!-- Struk Penjualan Modal -->
+  <div class="struk-modal-overlay" id="strukModal">
+    <div class="struk-modal">
+      <div class="struk-modal-header">
+        <span class="struk-modal-title"><i class="fas fa-receipt" style="color: var(--success)"></i> Transaksi Berhasil</span>
+        <button class="struk-modal-close" onclick="closeStrukModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="struk-modal-body">
+        <div class="struk-paper" id="strukPaper"></div>
+      </div>
+      <div class="struk-actions">
+        <button class="btn btn-outline" onclick="closeStrukModal()">
+          <i class="fas fa-times"></i> Tutup
+        </button>
+        <button class="btn btn-primary" onclick="printStrukBluetooth()" id="btnPrintStruk">
+          <i class="fas fa-print"></i> Cetak Thermal
         </button>
       </div>
     </div>
