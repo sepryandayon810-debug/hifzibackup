@@ -1182,6 +1182,10 @@
    document.addEventListener('DOMContentLoaded', async function() {
   syncTheme();
   updateThemeIcon();
+  
+  // ⭐ Version label
+  const verEl = document.getElementById('appVersion');
+  if (verEl) verEl.textContent = 'WebPOS v1.2.6 (Apr 2026)';
       
       // Initialize OCR
       await initOCR();
@@ -2164,7 +2168,8 @@ ${note}
     }
   </style>
 </head>
-<body>${content}</body>
+<body>${content}
+</body>
 </html>`);
       doc.close();
       
@@ -2209,16 +2214,15 @@ ${note}
         pdf.addImage(imgData, 'PNG', 0, 0, 80, canvas.height / canvas.width * 80);
         
         // ⭐ FALLBACK: Kalau Capacitor ada (APK), simpan ke Documents
-                if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
+          if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
           const pdfBase64 = pdf.output('datauristring').split(',')[1];
           const result = await Capacitor.Plugins.Filesystem.writeFile({
-            path: `struk-transfer-${Date.now()}.pdf`,
+            path: `Download/WebPOS/struk-transfer-${Date.now()}.pdf`,
             data: pdfBase64,
-            directory: Capacitor.Plugins.Filesystem.Directory.Documents,
+            directory: Capacitor.Plugins.Filesystem.Directory.ExternalStorage,
             recursive: true
           });
-          // ⭐ Tampilkan path asli ke user
-          showToast('PDF tersimpan di:\n' + result.uri, 'success');
+          showToast('PDF tersimpan di Download/WebPOS', 'success');
           console.log('Lokasi file:', result.uri);
         } else {
           // ⭐ FALLBACK: Kalau di browser, pakai download biasa
@@ -2236,17 +2240,15 @@ ${note}
         const canvas = await captureReceiptPreview();
         
         // ⭐ FALLBACK: Kalau Capacitor ada (APK), simpan ke Documents
-                if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
+          if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
           const base64 = canvas.toDataURL('image/png').split(',')[1];
           const result = await Capacitor.Plugins.Filesystem.writeFile({
-            path: `struk-transfer-${Date.now()}.png`,
+            path: `Download/WebPOS/struk-transfer-${Date.now()}.png`,
             data: base64,
-            directory: Capacitor.Plugins.Filesystem.Directory.Documents,
+            directory: Capacitor.Plugins.Filesystem.Directory.ExternalStorage,
             recursive: true
           });
-          // ⭐ Tampilkan path asli ke user
-          showToast('Gambar tersimpan di:\n' + result.uri, 'success');
-          console.log('Lokasi file:', result.uri);
+          showToast('Gambar tersimpan di Download/WebPOS', 'success');
         } else {
           // ⭐ FALLBACK: Kalau di browser, pakai download biasa
           const link = document.createElement('a');
@@ -2270,16 +2272,15 @@ ${note}
           const base64 = canvas.toDataURL('image/png').split(',')[1];
           
           const result = await Capacitor.Plugins.Filesystem.writeFile({
-            path: `struk-wa-${Date.now()}.png`,
+            path: `Download/WebPOS/struk-wa-${Date.now()}.png`,
             data: base64,
-            directory: Capacitor.Plugins.Filesystem.Directory.Cache,
+            directory: Capacitor.Plugins.Filesystem.Directory.ExternalStorage,
             recursive: true
           });
           
-          // ⭐ PAKAI 'files' BUKAN 'url' SUPAYA GAMBAR TERKIRIM!
+          // ⭐ HAPUS 'text' SUPAYA WA TERIMA GAMBARNYA!
           await Capacitor.Plugins.Share.share({
             title: 'Struk Transfer',
-            text: 'Berikut struk transaksi saya:',
             files: [result.uri],
             dialogTitle: 'Bagikan struk ke'
           });
@@ -2825,5 +2826,8 @@ ${note}
       }, 3000);
     }
   </script>
+
+<div id="appVersion" style="position:fixed;bottom:80px;right:12px;font-size:11px;color:var(--text-muted);opacity:0.5;z-index:9999;font-family:monospace;">v1.0.0</div>
+
 </body>
 </html>
