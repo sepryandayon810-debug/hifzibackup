@@ -24,6 +24,10 @@
 
   <!-- Tesseract.js untuk OCR -->
   <script src="https://unpkg.com/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+  <!-- html2canvas untuk capture preview jadi gambar -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- jsPDF untuk generate PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -2176,26 +2180,89 @@ ${note}
        showToast('Struk berhasil dibuat! Pilih printer atau Save as PDF', 'success');
     }
 
-        function shareAsPDF() {
-      printReceipt();
-      showToast('Pilih "Save as PDF" di dialog print', 'info');
+            // ==========================================
+    // EXPORT PREVIEW STRUK (PDF & GAMBAR)
+    // ==========================================
+    
+    async function captureReceiptPreview() {
+      const preview = document.getElementById('receiptPreview');
+      const canvas = await html2canvas(preview, {
+        scale: 2,           // resolusi tinggi
+        backgroundColor: '#ffffff',
+        useCORS: true
+      });
+      return canvas;
+    }
+
+    async function shareAsPDF() {
+      try {
+        const canvas = await captureReceiptPreview();
+        const imgData = canvas.toDataURL('image/png');
+        
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: [80, 120 + (canvas.height / canvas.width * 80)]  // ukuran kertas thermal
+        });
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, 80, canvas.height / canvas.width * 80);
+        pdf.save('struk-transfer.pdf');
+        
+        showToast('PDF berhasil disimpan!', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Gagal simpan PDF', 'error');
+      }
     }
     
-            function shareAsImage() {
-      printReceipt();
-      showToast('Screenshot struk ini untuk share gambar', 'info');
+    async function shareAsImage() {
+      try {
+        const canvas = await captureReceiptPreview();
+        const link = document.createElement('a');
+        link.download = 'struk-transfer.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+        showToast('Gambar berhasil disimpan!', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Gagal simpan gambar', 'error');
+      }
     }
-            function shareToWhatsApp() {
-      const nominal = parseInt(document.getElementById('manualNominal')?.value) || 0;
-      const date = document.getElementById('manualDate')?.value || '';
-      const type = currentReceiptType === 'transfer' ? 'Transfer' : currentReceiptType === 'tarik_tunai' ? 'Tarik Tunai' : 'Top Up';
-      let text = `*BUKTI ${type.toUpperCase()}*\n\n`;
-      text += `Tanggal: ${date}\n`;
-      text += `Nominal: Rp ${formatNumber(nominal)}\n\n`;
-      text += `_Dibuat via WebPOS_`;
-      const encoded = encodeURIComponent(text);
-      const waUrl = `https://wa.me/?text=${encoded}`;
-      window.open(waUrl, '_blank');
+    
+    async function shareToWhatsApp() {
+      try {
+        const canvas = await captureReceiptPreview();
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        
+        // Coba pakai Web Share API (Android Chrome/WebView modern)
+        if (navigator.canShare && navigator.canShare({ files: [new File([blob], 'struk.png', { type: 'image/png' })] })) {
+          const file = new File([blob], 'struk-transfer.png', { type: 'image/png' });
+          await navigator.share({
+            title: 'Struk Transfer',
+            text: 'Berikut struk transaksi:',
+            files: [file]
+          });
+        } else {
+          // Fallback: download gambar + buka WA dengan caption
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'struk-transfer.png';
+          link.click();
+          
+          setTimeout(() => {
+            const text = encodeURIComponent('Berikut struk transaksi saya:');
+            window.open(`https://wa.me/?text=${text}`, '_blank');
+          }, 500);
+          
+          showToast('Gambar disimpan. Buka WhatsApp untuk kirim.', 'info');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Gagal share ke WhatsApp', 'error');
+      }
     }
     
     function generateReceiptText() {
@@ -2546,7 +2613,6 @@ ${note}
       content += BOLD_ON + 'TOTAL  : Rp ' + formatNumber(total) + BOLD_OFF + FEED;
       content += '==============================';
       content += FEED + CENTER + note + FEED;
-      content += CENTER + '_WebPOS Digital_' + FEED;
       content += FEED + FEED + FEED + CUT;
 
       return content;
@@ -2619,7 +2685,6 @@ ${note}
       lines.push('TOTAL  : Rp ' + formatNumber(total));
       lines.push('==============================');
       lines.push(note);
-      lines.push('_WebPOS Digital_');
       
       return lines.join('\n');
     }
