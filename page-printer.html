@@ -1182,10 +1182,6 @@
    document.addEventListener('DOMContentLoaded', async function() {
   syncTheme();
   updateThemeIcon();
-  
-  // ⭐ Version label
-  const verEl = document.getElementById('appVersion');
-  if (verEl) verEl.textContent = 'WebPOS v1.2.6 (Apr 2026)';
       
       // Initialize OCR
       await initOCR();
@@ -2214,16 +2210,16 @@ ${note}
         pdf.addImage(imgData, 'PNG', 0, 0, 80, canvas.height / canvas.width * 80);
         
         // ⭐ FALLBACK: Kalau Capacitor ada (APK), simpan ke Documents
-          if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
+        if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
           const pdfBase64 = pdf.output('datauristring').split(',')[1];
           const result = await Capacitor.Plugins.Filesystem.writeFile({
-            path: `Download/WebPOS/struk-transfer-${Date.now()}.pdf`,
+            path: `struk-${Date.now()}.pdf`,
             data: pdfBase64,
-            directory: Capacitor.Plugins.Filesystem.Directory.ExternalStorage,
+            directory: Capacitor.Plugins.Filesystem.Directory.Documents,
             recursive: true
           });
-          showToast('PDF tersimpan di Download/WebPOS', 'success');
-          console.log('Lokasi file:', result.uri);
+          showToast('PDF tersimpan!', 'success');
+          console.log('PDF URI:', result.uri);
         } else {
           // ⭐ FALLBACK: Kalau di browser, pakai download biasa
           pdf.save('struk-transfer.pdf');
@@ -2240,15 +2236,16 @@ ${note}
         const canvas = await captureReceiptPreview();
         
         // ⭐ FALLBACK: Kalau Capacitor ada (APK), simpan ke Documents
-          if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
+                  if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
           const base64 = canvas.toDataURL('image/png').split(',')[1];
           const result = await Capacitor.Plugins.Filesystem.writeFile({
-            path: `Download/WebPOS/struk-transfer-${Date.now()}.png`,
+            path: `struk-${Date.now()}.png`,
             data: base64,
-            directory: Capacitor.Plugins.Filesystem.Directory.ExternalStorage,
+            directory: Capacitor.Plugins.Filesystem.Directory.Documents,
             recursive: true
           });
-          showToast('Gambar tersimpan di Download/WebPOS', 'success');
+          showToast('Gambar tersimpan!', 'success');
+          console.log('Image URI:', result.uri);
         } else {
           // ⭐ FALLBACK: Kalau di browser, pakai download biasa
           const link = document.createElement('a');
@@ -2271,17 +2268,18 @@ ${note}
                         if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Share && Capacitor.Plugins.Filesystem) {
           const base64 = canvas.toDataURL('image/png').split(',')[1];
           
-          const result = await Capacitor.Plugins.Filesystem.writeFile({
-            path: `Download/WebPOS/struk-wa-${Date.now()}.png`,
+        const result = await Capacitor.Plugins.Filesystem.writeFile({
+            path: `struk-wa-${Date.now()}.png`,
             data: base64,
-            directory: Capacitor.Plugins.Filesystem.Directory.ExternalStorage,
+            directory: Capacitor.Plugins.Filesystem.Directory.Cache,
             recursive: true
           });
           
-          // ⭐ HAPUS 'text' SUPAYA WA TERIMA GAMBARNYA!
+          // ⭐ PAKAI 'url' BUKAN 'files' — LEBIH STABIL DI ANDROID
           await Capacitor.Plugins.Share.share({
             title: 'Struk Transfer',
-            files: [result.uri],
+            text: 'Berikut struk transaksi saya:',
+            url: result.uri,
             dialogTitle: 'Bagikan struk ke'
           });
         } else {
@@ -2827,7 +2825,19 @@ ${note}
     }
   </script>
 
-<div id="appVersion" style="position:fixed;bottom:80px;right:12px;font-size:11px;color:var(--text-muted);opacity:0.5;z-index:9999;font-family:monospace;">v1.0.0</div>
+<div id="appVersion" style="position:fixed;bottom:80px;right:12px;font-size:11px;color:var(--text-muted);opacity:0.5;z-index:9999;font-family:monospace;">v1.2.7</div>
 
+  <script>
+  // Auto timestamp — kelihatan kapan file terakhir diubah
+  (function(){
+    const el = document.getElementById('appVersion');
+    if(el){
+      const d = new Date(document.lastModified);
+      const tgl = d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0') + ' ' + 
+                  d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+      el.textContent += ' • ' + tgl;
+    }
+  })();
+</script>
 </body>
 </html>
