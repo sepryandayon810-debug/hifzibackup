@@ -2214,7 +2214,7 @@ ${note}
           const result = await Capacitor.Plugins.Filesystem.writeFile({
             path: `struk-transfer-${Date.now()}.pdf`,
             data: pdfBase64,
-            directory: Capacitor.Plugins.Directory.Documents,
+            directory: Capacitor.Plugins.Filesystem.Directory.Documents,
             recursive: true
           });
           showToast('PDF tersimpan di Documents HP!', 'success');
@@ -2240,7 +2240,7 @@ ${note}
           const result = await Capacitor.Plugins.Filesystem.writeFile({
             path: `struk-transfer-${Date.now()}.png`,
             data: base64,
-            directory: Capacitor.Plugins.Directory.Documents,
+            directory: Capacitor.Plugins.Filesystem.Directory.Documents,
             recursive: true
           });
           showToast('Gambar tersimpan di Documents HP!', 'success');
@@ -2270,7 +2270,7 @@ ${note}
           const result = await Capacitor.Plugins.Filesystem.writeFile({
             path: `struk-wa-${Date.now()}.png`,
             data: base64,
-            directory: Capacitor.Plugins.Directory.Cache,
+            directory: Capacitor.Plugins.Filesystem.Directory.Cache,
             recursive: true
           });
           
