@@ -2195,7 +2195,7 @@ ${note}
       return canvas;
     }
 
-           async function shareAsPDF() {
+          async function shareAsPDF() {
   try {
     const canvas = await captureReceiptPreview();
     const imgData = canvas.toDataURL('image/png');
@@ -2205,11 +2205,11 @@ ${note}
     const pdfBase64 = pdf.output('datauristring').split(',')[1];
     const fileName = 'struk-'+currentReceiptType+'-'+Date.now()+'.pdf';
 
-    // ⭐ CAPACITOR: Cache + Share Sheet (paling aman, tidak butuh permission)
+    // ⭐ CAPACITOR: pakai string 'CACHE' bukan Directory.Cache
     if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem && Capacitor.Plugins.Share) {
       const result = await Capacitor.Plugins.Filesystem.writeFile({
         path: fileName, data: pdfBase64,
-        directory: Capacitor.Plugins.Filesystem.Directory.Cache,
+        directory: 'CACHE',  // ⭐ STRING, bukan enum
         recursive: true
       });
       await Capacitor.Plugins.Share.share({
@@ -2230,17 +2230,17 @@ ${note}
   }
 }
     
-         async function shareAsImage() {
+   async function shareAsImage() {
   try {
     const canvas = await captureReceiptPreview();
     const base64 = canvas.toDataURL('image/png').split(',')[1];
     const fileName = 'struk-'+currentReceiptType+'-'+Date.now()+'.png';
 
-    // ⭐ CAPACITOR: Cache + Share Sheet
+    // ⭐ CAPACITOR: pakai string 'CACHE'
     if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem && Capacitor.Plugins.Share) {
       const result = await Capacitor.Plugins.Filesystem.writeFile({
         path: fileName, data: base64,
-        directory: Capacitor.Plugins.Filesystem.Directory.Cache,
+        directory: 'CACHE',  // ⭐ STRING
         recursive: true
       });
       await Capacitor.Plugins.Share.share({
@@ -2264,18 +2264,18 @@ ${note}
   }
 }
     
-        async function shareToWhatsApp() {
+  async function shareToWhatsApp() {
   try {
     const canvas = await captureReceiptPreview();
     const base64 = canvas.toDataURL('image/png').split(',')[1];
     const fileName = 'struk-wa-'+Date.now()+'.png';
     const shareText = 'Berikut struk transaksi saya:';
 
-    // ⭐ CAPACITOR: Cache + Share Sheet (bisa pilih WhatsApp langsung)
+    // ⭐ CAPACITOR: pakai string 'CACHE'
     if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem && Capacitor.Plugins.Share) {
       const result = await Capacitor.Plugins.Filesystem.writeFile({
         path: fileName, data: base64,
-        directory: Capacitor.Plugins.Filesystem.Directory.Cache,
+        directory: 'CACHE',  // ⭐ STRING
         recursive: true
       });
       await Capacitor.Plugins.Share.share({
@@ -2823,7 +2823,7 @@ ${note}
     }
   </script>
 
-<div id="appVersion" style="position:fixed;bottom:80px;right:12px;font-size:11px;color:var(--text-muted);opacity:0.6;z-index:9999;font-family:monospace;background:var(--bg-card);padding:4px 8px;border-radius:6px;border:1px solid var(--border-color);">v1.2.8</div>
+<div id="appVersion" style="position:fixed;bottom:80px;right:12px;font-size:11px;color:var(--text-muted);opacity:0.6;z-index:9999;font-family:monospace;background:var(--bg-card);padding:4px 8px;border-radius:6px;border:1px solid var(--border-color);">v1.2.9</div>
 
   <script>
   // Auto timestamp — kelihatan kapan file terakhir diubah
