@@ -2196,113 +2196,125 @@ ${note}
     }
 
             async function shareAsPDF() {
-      try {
-        const canvas = await captureReceiptPreview();
-        const imgData = canvas.toDataURL('image/png');
-        
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: [80, 120 + (canvas.height / canvas.width * 80)]
-        });
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, 80, canvas.height / canvas.width * 80);
-        
-        // ⭐ FALLBACK: Kalau Capacitor ada (APK), simpan ke Documents
-        if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
-          const pdfBase64 = pdf.output('datauristring').split(',')[1];
-          const result = await Capacitor.Plugins.Filesystem.writeFile({
-            path: `struk-${Date.now()}.pdf`,
-            data: pdfBase64,
-            directory: Capacitor.Plugins.Filesystem.Directory.Documents,
-            recursive: true
-          });
-          showToast('PDF tersimpan!', 'success');
-          console.log('PDF URI:', result.uri);
-        } else {
-          // ⭐ FALLBACK: Kalau di browser, pakai download biasa
-          pdf.save('struk-transfer.pdf');
-          showToast('PDF berhasil di-download!', 'success');
-        }
-      } catch (err) {
-        console.error(err);
-        showToast('Gagal simpan PDF', 'error');
-      }
+  try {
+    const canvas = await captureReceiptPreview();
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:[80, 120+(canvas.height/canvas.width*80)] });
+    pdf.addImage(imgData, 'PNG', 0, 0, 80, canvas.height/canvas.width*80);
+    const pdfBase64 = pdf.output('datauristring').split(',')[1];
+    const fileName = 'struk-'+currentReceiptType+'-'+Date.now()+'.pdf';
+
+    // ⭐ PRIORITAS 1: CAPACITOR
+    if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
+      const result = await Capacitor.Plugins.Filesystem.writeFile({
+        path: fileName, data: pdfBase64,
+        directory: Capacitor.Plugins.Filesystem.Directory.Documents,
+        recursive: true
+      });
+      showToast('✅ PDF tersimpan di Documents HP!', 'success');
+      console.log('PDF lokasi:', result.uri);
+      return;
     }
+
+    // ⭐ PRIORITAS 2: Median (kalau-kalau ada)
+    if (window.median && window.median.saveToDownloads) {
+      await window.median.saveToDownloads({ filename: fileName, data: pdfBase64, mimeType: 'application/pdf' });
+      showToast('PDF tersimpan!', 'success');
+      return;
+    }
+
+    // ⭐ PRIORITAS 3: Browser
+    pdf.save(fileName);
+    showToast('PDF di-download!', 'success');
+
+  } catch (err) {
+    console.error('PDF Error:', err);
+    showToast('Gagal: '+err.message, 'error');
+  }
+}
     
-            async function shareAsImage() {
-      try {
-        const canvas = await captureReceiptPreview();
-        
-        // ⭐ FALLBACK: Kalau Capacitor ada (APK), simpan ke Documents
-                  if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
-          const base64 = canvas.toDataURL('image/png').split(',')[1];
-          const result = await Capacitor.Plugins.Filesystem.writeFile({
-            path: `struk-${Date.now()}.png`,
-            data: base64,
-            directory: Capacitor.Plugins.Filesystem.Directory.Documents,
-            recursive: true
-          });
-          showToast('Gambar tersimpan!', 'success');
-          console.log('Image URI:', result.uri);
-        } else {
-          // ⭐ FALLBACK: Kalau di browser, pakai download biasa
-          const link = document.createElement('a');
-          link.download = 'struk-transfer.png';
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-          showToast('Gambar berhasil di-download!', 'success');
-        }
-      } catch (err) {
-        console.error(err);
-        showToast('Gagal simpan gambar', 'error');
-      }
+          async function shareAsImage() {
+  try {
+    const canvas = await captureReceiptPreview();
+    const base64 = canvas.toDataURL('image/png').split(',')[1];
+    const fileName = 'struk-'+currentReceiptType+'-'+Date.now()+'.png';
+
+    // ⭐ PRIORITAS 1: CAPACITOR
+    if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
+      const result = await Capacitor.Plugins.Filesystem.writeFile({
+        path: fileName, data: base64,
+        directory: Capacitor.Plugins.Filesystem.Directory.Documents,
+        recursive: true
+      });
+      showToast('✅ Gambar tersimpan di Documents HP!', 'success');
+      console.log('Gambar lokasi:', result.uri);
+      return;
     }
+
+    // ⭐ PRIORITAS 2: Median fallback
+    if (window.median && window.median.saveToDownloads) {
+      await window.median.saveToDownloads({ filename: fileName, data: base64, mimeType: 'image/png' });
+      showToast('Gambar tersimpan!', 'success');
+      return;
+    }
+
+    // ⭐ PRIORITAS 3: Browser
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('Gambar di-download!', 'success');
+
+  } catch (err) {
+    console.error('Image Error:', err);
+    showToast('Gagal: '+err.message, 'error');
+  }
+}
     
-            async function shareToWhatsApp() {
-      try {
-        const canvas = await captureReceiptPreview();
-        
-        // ⭐ FALLBACK: Kalau Capacitor Share ada (APK)
-                        if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Share && Capacitor.Plugins.Filesystem) {
-          const base64 = canvas.toDataURL('image/png').split(',')[1];
-          
-        const result = await Capacitor.Plugins.Filesystem.writeFile({
-            path: `struk-wa-${Date.now()}.png`,
-            data: base64,
-            directory: Capacitor.Plugins.Filesystem.Directory.Cache,
-            recursive: true
-          });
-          
-          // ⭐ PAKAI 'url' BUKAN 'files' — LEBIH STABIL DI ANDROID
-          await Capacitor.Plugins.Share.share({
-            title: 'Struk Transfer',
-            text: 'Berikut struk transaksi saya:',
-            url: result.uri,
-            dialogTitle: 'Bagikan struk ke'
-          });
-        } else {
-          // ⭐ FALLBACK: Kalau di browser, download gambar + buka WA dengan teks
-          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = 'struk-transfer.png';
-          link.click();
-          
-          setTimeout(() => {
-            const text = encodeURIComponent('Berikut struk transaksi saya:');
-            window.open(`https://wa.me/?text=${text}`, '_blank');
-          }, 500);
-          
-          showToast('Gambar disimpan. Buka WhatsApp untuk kirim.', 'info');
-        }
-      } catch (err) {
-        console.error(err);
-        showToast('Gagal share ke WhatsApp', 'error');
-      }
+          async function shareToWhatsApp() {
+  try {
+    const canvas = await captureReceiptPreview();
+    const base64 = canvas.toDataURL('image/png').split(',')[1];
+    const fileName = 'struk-wa-'+Date.now()+'.png';
+    const shareText = 'Berikut struk transaksi saya:';
+
+    // ⭐ PRIORITAS 1: CAPACITOR SHARE
+    if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Share && Capacitor.Plugins.Filesystem) {
+      const result = await Capacitor.Plugins.Filesystem.writeFile({
+        path: fileName, data: base64,
+        directory: Capacitor.Plugins.Filesystem.Directory.Cache,
+        recursive: true
+      });
+      await Capacitor.Plugins.Share.share({
+        title: 'Struk Transfer', text: shareText,
+        url: result.uri, dialogTitle: 'Bagikan struk ke'
+      });
+      showToast('✅ Pilih WhatsApp dari share sheet!', 'success');
+      return;
     }
+
+    // ⭐ PRIORITAS 2: Median fallback
+    if (window.median && window.median.share) {
+      await window.median.share({ message: shareText, files: [{ filename: fileName, base64: base64, mimeType: 'image/png' }] });
+      return;
+    }
+
+    // ⭐ PRIORITAS 3: Browser
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url; link.download = fileName; link.click();
+    setTimeout(() => {
+      window.open('https://wa.me/?text='+encodeURIComponent(shareText), '_blank');
+    }, 800);
+    showToast('Gambar disimpan. Tab WA dibuka.', 'info');
+
+  } catch (err) {
+    console.error('WA Error:', err);
+    showToast('Gagal: '+err.message, 'error');
+  }
+}
     
     function generateReceiptText() {
       const storeName = document.getElementById('receiptStoreName')?.value || 'NAMA TOKO';
