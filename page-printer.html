@@ -614,6 +614,100 @@
       color: var(--text-muted); 
       font-family: monospace; 
     }
+
+        /* ==========================================
+       THERMAL PREVIEW MODAL (TAMBAHAN)
+       ========================================== */
+    .thermal-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s;
+    }
+    .thermal-modal-overlay.active { opacity: 1; visibility: visible; }
+    
+    .thermal-modal {
+      background: var(--bg-card);
+      border-radius: 1rem;
+      max-width: 400px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+    .thermal-modal-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .thermal-modal-title { font-weight: 700; font-size: 1.1rem; color: var(--text-primary); }
+    .thermal-modal-close {
+      width: 32px; height: 32px;
+      border-radius: 0.5rem;
+      border: none;
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+    .thermal-modal-body {
+      padding: 1.25rem;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .thermal-paper {
+      background: #fff;
+      color: #000;
+      width: 280px;
+      padding: 12px;
+      font-family: 'Courier New', 'Courier', monospace;
+      font-size: 11px;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      word-break: break-word;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      border-radius: 2px;
+      position: relative;
+    }
+    .thermal-paper::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 0; right: 0;
+      height: 10px;
+      background: repeating-linear-gradient(
+        45deg,
+        #fff,
+        #fff 2px,
+        #ddd 2px,
+        #ddd 4px
+      );
+    }
+    .thermal-actions {
+      display: flex;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .thermal-actions .btn { flex: 1; }
   </style>
 </head>
 <body>
@@ -842,6 +936,9 @@
                 <button class="btn btn-primary" onclick="printBluetoothThermal()" id="btnPrintBt" disabled>
                   <i class="fas fa-print"></i> Print Thermal
                 </button>
+                <button class="btn btn-success" onclick="previewThermalReceipt()" id="btnPreviewThermal" disabled>
+                  <i class="fas fa-eye"></i> Preview Thermal
+                </button>
               </div>
 
               <div class="printer-list" id="printerList"></div>
@@ -981,6 +1078,27 @@
       <a href="page-riwayat.html" class="mobile-nav-item"><i class="fas fa-history"></i><span>Riwayat</span></a>
       <a href="page-setting.html" class="mobile-nav-item"><i class="fas fa-cog"></i><span>Setting</span></a>
     </nav>
+  </div>
+
+    <!-- Thermal Preview Modal -->
+  <div class="thermal-modal-overlay" id="thermalModal">
+    <div class="thermal-modal">
+      <div class="thermal-modal-header">
+        <span class="thermal-modal-title"><i class="fas fa-receipt" style="color: var(--primary)"></i> Preview Struk Thermal</span>
+        <button class="thermal-modal-close" onclick="closeThermalModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="thermal-modal-body">
+        <div class="thermal-paper" id="thermalPaper"></div>
+      </div>
+      <div class="thermal-actions">
+        <button class="btn btn-outline" onclick="closeThermalModal()">
+          <i class="fas fa-times"></i> Tutup
+        </button>
+        <button class="btn btn-primary" onclick="printFromPreview()">
+          <i class="fas fa-print"></i> Print Sekarang
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Loading Overlay -->
@@ -2321,19 +2439,23 @@ ${note}
               item.classList.add('selected');
               document.getElementById('btnPrintBt').disabled = false;
               updateBtStatus(`✅ Printer dipilih: <strong>${device.name}</strong>`, 'success');
+              document.getElementById('btnPrintBt').disabled = false;
+              document.getElementById('btnPreviewThermal').disabled = false;
             };
             
             list.appendChild(item);
           });
 
-          // Auto-select kalau sudah pernah simpan sebelumnya
-          if (selectedPrinterMac) {
+                    // Auto-select kalau sudah pernah simpan sebelumnya
+                    if (selectedPrinterMac) {
             const found = devices.find(d => d.address === selectedPrinterMac);
             if (found) {
               document.getElementById('btnPrintBt').disabled = false;
+              document.getElementById('btnPreviewThermal').disabled = false;
               updateBtStatus(`✅ Printer aktif: <strong>${found.name}</strong>`, 'success');
             }
           } else {
+            document.getElementById('btnPreviewThermal').disabled = false;
             updateBtStatus(`📋 Ditemukan ${devices.length} printer. Klik untuk memilih.`, 'info');
           }
           
@@ -2427,6 +2549,100 @@ ${note}
       return content;
     }
 
+        // ==========================================
+    // THERMAL PREVIEW (TAMBAHAN)
+    // ==========================================
+    function generateEscPosPlain() {
+      // Sama persis dengan generateEscPos() tapi tanpa command bytes
+      // untuk ditampilkan di preview HTML
+      const storeName = document.getElementById('receiptStoreName')?.value || 'NAMA TOKO';
+      const address = document.getElementById('receiptAddress')?.value || '';
+      const phone = document.getElementById('receiptPhone')?.value || '';
+      const note = document.getElementById('receiptNote')?.value || 'Terima kasih';
+      const date = document.getElementById('manualDate')?.value || '';
+      const time = document.getElementById('manualTime')?.value || '';
+      const nominal = parseInt(document.getElementById('manualNominal')?.value) || 0;
+      const admin = parseInt(document.getElementById('manualAdmin')?.value) || 0;
+      const total = nominal + admin;
+      const trxId = currentReceiptType.substring(0,2).toUpperCase() + '-' + Date.now().toString().slice(-6);
+
+      let lines = [];
+      lines.push('================================');
+      lines.push('    ' + storeName.toUpperCase());
+      if (address) lines.push(address);
+      if (phone) lines.push('HP: ' + phone);
+      lines.push('================================');
+      
+      const typeLabel = currentReceiptType === 'transfer' ? 'BUKTI TRANSFER' : 
+                        currentReceiptType === 'tarik_tunai' ? 'BUKTI TARIK TUNAI' : 'BUKTI TOP UP';
+      lines.push(typeLabel);
+      lines.push('No : ' + trxId);
+      lines.push('Tgl: ' + date + ' ' + time);
+      lines.push('--------------------------------');
+
+      if (currentReceiptType === 'transfer') {
+        const sender = document.getElementById('manualSender')?.value || '-';
+        const senderAcc = document.getElementById('manualSenderAccount')?.value || '-';
+        const senderBank = document.getElementById('manualBankFrom')?.value || '';
+        const receiver = document.getElementById('manualReceiver')?.value || '-';
+        const receiverAcc = document.getElementById('manualReceiverAccount')?.value || '-';
+        const receiverBank = document.getElementById('manualBankTo')?.value || '';
+        lines.push('PENGIRIM:');
+        lines.push(sender);
+        lines.push(senderAcc + ' ' + senderBank);
+        lines.push('');
+        lines.push('PENERIMA:');
+        lines.push(receiver);
+        lines.push(receiverAcc + ' ' + receiverBank);
+      } else if (currentReceiptType === 'tarik_tunai') {
+        const customer = document.getElementById('manualCustomer')?.value || '-';
+        const bank = document.getElementById('manualBank')?.value || '';
+        const account = document.getElementById('manualAccount')?.value || '-';
+        lines.push('Customer: ' + customer);
+        lines.push('Bank    : ' + bank);
+        lines.push('No Rek  : ' + account);
+      } else {
+        const type = document.getElementById('manualTopUpType')?.value || '';
+        const target = document.getElementById('manualTarget')?.value || '-';
+        const customer = document.getElementById('manualCustomer')?.value || '-';
+        lines.push('Jenis    : ' + type);
+        lines.push('No Tujuan: ' + target);
+        lines.push('Customer : ' + customer);
+      }
+
+      lines.push('--------------------------------');
+      lines.push('Nominal: Rp ' + formatNumber(nominal));
+      lines.push('Admin  : Rp ' + formatNumber(admin));
+      lines.push('TOTAL  : Rp ' + formatNumber(total));
+      lines.push('==============================');
+      lines.push(note);
+      lines.push('_WebPOS Digital_');
+      
+      return lines.join('\n');
+    }
+
+    function previewThermalReceipt() {
+      const nominal = parseInt(document.getElementById('manualNominal')?.value) || 0;
+      if (nominal <= 0) {
+        showToast('Nominal harus diisi!', 'warning');
+        return;
+      }
+      
+      const paper = document.getElementById('thermalPaper');
+      paper.textContent = generateEscPosPlain();
+      
+      document.getElementById('thermalModal').classList.add('active');
+    }
+
+    function closeThermalModal() {
+      document.getElementById('thermalModal').classList.remove('active');
+    }
+
+    function printFromPreview() {
+      closeThermalModal();
+      printBluetoothThermal();
+    }
+
     async function printBluetoothThermal() {
       if (!selectedPrinterMac) {
         showToast('Pilih printer dulu!', 'warning');
@@ -2453,16 +2669,12 @@ ${note}
           bluetoothSerial.connect(selectedPrinterMac, resolve, reject);
         });
         
-                updateBtStatus('⏳ Mengirim data struk...', 'info');
+        updateBtStatus('⏳ Mengirim data struk...', 'info');
         const escData = generateEscPos();
         
-        // ⭐ Konversi string ESC/POS ke ArrayBuffer agar printer baca byte murni
-        const encoder = new TextEncoder();
-        const buffer = encoder.encode(escData);
-        
-        // Write data sebagai bytes
+        // ⭐ Kirim langsung sebagai string (plugin Cordova lebih stabil)
         await new Promise((resolve, reject) => {
-          bluetoothSerial.write(buffer, resolve, reject);
+          bluetoothSerial.write(escData, resolve, reject);
         });
         
         // Disconnect
