@@ -2209,7 +2209,7 @@ ${note}
         pdf.addImage(imgData, 'PNG', 0, 0, 80, canvas.height / canvas.width * 80);
         
         // ⭐ FALLBACK: Kalau Capacitor ada (APK), simpan ke Documents
-        if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
+                if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
           const pdfBase64 = pdf.output('datauristring').split(',')[1];
           const result = await Capacitor.Plugins.Filesystem.writeFile({
             path: `struk-transfer-${Date.now()}.pdf`,
@@ -2217,7 +2217,8 @@ ${note}
             directory: Capacitor.Plugins.Filesystem.Directory.Documents,
             recursive: true
           });
-          showToast('PDF tersimpan di Documents HP!', 'success');
+          // ⭐ Tampilkan path asli ke user
+          showToast('PDF tersimpan di:\n' + result.uri, 'success');
           console.log('Lokasi file:', result.uri);
         } else {
           // ⭐ FALLBACK: Kalau di browser, pakai download biasa
@@ -2235,7 +2236,7 @@ ${note}
         const canvas = await captureReceiptPreview();
         
         // ⭐ FALLBACK: Kalau Capacitor ada (APK), simpan ke Documents
-        if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
+                if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem) {
           const base64 = canvas.toDataURL('image/png').split(',')[1];
           const result = await Capacitor.Plugins.Filesystem.writeFile({
             path: `struk-transfer-${Date.now()}.png`,
@@ -2243,7 +2244,8 @@ ${note}
             directory: Capacitor.Plugins.Filesystem.Directory.Documents,
             recursive: true
           });
-          showToast('Gambar tersimpan di Documents HP!', 'success');
+          // ⭐ Tampilkan path asli ke user
+          showToast('Gambar tersimpan di:\n' + result.uri, 'success');
           console.log('Lokasi file:', result.uri);
         } else {
           // ⭐ FALLBACK: Kalau di browser, pakai download biasa
@@ -2264,7 +2266,7 @@ ${note}
         const canvas = await captureReceiptPreview();
         
         // ⭐ FALLBACK: Kalau Capacitor Share ada (APK)
-        if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Share && Capacitor.Plugins.Filesystem) {
+                        if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Share && Capacitor.Plugins.Filesystem) {
           const base64 = canvas.toDataURL('image/png').split(',')[1];
           
           const result = await Capacitor.Plugins.Filesystem.writeFile({
@@ -2274,10 +2276,11 @@ ${note}
             recursive: true
           });
           
+          // ⭐ PAKAI 'files' BUKAN 'url' SUPAYA GAMBAR TERKIRIM!
           await Capacitor.Plugins.Share.share({
             title: 'Struk Transfer',
             text: 'Berikut struk transaksi saya:',
-            url: result.uri,
+            files: [result.uri],
             dialogTitle: 'Bagikan struk ke'
           });
         } else {
