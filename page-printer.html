@@ -57,7 +57,11 @@
     ::-webkit-scrollbar-track { background: var(--bg-secondary); }
     ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 9999px; }
 
-    :root {
+        :root {
+      --success: #10b981;
+      --info: #3b82f6;
+      --warning: #f59e0b;
+      --danger: #ef4444;
       --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
       --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
       --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
@@ -563,6 +567,53 @@
     .share-btn.whatsapp { background: #25d366; color: white; }
     .share-btn.print { background: var(--primary); color: white; }
     .share-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        /* ==========================================
+       BLUETOOTH PRINTER STYLES (TAMBAHAN)
+       ========================================== */
+    .bluetooth-section { 
+      background: var(--bg-card); 
+      border-radius: 1rem; 
+      border: 1px solid var(--border-color); 
+      padding: 1.5rem; 
+      margin-bottom: 1.5rem; 
+    }
+    .printer-list { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 0.5rem; 
+      margin: 1rem 0; 
+      max-height: 200px; 
+      overflow-y: auto; 
+    }
+    .printer-item { 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      padding: 0.75rem 1rem; 
+      background: var(--bg-secondary); 
+      border-radius: 0.5rem; 
+      cursor: pointer; 
+      border: 2px solid transparent; 
+      transition: all 0.15s; 
+    }
+    .printer-item:hover { 
+      border-color: var(--primary); 
+    }
+    .printer-item.selected { 
+      border-color: var(--primary); 
+      background: rgba(99,102,241,0.1); 
+    }
+    .printer-name { 
+      font-weight: 600; 
+      font-size: 0.9rem; 
+      color: var(--text-primary);
+    }
+    .printer-mac { 
+      font-size: 0.75rem; 
+      color: var(--text-muted); 
+      font-family: monospace; 
+    }
   </style>
 </head>
 <body>
@@ -765,12 +816,42 @@
                   <label class="form-label">Catatan Footer</label>
                   <textarea class="form-textarea" id="receiptNote" rows="2" placeholder="Terima kasih telah berbelanja..." oninput="updatePreview()"></textarea>
                 </div>
-                <button class="btn btn-primary btn-block" onclick="saveHeader()">
+                  <button class="btn btn-primary btn-block" onclick="saveHeader()">
                   <i class="fas fa-save"></i> Simpan Header
                 </button>
               </div>
             </div>
 
+            <!-- ==========================================
+                 BLUETOOTH THERMAL PRINTER (TAMBAHAN)
+                 ========================================== -->
+            <div class="bluetooth-section">              
+              <div class="card-header" style="padding: 0 0 1rem 0; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem;">
+                <span class="card-title"><i class="fab fa-bluetooth-b" style="color: #3b82f6"></i> Printer Bluetooth Thermal</span>
+              </div>
+              
+              <div class="info-box info" id="btStatusBox">
+                <div class="info-title"><i class="fas fa-info-circle"></i> Status Bluetooth</div>
+                <div id="btStatusText">Klik "Scan Printer" untuk mencari printer.</div>
+              </div>
+
+              <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                <button class="btn btn-outline" onclick="scanBluetoothPrinters()" id="btnScanBt">
+                  <i class="fas fa-search"></i> Scan Printer
+                </button>
+                <button class="btn btn-primary" onclick="printBluetoothThermal()" id="btnPrintBt" disabled>
+                  <i class="fas fa-print"></i> Print Thermal
+                </button>
+              </div>
+
+              <div class="printer-list" id="printerList"></div>
+              
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; line-height: 1.5;">
+                <i class="fas fa-lightbulb" style="color: var(--warning)"></i> 
+                Pastikan printer sudah <strong>Pairing</strong> di Settings → Bluetooth HP terlebih dahulu.
+              </div>
+            </div>
+              
             <!-- OCR Section -->
             <div class="ocr-section">
               <div class="card-header" style="padding: 0 0 1rem 0; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem;">
@@ -941,7 +1022,6 @@
         let isMedianApp = false;
 
     // ⭐ DETEKSI APK/WEBVIEW (multi-cara)
-        // ⭐ DETEKSI APK/WEBVIEW (multi-cara)
     function detectAppEnvironment() {
       const ua = navigator.userAgent.toLowerCase();
       // Cek Median/GoNative bridge
@@ -998,6 +1078,16 @@
       
       // Setup Auth state listener
       setupAuthListener();
+      
+      // ⭐ Auto-check Bluetooth plugin setelah 1 detik
+      setTimeout(() => {
+        if (window.bluetoothSerial) {
+          updateBtStatus('✅ Plugin Bluetooth terdeteksi. Klik Scan Printer.', 'success');
+          if (selectedPrinterMac) scanBluetoothPrinters();
+        } else {
+          updateBtStatus('ℹ️ Mode Browser/WebView. Bluetooth hanya tersedia di APK Android.', 'warning');
+        }
+      }, 1000);
     });
 
     // ==========================================
@@ -1445,7 +1535,7 @@
       const p = data.parsed;
 
       let html = `
-        <div style="margin-bottom: 0.5rem;"><strong>Jenis:</strong> ${data.receiverProvider || 'Transfer'}</div>
+        <div style="margin-bottom: 0.5rem;"><strong>Jenis:</strong> ${data.provider || 'Transfer'}</div>
         <div style="margin-bottom: 0.5rem;"><strong>Tanggal:</strong> ${p.date} ${p.time}</div>
       `;
 
@@ -2173,6 +2263,219 @@ ${note}
           if (li) li.style.display = span.textContent.toLowerCase().includes(q) ? '' : 'none';
         });
       });
+    }
+
+        // ==========================================
+    // BLUETOOTH THERMAL PRINTER (TAMBAHAN)
+    // ==========================================
+    let selectedPrinterMac = localStorage.getItem('webpos_printer_mac') || null;
+
+    function updateBtStatus(msg, type = 'info') {
+      const box = document.getElementById('btStatusBox');
+      const txt = document.getElementById('btStatusText');
+      if (!box || !txt) return;
+      box.className = `info-box ${type}`;
+      txt.innerHTML = msg;
+    }
+
+    function scanBluetoothPrinters() {
+      // Deteksi Capacitor/Cordova plugin
+      if (!window.bluetoothSerial) {
+        updateBtStatus('❌ Plugin Bluetooth tidak ditemukan. Pastikan sudah install plugin dan build ulang APK.', 'error');
+        showToast('Plugin bluetooth-serial belum terinstall', 'error');
+        return;
+      }
+
+      updateBtStatus('⏳ Mencari printer yang sudah dipairing...', 'info');
+      document.getElementById('btnScanBt').disabled = true;
+
+      bluetoothSerial.list(
+        (devices) => {
+          const list = document.getElementById('printerList');
+          list.innerHTML = '';
+          
+          if (devices.length === 0) {
+            updateBtStatus('⚠️ Tidak ada printer ditemukan. Pairing dulu di Settings → Bluetooth.', 'warning');
+            document.getElementById('btnScanBt').disabled = false;
+            return;
+          }
+
+          devices.forEach(device => {
+            const item = document.createElement('div');
+            item.className = 'printer-item';
+            if (device.address === selectedPrinterMac) item.classList.add('selected');
+            
+            item.innerHTML = `
+              <div>
+                <div class="printer-name">${device.name || 'Unknown Device'}</div>
+                <div class="printer-mac">${device.address}</div>
+              </div>
+              <i class="fas ${device.address === selectedPrinterMac ? 'fa-check-circle' : 'fa-circle'}" 
+                 style="color: ${device.address === selectedPrinterMac ? 'var(--success)' : 'var(--text-muted)'}"></i>
+            `;
+            
+            item.onclick = () => {
+              selectedPrinterMac = device.address;
+              localStorage.setItem('webpos_printer_mac', device.address);
+              document.querySelectorAll('.printer-item').forEach(el => el.classList.remove('selected'));
+              item.classList.add('selected');
+              document.getElementById('btnPrintBt').disabled = false;
+              updateBtStatus(`✅ Printer dipilih: <strong>${device.name}</strong>`, 'success');
+            };
+            
+            list.appendChild(item);
+          });
+
+          // Auto-select kalau sudah pernah simpan sebelumnya
+          if (selectedPrinterMac) {
+            const found = devices.find(d => d.address === selectedPrinterMac);
+            if (found) {
+              document.getElementById('btnPrintBt').disabled = false;
+              updateBtStatus(`✅ Printer aktif: <strong>${found.name}</strong>`, 'success');
+            }
+          } else {
+            updateBtStatus(`📋 Ditemukan ${devices.length} printer. Klik untuk memilih.`, 'info');
+          }
+          
+          document.getElementById('btnScanBt').disabled = false;
+        },
+        (error) => {
+          updateBtStatus('❌ Error scan: ' + error, 'error');
+          document.getElementById('btnScanBt').disabled = false;
+        }
+      );
+    }
+
+    function generateEscPos() {
+      const storeName = document.getElementById('receiptStoreName')?.value || 'NAMA TOKO';
+      const address = document.getElementById('receiptAddress')?.value || '';
+      const phone = document.getElementById('receiptPhone')?.value || '';
+      const note = document.getElementById('receiptNote')?.value || 'Terima kasih';
+      const date = document.getElementById('manualDate')?.value || '';
+      const time = document.getElementById('manualTime')?.value || '';
+      const nominal = parseInt(document.getElementById('manualNominal')?.value) || 0;
+      const admin = parseInt(document.getElementById('manualAdmin')?.value) || 0;
+      const total = nominal + admin;
+      const trxId = currentReceiptType.substring(0,2).toUpperCase() + '-' + Date.now().toString().slice(-6);
+
+      // ESC/POS Command Codes
+      const ESC = '\x1B';
+      const GS = '\x1D';
+      const INIT = ESC + '\x40';           // Initialize printer
+      const CENTER = ESC + '\x61\x01';     // Center align
+      const LEFT = ESC + '\x61\x00';       // Left align
+      const BOLD_ON = ESC + '\x45\x01';    // Bold ON
+      const BOLD_OFF = ESC + '\x45\x00';   // Bold OFF
+      const SIZE2 = ESC + '\x21\x10';      // Double width
+      const SIZE1 = ESC + '\x21\x00';      // Normal size
+      const CUT = GS + '\x56\x41\x03';     // Cut paper (partial)
+      const FEED = '\x0A';                 // Line feed
+
+      let content = INIT;
+      content += CENTER + BOLD_ON + SIZE2 + storeName.toUpperCase() + SIZE1 + BOLD_OFF + FEED;
+      if (address) content += CENTER + address + FEED;
+      if (phone) content += CENTER + 'HP: ' + phone + FEED;
+      content += CENTER + '------------------------------' + FEED;
+      content += LEFT;
+      
+      const typeLabel = currentReceiptType === 'transfer' ? 'BUKTI TRANSFER' : 
+                        currentReceiptType === 'tarik_tunai' ? 'BUKTI TARIK TUNAI' : 'BUKTI TOP UP';
+      content += CENTER + BOLD_ON + typeLabel + BOLD_OFF + FEED;
+      content += LEFT + 'No : ' + trxId + FEED;
+      content += 'Tgl: ' + date + ' ' + time + FEED;
+      content += '------------------------------' + FEED;
+
+      if (currentReceiptType === 'transfer') {
+        const sender = document.getElementById('manualSender')?.value || '-';
+        const senderAcc = document.getElementById('manualSenderAccount')?.value || '-';
+        const senderBank = document.getElementById('manualBankFrom')?.value || '';
+        const receiver = document.getElementById('manualReceiver')?.value || '-';
+        const receiverAcc = document.getElementById('manualReceiverAccount')?.value || '-';
+        const receiverBank = document.getElementById('manualBankTo')?.value || '';
+        
+        content += 'PENGIRIM:' + FEED;
+        content += sender + FEED;
+        content += senderAcc + ' ' + senderBank + FEED + FEED;
+        content += 'PENERIMA:' + FEED;
+        content += receiver + FEED;
+        content += receiverAcc + ' ' + receiverBank + FEED;
+      } else if (currentReceiptType === 'tarik_tunai') {
+        const customer = document.getElementById('manualCustomer')?.value || '-';
+        const bank = document.getElementById('manualBank')?.value || '';
+        const account = document.getElementById('manualAccount')?.value || '-';
+        content += 'Customer: ' + customer + FEED;
+        content += 'Bank    : ' + bank + FEED;
+        content += 'No Rek  : ' + account + FEED;
+      } else {
+        const type = document.getElementById('manualTopUpType')?.value || '';
+        const target = document.getElementById('manualTarget')?.value || '-';
+        const customer = document.getElementById('manualCustomer')?.value || '-';
+        content += 'Jenis    : ' + type + FEED;
+        content += 'No Tujuan: ' + target + FEED;
+        content += 'Customer : ' + customer + FEED;
+      }
+
+      content += '------------------------------' + FEED;
+      content += 'Nominal: Rp ' + formatNumber(nominal) + FEED;
+      content += 'Admin  : Rp ' + formatNumber(admin) + FEED;
+      content += BOLD_ON + 'TOTAL  : Rp ' + formatNumber(total) + BOLD_OFF + FEED;
+      content += '==============================';
+      content += FEED + CENTER + note + FEED;
+      content += CENTER + '_WebPOS Digital_' + FEED;
+      content += FEED + FEED + FEED + CUT;
+
+      return content;
+    }
+
+    async function printBluetoothThermal() {
+      if (!selectedPrinterMac) {
+        showToast('Pilih printer dulu!', 'warning');
+        return;
+      }
+      
+      if (!window.bluetoothSerial) {
+        showToast('Plugin Bluetooth tidak tersedia', 'error');
+        return;
+      }
+
+      const nominal = parseInt(document.getElementById('manualNominal')?.value) || 0;
+      if (nominal <= 0) {
+        showToast('Nominal harus diisi!', 'warning');
+        return;
+      }
+
+      showToast('Menghubungkan ke printer...', 'info');
+      updateBtStatus('⏳ Menghubungkan ke printer...', 'info');
+
+      try {
+        // Connect
+        await new Promise((resolve, reject) => {
+          bluetoothSerial.connect(selectedPrinterMac, resolve, reject);
+        });
+        
+                updateBtStatus('⏳ Mengirim data struk...', 'info');
+        const escData = generateEscPos();
+        
+        // ⭐ Konversi string ESC/POS ke ArrayBuffer agar printer baca byte murni
+        const encoder = new TextEncoder();
+        const buffer = encoder.encode(escData);
+        
+        // Write data sebagai bytes
+        await new Promise((resolve, reject) => {
+          bluetoothSerial.write(buffer, resolve, reject);
+        });
+        
+        // Disconnect
+        await new Promise((resolve) => {
+          bluetoothSerial.disconnect(resolve, resolve);
+        });
+        
+        updateBtStatus('✅ Struk berhasil dicetak!', 'success');
+        showToast('Struk berhasil dicetak via Bluetooth!', 'success');
+      } catch (error) {
+        updateBtStatus('❌ Gagal print: ' + error, 'error');
+        showToast('Gagal print: ' + error, 'error');
+      }
     }
 
     // ==========================================
