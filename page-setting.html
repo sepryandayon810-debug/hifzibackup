@@ -1044,6 +1044,10 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
                 <label class="form-label">Telepon</label>
                 <input type="tel" class="form-input" id="storePhone" placeholder="Nomor Telepon">
               </div>
+              <div class="form-group">
+  <label class="form-label">Catatan Footer Struk</label>
+  <textarea class="form-textarea" id="receiptFooterNote" rows="2" placeholder="Terima kasih telah berbelanja..."></textarea>
+</div>
               <button class="btn btn-primary btn-block" id="btnSaveStore">
                 <i class="fas fa-save"></i> Simpan Perubahan
               </button>
@@ -1293,6 +1297,13 @@ themeGrid.innerHTML = allThemes.map(theme => `
               document.getElementById('storeAddress').value = settings.address || '';
               document.getElementById('storePhone').value = settings.phone || '';
               
+              // ⭐ Load footer note dari receiptHeader
+              try {
+                const hdrSnap = await database.ref('settings/receiptHeader').once('value');
+                const hdr = hdrSnap.val() || {};
+                if (hdr.note) document.getElementById('receiptFooterNote').value = hdr.note;
+              } catch(e) {}
+              
               // Update logo saat load
               updateLogoToko(settings.name);
               
@@ -1301,18 +1312,31 @@ themeGrid.innerHTML = allThemes.map(theme => `
               localStorage.setItem('webpos_store_address', settings.address || '');
               localStorage.setItem('webpos_store_phone', settings.phone || '');
             }
-          } catch (error) {
+                    } catch (error) {
             console.error('Error loading settings:', error);
+            // Fallback dari localStorage
+            const savedName = localStorage.getItem('webpos_store_name');
+            const savedAddr = localStorage.getItem('webpos_store_address');
+            const savedPhone = localStorage.getItem('webpos_store_phone');
+            if (savedName) document.getElementById('storeName').value = savedName;
+            if (savedAddr) document.getElementById('storeAddress').value = savedAddr;
+            if (savedPhone) document.getElementById('storePhone').value = savedPhone;
+            
+            // ⭐ Fallback footer note
+            try {
+              const savedHdr = JSON.parse(localStorage.getItem('receiptHeader') || '{}');
+              if (savedHdr.note) document.getElementById('receiptFooterNote').value = savedHdr.note;
+            } catch(e) {}
           }
-        }
                   
-        document.getElementById('btnSaveStore').addEventListener('click', async () => {
+          document.getElementById('btnSaveStore').addEventListener('click', async () => {
           Utils.showLoading();
           
           try {
             const storeName = document.getElementById('storeName').value;
             const storeAddress = document.getElementById('storeAddress').value;
             const storePhone = document.getElementById('storePhone').value;
+            const footerNote = document.getElementById('receiptFooterNote').value.trim();
             
             await database.ref('settings/store').set({
               name: storeName,
@@ -1320,6 +1344,17 @@ themeGrid.innerHTML = allThemes.map(theme => `
               phone: storePhone,
               updatedAt: Date.now()
             });
+            
+            // ⭐ SINKRON KE HEADER STRUK (master)
+            const headerData = {
+              storeName: storeName,
+              address: storeAddress,
+              phone: storePhone,
+              note: footerNote || 'Terima kasih',
+              updatedAt: Date.now()
+            };
+            await database.ref('settings/receiptHeader').set(headerData);
+            localStorage.setItem('receiptHeader', JSON.stringify(headerData));
             
             // Update logo langsung di page ini
             updateLogoToko(storeName);
@@ -1333,7 +1368,7 @@ themeGrid.innerHTML = allThemes.map(theme => `
             document.title = `${storeName} - Pengaturan`;
             
             Utils.hideLoading();
-            Utils.showToast('Pengaturan toko disimpan', 'success');
+            Utils.showToast('Pengaturan toko & header struk disimpan', 'success');
           } catch (error) {
             Utils.hideLoading();
             console.error('Error saving settings:', error);
