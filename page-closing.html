@@ -1184,15 +1184,15 @@ async function loadUserSidebar(user) {
             // Calculate Uang Global
             
             // Calculate Uang Global
-            todayStats.uangGlobal = todayStats.modalAwal + 
-                                    todayStats.kasMasuk - 
-                                    todayStats.kasKeluar + 
-                                    todayStats.penjualan - 
-                                    todayStats.piutang +        // ← ⭐ DIKURANG
-                                    todayStats.topup +
-                                    todayStats.topupAdminFee -  // ← ⭐ TAMBAH
-                                    todayStats.tarik;
-                                    todayStats.tarikAdminFee;
+          const uangGlobal = todayStats.modalAwal + 
+                            todayStats.kasMasuk - 
+                            todayStats.kasKeluar + 
+                            todayStats.penjualan - 
+                            todayStats.piutang +        
+                            todayStats.topup +
+                            todayStats.topupAdminFee -  
+                            todayStats.tarik +
+                            todayStats.tarikAdminFee;
             
             // Update UI
             document.getElementById('sistemModal').textContent = Utils.formatRupiah(todayStats.modalAwal);
