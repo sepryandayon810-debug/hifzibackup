@@ -965,6 +965,99 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 [data-theme="dark"] .search-input:focus{background:var(--bg-card);box-shadow:0 0 0 4px rgba(5,150,105,.2)}
 [data-theme="dark"] .logo-text{-webkit-text-fill-color:var(--text-primary)}
 
+        /* ============================================
+       SHIFT MASTER TOGGLE - ON/OFF
+       ============================================ */
+    .shift-master-toggle {
+      background: var(--bg-card);
+      border-radius: var(--radius-2xl);
+      border: 2px solid var(--border-color);
+      padding: 1.25rem 1.5rem;
+      transition: all .3s ease;
+      box-shadow: 0 4px 20px rgba(5,150,105,0.06);
+    }
+    .shift-master-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(5,150,105,0.12);
+    }
+    .shift-master-toggle.active {
+      background: linear-gradient(135deg, #059669, #10b981);
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 6px 20px rgba(5,150,105,0.35);
+    }
+    .shift-toggle-inner {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .shift-toggle-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: rgba(5,150,105,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      color: var(--primary);
+      transition: all .3s;
+    }
+    .shift-master-toggle.active .shift-toggle-icon {
+      background: rgba(255,255,255,0.2);
+      color: white;
+    }
+    .shift-toggle-info {
+      flex: 1;
+    }
+    .shift-toggle-label {
+      font-size: .75rem;
+      color: var(--text-muted);
+      margin-bottom: .15rem;
+      font-weight: 500;
+      transition: all .3s;
+    }
+    .shift-master-toggle.active .shift-toggle-label {
+      color: rgba(255,255,255,0.85);
+    }
+    .shift-toggle-value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      transition: all .3s;
+    }
+    .shift-master-toggle.active .shift-toggle-value {
+      color: white;
+    }
+    .shift-toggle-switch {
+      width: 56px;
+      height: 32px;
+      background: var(--bg-secondary);
+      border-radius: 999px;
+      position: relative;
+      transition: all .3s ease;
+      border: 1px solid var(--border-color);
+    }
+    .shift-master-toggle.active .shift-toggle-switch {
+      background: rgba(255,255,255,0.35);
+      border-color: transparent;
+    }
+    .shift-toggle-knob {
+      width: 26px;
+      height: 26px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .shift-master-toggle.active .shift-toggle-knob {
+      left: 27px;
+      background: white;
+    }
+
   </style>
   
   <!-- Fonts -->
@@ -1466,6 +1559,22 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 
       <!-- Page Content -->
       <div class="page-content">
+               <!-- ⭐ SHIFT MASTER TOGGLE (di atas Modal Awal) -->
+        <div class="shift-master-toggle" id="btnToggleShift" style="cursor:pointer; margin-bottom:1.25rem;">
+          <div class="shift-toggle-inner">
+            <div class="shift-toggle-icon">
+              <i class="fas fa-store-slash" id="shiftToggleIcon"></i>
+            </div>
+            <div class="shift-toggle-info">
+              <div class="shift-toggle-label">Status Shift</div>
+              <div class="shift-toggle-value" id="shiftToggleText">Buka Shift</div>
+            </div>
+            <div class="shift-toggle-switch">
+              <div class="shift-toggle-knob" id="shiftToggleKnob"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Stats Cards -->
         <div class="stats-grid">
           <div class="stat-card">
@@ -1653,11 +1762,6 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     <span>Kas Keluar</span>
   </a>
   
-  <button class="quick-action-btn" id="btnToggleShift">
-    <i class="fas fa-store-slash"></i>
-    <span id="shiftBtnText">Tutup Shift</span>
-  </button>
-
     <a href="page-closing.html" class="quick-action-btn" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: var(--warning);">
     <i class="fas fa-calculator" style="color: var(--warning);"></i>
     <span>Closing Shift</span>
@@ -2073,16 +2177,20 @@ if (namaDisplay) {
 function updateShiftUI() {
   const shiftStatus = document.getElementById('shiftStatus');
   const shiftText = document.getElementById('shiftText');
-  const shiftBtnText = document.getElementById('shiftBtnText');
-  const btnIcon = btnToggleShift.querySelector('i');
+  const shiftToggleText = document.getElementById('shiftToggleText');
+  const shiftToggleIcon = document.getElementById('shiftToggleIcon');
   const btnTransfer = document.getElementById('btnTransferShift');
   
   if (isShiftOpen) {
+    // Status: BUKA (ON)
     shiftStatus.classList.remove('closed');
     shiftStatus.classList.add('open');
     shiftText.textContent = 'Buka';
-    shiftBtnText.textContent = 'Tutup Shift';
-    btnIcon.className = 'fas fa-store-slash';
+    
+    // Toggle master ON
+    document.getElementById('btnToggleShift').classList.add('active');
+    shiftToggleText.textContent = 'Shift Buka';
+    shiftToggleIcon.className = 'fas fa-store';
     
     const user = Auth.getCurrentUser();
     if (btnTransfer && user && (user.role === 'owner' || user.role === 'admin')) {
@@ -2092,11 +2200,15 @@ function updateShiftUI() {
       btnTransfer.style.display = 'flex';
     }
   } else {
+    // Status: TUTUP (OFF)
     shiftStatus.classList.remove('open');
     shiftStatus.classList.add('closed');
     shiftText.textContent = 'Tutup';
-    shiftBtnText.textContent = 'Buka Shift';
-    btnIcon.className = 'fas fa-store';
+    
+    // Toggle master OFF
+    document.getElementById('btnToggleShift').classList.remove('active');
+    shiftToggleText.textContent = 'Buka Shift';
+    shiftToggleIcon.className = 'fas fa-store-slash';
     
     if (btnTransfer) {
       btnTransfer.disabled = true;
@@ -2104,8 +2216,7 @@ function updateShiftUI() {
       btnTransfer.style.cursor = 'not-allowed';
     }
   }
-}
-    
+}    
     // Toggle shift
       async function toggleShift() {
         const today = Utils.getTodayString();
