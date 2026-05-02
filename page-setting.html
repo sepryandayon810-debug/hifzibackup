@@ -1287,7 +1287,7 @@ themeGrid.innerHTML = allThemes.map(theme => `
           Utils.showToast(val ? 'Menu Keuangan Owner diaktifkan' : 'Menu Keuangan Owner dinonaktifkan', 'success');
         });
 
-        async function loadStoreSettings() {
+                async function loadStoreSettings() {
           try {
             const snapshot = await database.ref('settings/store').once('value');
             const settings = snapshot.val();
@@ -1312,7 +1312,7 @@ themeGrid.innerHTML = allThemes.map(theme => `
               localStorage.setItem('webpos_store_address', settings.address || '');
               localStorage.setItem('webpos_store_phone', settings.phone || '');
             }
-                    } catch (error) {
+          } catch (error) {
             console.error('Error loading settings:', error);
             // Fallback dari localStorage
             const savedName = localStorage.getItem('webpos_store_name');
@@ -1328,8 +1328,10 @@ themeGrid.innerHTML = allThemes.map(theme => `
               if (savedHdr.note) document.getElementById('receiptFooterNote').value = savedHdr.note;
             } catch(e) {}
           }
-                  
-          document.getElementById('btnSaveStore').addEventListener('click', async () => {
+        }  // ⭐ TAMBAH } DI SINI — tutup loadStoreSettings
+
+        // ⭐ PINDAH KE LUAR loadStoreSettings, tapi masih dalam initSettings
+        document.getElementById('btnSaveStore').addEventListener('click', async () => {
           Utils.showLoading();
           
           try {
