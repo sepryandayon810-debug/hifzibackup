@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light" data-theme-color="indigo">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebPOS - Role Manager</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Paste CSS dari page-setting.html kamu (sama persis) -->
+  <style>
+    /* ... paste CSS lengkap dari page-setting.html ... */
+    
+    /* Tambahan khusus Role Manager */
+    .role-tabs{display:flex;gap:.5rem;margin-bottom:1.5rem;border-bottom:2px solid var(--border-color);padding-bottom:.5rem}
+    .role-tab{padding:.625rem 1.25rem;border-radius:.75rem;font-size:.875rem;font-weight:600;cursor:pointer;border:1.5px solid transparent;color:var(--text-secondary);background:var(--bg-secondary)}
+    .role-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .role-tab:hover:not(.active){border-color:var(--primary);color:var(--primary)}
+    
+    .perm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem}
+    .perm-item{display:flex;align-items:center;justify-content:space-between;padding:1rem;background:var(--bg-secondary);border-radius:var(--radius-lg);border:1px solid var(--border-color)}
+    .perm-info{display:flex;align-items:center;gap:.75rem}
+    .perm-icon{width:32px;height:32px;border-radius:8px;background:rgba(99,102,241,.1);color:var(--primary);display:flex;align-items:center;justify-content:center}
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Paste sidebar dari index.html (sama persis, TAMBAH menu Developer aktif) -->
+    
+    <main class="main-content">
+      <header class="main-header">
+        <div class="header-left">
+          <button class="btn-icon" id="mobileMenuToggle"><i class="fas fa-bars"></i></button>
+          <h1 class="header-title">Role Access Manager</h1>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary btn-sm" onclick="saveRoleAccess()">
+            <i class="fas fa-save"></i> Simpan Perubahan
+          </button>
+        </div>
+      </header>
+      
+      <div class="page-content">
+        <!-- Pilih Role -->
+        <div class="role-tabs" id="roleTabs">
+          <div class="role-tab active" data-role="owner" onclick="switchRole('owner')">Owner</div>
+          <div class="role-tab" data-role="admin" onclick="switchRole('admin')">Admin</div>
+          <div class="role-tab" data-role="kasir" onclick="switchRole('kasir')">Kasir</div>
+          <div class="role-tab" data-role="developer" onclick="switchRole('developer')">Developer</div>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-shield-alt" style="color:var(--primary)"></i>
+              Permission & Menu — <span id="currentRoleLabel">Owner</span>
+            </h3>
+            <span class="badge badge-warning" id="unsavedBadge" style="display:none">Belum Disimpan</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem">
+              Centang fitur/menu yang boleh diakses oleh role ini. Perubahan akan berlaku saat user login ulang atau refresh halaman.
+            </p>
+            <div class="perm-grid" id="permGrid">
+              <!-- Di-render JS -->
+            </div>
+          </div>
+        </div>
+        
+        <!-- Info Panel -->
+        <div class="card" style="margin-top:1.5rem">
+          <div class="card-body">
+            <h4 style="margin-bottom:.75rem"><i class="fas fa-info-circle"></i> Cara Kerja</h4>
+            <ul style="font-size:.85rem;color:var(--text-secondary);padding-left:1.25rem;line-height:1.8">
+              <li><strong>Developer</strong> mengatur template permission per role di sini.</li>
+              <li>Data tersimpan di <code>settings/developer/roleAccess/{role}</code>.</li>
+              <li>Saat user login, sistem membaca config ini sebagai <strong>master permission</strong>.</li>
+              <li>Individual permission di <code>users/{uid}/permissions</code> bisa override master (kalau explicit true/false).</li>
+              <li>Kosongkan individual permission agar user mengikuti master role config.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/firebase-config.js?v=2"></script>
+  <script src="js/utils.js?v=3"></script>
+  <script src="js/auth.js"></script>
+
+  <script>
+    let currentRole = 'owner';
+    let roleData = {}; // cache local
+    let hasChanges = false;
+
+    const permissionList = [
+      { key: 'dashboard', label: 'Dashboard', icon: 'fa-home' },
+      { key: 'kasir', label: 'Kasir', icon: 'fa-cash-register' },
+      { key: 'produk', label: 'Produk', icon: 'fa-box' },
+      { key: 'riwayat', label: 'Riwayat Transaksi', icon: 'fa-history' },
+      { key: 'kas', label: 'Kas Management', icon: 'fa-wallet' },
+      { key: 'pembelian', label: 'Pembelian / Restock', icon: 'fa-shopping-cart' },
+      { key: 'hutang', label: 'Hutang & Piutang', icon: 'fa-hand-holding-usd' },
+      { key: 'laporan', label: 'Laporan Penjualan', icon: 'fa-chart-bar' },
+      { key: 'laporan-stok', label: 'Laporan Stok', icon: 'fa-boxes' },
+      { key: 'laporan-terlaris', label: 'Barang Terlaris', icon: 'fa-crown' },
+      { key: 'telegram', label: 'Saldo Telegram', icon: 'fa-telegram' },
+      { key: 'pelanggan', label: 'Data Pelanggan', icon: 'fa-users' },
+      { key: 'pengguna', label: 'Manajemen Pengguna', icon: 'fa-user-cog' },
+      { key: 'setting', label: 'Pengaturan', icon: 'fa-cog' },
+      { key: 'backup', label: 'Backup & Sync', icon: 'fa-cloud-upload-alt' },
+      { key: 'log-aktivitas', label: 'Log Aktivitas', icon: 'fa-history' },
+      { key: 'printer', label: 'Printer & Struk', icon: 'fa-print' },
+      { key: 'reset', label: 'Reset Data', icon: 'fa-trash-alt' },
+      { key: 'developer', label: 'Developer Tools', icon: 'fa-code' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Auth guard
+      auth.onAuthStateChanged(user => {
+        if (!user && !Utils.getStorage('webpos_session')) {
+          window.location.href = 'login.html';
+          return;
+        }
+        if (user) {
+          Auth.loadUserData(user.uid).then(() => {
+            const me = Auth.getCurrentUser();
+            if (!me || me.role !== 'developer') {
+              Utils.showToast('Akses ditolak: hanya Developer', 'error');
+              setTimeout(() => window.location.href = 'index.html', 1500);
+              return;
+            }
+            initRoleManager();
+          });
+        }
+      });
+    });
+
+    async function initRoleManager() {
+      await Auth.loadRoleAccess();
+      roleData = JSON.parse(JSON.stringify(Auth.roleAccessCache || {}));
+      renderGrid();
+    }
+
+    function switchRole(role) {
+      if (hasChanges && !confirm('Ada perubahan belum disimpan. Pindah role?')) return;
+      currentRole = role;
+      hasChanges = false;
+      updateBadge();
+      
+      document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`[data-role="${role}"]`).classList.add('active');
+      document.getElementById('currentRoleLabel').textContent = role.charAt(0).toUpperCase() + role.slice(1);
+      renderGrid();
+    }
+
+    function renderGrid() {
+      const cfg = roleData[currentRole] || {};
+      const grid = document.getElementById('permGrid');
+      
+      grid.innerHTML = permissionList.map(p => {
+        const checked = cfg[p.key] === true ? 'checked' : '';
+        return `
+          <div class="perm-item">
+            <div class="perm-info">
+              <div class="perm-icon"><i class="fas ${p.icon}"></i></div>
+              <span style="font-weight:500;font-size:.9rem">${p.label}</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" onchange="togglePerm('${p.key}', this.checked)" ${checked}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function togglePerm(key, val) {
+      if (!roleData[currentRole]) roleData[currentRole] = {};
+      roleData[currentRole][key] = val;
+      hasChanges = true;
+      updateBadge();
+    }
+
+    function updateBadge() {
+      document.getElementById('unsavedBadge').style.display = hasChanges ? 'inline-flex' : 'none';
+    }
+
+    async function saveRoleAccess() {
+      if (!hasChanges) { Utils.showToast('Tidak ada perubahan', 'info'); return; }
+      
+      Utils.showLoading('Menyimpan konfigurasi role...');
+      try {
+        await database.ref('settings/developer/roleAccess').set(roleData);
+        Auth.roleAccessCache = JSON.parse(JSON.stringify(roleData));
+        hasChanges = false;
+        updateBadge();
+        Utils.hideLoading();
+        Utils.showToast('Konfigurasi role tersimpan. User perlu refresh untuk melihat perubahan.', 'success');
+      } catch(e) {
+        Utils.hideLoading();
+        Utils.showToast('Gagal menyimpan: ' + e.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>
