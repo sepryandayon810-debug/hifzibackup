@@ -334,7 +334,7 @@ body{
 .cart-empty i{font-size:3rem;margin-bottom:1rem;opacity:.5}
 
 /* Cart Footer */
-.cart-footer{padding:1rem 1.25rem;border-top:1px solid var(--border-color);background:var(--bg-secondary)}
+.cart-footer{padding:0.75rem 1rem;border-top:1px solid var(--border-color);background:var(--bg-secondary)}
 .cart-summary{margin-bottom:1rem}
 .summary-row{display:flex;justify-content:space-between;margin-bottom:.5rem;font-size:.875rem}
 .summary-row.discount{color:var(--success)}
@@ -1663,21 +1663,12 @@ html,body{overflow-x:hidden;max-width:100vw}
     </div>
   </div>  <!-- ✅ BENAR: ditutup di sini setelah semua rows selesai -->
   
-  <div class="cart-actions">
-    <button class="btn btn-secondary" id="btnDiskon">
-      <i class="fas fa-percent"></i>
-      Diskon
-    </button>
-    <button class="btn btn-secondary" id="btnCatatan">
-      <i class="fas fa-sticky-note"></i>
-      Catatan
-    </button>
+    <div class="cart-actions">
     <button class="btn btn-pay" id="btnBayar">
       <i class="fas fa-credit-card"></i>
       Bayar
     </button>
   </div>
-</div>
           </div>
         </div>
       </div>
@@ -2469,25 +2460,6 @@ function renderCart() {
         renderCart();
         updateSummary();
         showToast('Keranjang dikosongkan', 'info');
-      }
-    });
-
-    // ===== DISKON =====
-    document.getElementById('btnDiskon').addEventListener('click', () => {
-      const input = prompt('Masukkan jumlah diskon (Rp):', discount);
-      if (input !== null) {
-        discount = parseInt(input) || 0;
-        saveCart();
-        updateSummary();
-      }
-    });
-
-    // ===== CATATAN =====
-    document.getElementById('btnCatatan').addEventListener('click', () => {
-      const note = prompt('Catatan untuk transaksi:', localStorage.getItem('kasir_note') || '');
-      if (note !== null) {
-        localStorage.setItem('kasir_note', note);
-        showToast('Catatan disimpan', 'success');
       }
     });
 
