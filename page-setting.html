@@ -285,10 +285,15 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
   
   <style>
-    .settings-grid {
+        .settings-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      grid-template-columns: 1fr;
       gap: 1.5rem;
+    }
+    @media (min-width: 769px) {
+      .settings-grid {
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      }
     }
 
     .setting-item {
@@ -365,29 +370,27 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       transform: translateX(24px);
     }
 
-    /* Theme Color Grid */
-   .theme-grid {
+       .theme-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
   margin-top: 1rem;
 }
 
 @media (max-width: 480px) {
-  .theme-grid { grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
-  .theme-option { padding: 0.75rem 0.5rem; }
-  .theme-color { width: 36px; height: 36px; }
+  .theme-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+  .theme-option { padding: 0.5rem 0.25rem; }
+  .theme-color { width: 32px; height: 32px; }
   .theme-name { font-size: 0.7rem; }
 }
 
 @media (min-width: 481px) and (max-width: 768px) {
-  .theme-grid { grid-template-columns: repeat(4, 1fr); }
+  .theme-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 @media (min-width: 769px) {
-  .theme-grid { grid-template-columns: repeat(5, 1fr); }
+  .theme-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; }
 }
-
     .theme-option {
       display: flex;
       flex-direction: column;
@@ -1298,6 +1301,21 @@ html, body {
   .theme-option { padding: 0.4rem 0.2rem !important; }
   .theme-color { width: 32px !important; height: 32px !important; }
   .theme-name { font-size: 0.65rem !important; }
+}
+
+/* ===== SAFETY ANTI OVERFLOW ===== */
+.card, .card-body, .tab-panel, .tab-contents {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+.card-body {
+  overflow-x: hidden !important;
+  padding: 1.25rem 1rem !important;
+}
+.form-input, .form-textarea, .btn-block {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
     
   </style>
