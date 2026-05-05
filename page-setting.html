@@ -308,8 +308,10 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       border-bottom: none;
     }
 
-    .setting-info {
+        .setting-info {
       flex: 1;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .setting-label {
@@ -575,7 +577,6 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 
 /* Mobile (max 768px) */
 @media (max-width: 768px) {
-  html { font-size: 14px !important; }
   
   :root {
     --header-height: 52px;
@@ -633,9 +634,9 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     font-size: 0.8rem !important;
   }
   
-  .theme-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 0.75rem !important;
+    .theme-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.5rem !important;
   }
   
   .theme-option {
@@ -696,16 +697,15 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 
 /* Small phone (max 380px) */
 @media (max-width: 380px) {
-  html { font-size: 13px !important; }
   
   .header-title {
     font-size: 0.9rem !important;
     max-width: 120px;
   }
   
-  .theme-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 0.5rem !important;
+    .theme-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.35rem !important;
   }
   
   .theme-color {
