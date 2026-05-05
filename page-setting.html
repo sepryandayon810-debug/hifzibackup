@@ -1101,6 +1101,32 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   .form-input, .form-textarea, .btn-block { max-width: 100% !important; box-sizing: border-box !important; }
   .setting-item { gap: 0.5rem !important; }
 }
+
+    /* ===== ROOT CAUSE FIX ===== */
+
+/* 1. Flex item TIDAK BOLEH melebar mengikuti konten */
+.main-content { min-width: 0 !important; }
+
+/* 2. Halaman tidak boleh geser horizontal */
+html, body { overflow-x: hidden !important; }
+
+/* 3. Tab wrapper = scroll container terisolasi */
+.settings-tabs-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.settings-tabs-wrapper::-webkit-scrollbar { display: none; }
+
+/* 4. Tab list lebar sesuai isi tombol */
+.settings-tabs {
+  display: flex;
+  gap: 0.5rem;
+  width: max-content;
+  padding: 0.25rem 0;
+}
     
   </style>
 </head>
