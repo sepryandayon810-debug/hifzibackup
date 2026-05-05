@@ -891,10 +891,17 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   <script src="js/sidebar-filter.js"></script>
 
   <script>
-        document.addEventListener('DOMContentLoaded', () => {
-      // Fallback: pastikan auth & database tersedia
-      window.auth = window.auth || firebase.auth();
-      window.database = window.database || firebase.database();
+      document.addEventListener('DOMContentLoaded', () => {
+  // ⭐ SAFETY: kalau dari kasir, langsung balik ke kasir
+  if (localStorage.getItem('fromKasir') === 'true') {
+    localStorage.removeItem('fromKasir');
+    window.location.replace('page-kasir.html');
+    return;
+  }
+
+  // Fallback: pastikan auth & database tersedia
+  window.auth = window.auth || firebase.auth();
+  window.database = window.database || firebase.database();
 
       auth.onAuthStateChanged((user) => {
         if (!user && !Utils.getStorage('webpos_session')) {
