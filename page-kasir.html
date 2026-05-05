@@ -2761,6 +2761,7 @@ async function processPayment() {
 
           const subtotal = cart.reduce((s, i) => s + i.total, 0);
           const profit = cart.reduce((s, i) => s + ((i.price - i.cost) * i.quantity), 0);
+          const taxAmount = 0; //
           
           // 1. Simpan transaksi kasir (status completed, tapi paymentMethod = hutang)
           const transaction = {
@@ -2926,8 +2927,7 @@ async function processPayment() {
 
         const subtotal = cart.reduce((s, i) => s + i.total, 0);
         const profit = cart.reduce((s, i) => s + ((i.price - i.cost) * i.quantity), 0);
-        const ppnAktif = document.getElementById('ppnToggle').checked;
-        const taxAmount = ppnAktif ? subtotal * TAX_RATE : 0;
+        const taxAmount = 0; // PPN dihapus dari UI, default 0
 
         const transaction = {
           id: transactionId,
