@@ -740,7 +740,10 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   overflow-x: auto;
   padding-bottom: 0.5rem;
   scrollbar-width: none;
+  max-width: 100%;
+  min-width: 0;
 }
+    
 .settings-tabs::-webkit-scrollbar { display: none; }
 
 .tab-btn {
@@ -840,7 +843,10 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 .settings-tabs-wrapper {
   position: relative;
   margin-bottom: 1.5rem;
+  max-width: 100%;
+  overflow: hidden;
 }
+    
 .settings-tabs-wrapper::after {
   content: '';
   position: absolute;
