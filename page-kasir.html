@@ -334,15 +334,64 @@ body{
 .cart-empty i{font-size:3rem;margin-bottom:1rem;opacity:.5}
 
 /* Cart Footer */
-.cart-footer{padding:0.75rem 1rem;border-top:1px solid var(--border-color);background:var(--bg-secondary)}
+.cart-footer{
+  padding:0.75rem 1rem;
+  border-top:2px solid var(--primary);
+  background:var(--bg-secondary);
+  position:relative;
+}
+.cart-footer::before{
+  content:'';
+  position:absolute;
+  top:-6px;left:50%;transform:translateX(-50%);
+  width:40px;height:4px;
+  background:var(--primary);
+  border-radius:2px;
+  opacity:0.5;
+}
 .cart-summary{margin-bottom:1rem}
 .summary-row{display:flex;justify-content:space-between;margin-bottom:.5rem;font-size:.875rem}
 .summary-row.discount{color:var(--success)}
 .summary-row.total{font-size:1.125rem;font-weight:700;color:var(--text-primary);border-top:2px solid var(--border-color);padding-top:.75rem;margin-top:.75rem}
-.cart-actions{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.cart-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:.75rem;
+  padding-top:0.5rem;
+}
 .cart-actions .btn{padding:.875rem;font-size:.875rem}
-.btn-pay{grid-column:span 2;background:linear-gradient(135deg,var(--success),#059669);color:white;font-size:1rem;padding:1rem;box-shadow:0 4px 14px rgba(16,185,129,0.3)}
-.btn-pay:hover{filter:brightness(1.05);transform:translateY(-2px);box-shadow:0 6px 20px rgba(16,185,129,0.4)}
+.btn-pay{
+  grid-column:span 2;
+  background:linear-gradient(135deg,#059669,#10b981);
+  color:white;
+  font-size:1rem;
+  font-weight:700;
+  padding:1rem;
+  border:3px solid #ffffff;
+  box-shadow:
+    0 4px 14px rgba(5,150,105,0.35),
+    0 0 0 4px rgba(16,185,129,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+  position:relative;
+  overflow:hidden;
+}
+.btn-pay::before{
+  content:'';
+  position:absolute;
+  top:0;left:-100%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);
+  transition:left 0.5s;
+}
+.btn-pay:hover{
+  filter:brightness(1.05);
+  transform:translateY(-3px);
+  box-shadow:
+    0 8px 25px rgba(5,150,105,0.45),
+    0 0 0 6px rgba(16,185,129,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.btn-pay:hover::before{left:100%}
+.btn-pay:active{transform:translateY(-1px)}
 
 /* Mobile Cart Toggle */
 .cart-toggle{position:fixed;bottom:90px;right:1rem;width:56px;height:56px;background:linear-gradient(135deg,#059669,#10b981);color:white;border:none;border-radius:50%;box-shadow:0 4px 14px rgba(5,150,105,0.35);display:none;align-items:center;justify-content:center;font-size:1.25rem;z-index:101;cursor:pointer;transition:all .2s}
