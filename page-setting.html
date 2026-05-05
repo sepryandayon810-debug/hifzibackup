@@ -728,6 +728,106 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
     align-self: flex-end;
   }
 }
+
+/* ===== SETTINGS TABS ===== */
+.settings-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: none;
+}
+.settings-tabs::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.75rem;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.tab-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.tab-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.25);
+}
+
+/* Tab Panels */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Bluetooth Device Item */
+.bt-device-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.bt-device-item:hover {
+  border-color: var(--primary);
+  background: rgba(99,102,241,0.05);
+}
+.bt-device-item.connected {
+  border-color: var(--success);
+  background: rgba(16,185,129,0.08);
+}
+.bt-device-info { display: flex; flex-direction: column; gap: 0.15rem; }
+.bt-device-name { font-weight: 600; font-size: 0.9rem; color: var(--text-primary); }
+.bt-device-mac { font-size: 0.75rem; color: var(--text-muted); }
+
+/* ===== DARK MODE FIX - PAGE SETTING ===== */
+[data-theme="dark"] .settings-tabs { /* inherit */ }
+[data-theme="dark"] .tab-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+[data-theme="dark"] .tab-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+[data-theme="dark"] .bt-device-item {
+  background: #1e293b;
+  border-color: #334155;
+}
+[data-theme="dark"] .bt-device-item:hover {
+  background: rgba(99,102,241,0.15);
+}
+[data-theme="dark"] .bt-device-name { color: #f8fafc; }
+[data-theme="dark"] #printerStatusBox { background: #1e293b !important; }
+[data-theme="dark"] .danger-zone {
+  background: rgba(239,68,68,0.05);
+}
+
+/* Mobile tabs */
+@media(max-width:768px){
+  .settings-tabs { gap: 0.4rem; margin-bottom: 1rem; }
+  .tab-btn { padding: 0.5rem 0.875rem; font-size: 0.8rem; border-radius: 0.625rem; }
+  .tab-btn i { font-size: 0.9rem; }
+  .settings-grid { gap: 1rem !important; }
+}
     
   </style>
 </head>
@@ -935,169 +1035,163 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       </header>
 
       <div class="page-content">
-        <div class="settings-grid">
-          <!-- Appearance -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title"><i class="fas fa-palette"></i> Tampilan</h3>
+  <!-- Tab Navigation -->
+  <div class="settings-tabs">
+    <button class="tab-btn active" data-tab="tab-tampilan"><i class="fas fa-palette"></i> Tampilan</button>
+    <button class="tab-btn" data-tab="tab-toko"><i class="fas fa-store"></i> Toko</button>
+    <button class="tab-btn" data-tab="tab-akun"><i class="fas fa-user-circle"></i> Akun</button>
+    <button class="tab-btn" data-tab="tab-printer"><i class="fas fa-print"></i> Printer</button>
+    <button class="tab-btn" data-tab="tab-notifikasi"><i class="fas fa-bell"></i> Notifikasi</button>
+    <button class="tab-btn" data-tab="tab-lanjutan"><i class="fas fa-cog"></i> Lanjutan</button>
+  </div>
+
+  <div class="tab-contents">
+    <!-- TAB 1: TAMPILAN -->
+    <div class="tab-panel active" id="tab-tampilan">
+      <div class="settings-grid">
+        <div class="card">
+          <div class="card-header"><h3 class="card-title"><i class="fas fa-palette"></i> Tampilan</h3></div>
+          <div class="card-body">
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="setting-label">Mode Gelap</div>
+                <div class="setting-desc">Aktifkan tema gelap</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="darkModeToggle">
+                <span class="toggle-slider"></span>
+              </label>
             </div>
-            <div class="card-body">
-              <div class="setting-item">
-                <div class="setting-info">
-                  <div class="setting-label">Mode Gelap</div>
-                  <div class="setting-desc">Aktifkan tema gelap untuk mengurangi kelelahan mata</div>
-                </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="darkModeToggle">
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-              
-              <div style="margin-top: 1.5rem;">
-                <div class="setting-label">Warna Tema</div>
-                <div class="theme-grid" id="themeGrid">
-                  <!-- Theme options will be generated by JS -->
-                </div>
-              </div>
+            <div style="margin-top:1.5rem;">
+              <div class="setting-label">Warna Tema</div>
+              <div class="theme-grid" id="themeGrid"></div>
             </div>
           </div>
-
-          <!-- Notifications -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title"><i class="fas fa-bell"></i> Notifikasi</h3>
-            </div>
-            <div class="card-body">
-              <div class="setting-item">
-                <div class="setting-info">
-                  <div class="setting-label">Notifikasi Stok Rendah</div>
-                  <div class="setting-desc">Dapatkan notifikasi saat stok produk menipis</div>
-                </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="stockNotif" checked>
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-              <div class="setting-item">
-                <div class="setting-info">
-                  <div class="setting-label">Suara Transaksi</div>
-                  <div class="setting-desc">Putar suara saat transaksi berhasil</div>
-                </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="soundToggle" checked>
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-            </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3 class="card-title"><i class="fas fa-th-list"></i> Menu Sidebar</h3></div>
+          <div class="card-body">
+            <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem">Centang menu yang ingin ditampilkan.</p>
+            <div id="menuConfigList"></div>
           </div>
+        </div>
+      </div>
+    </div>
 
-                    <!-- Menu & Akses -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title"><i class="fas fa-user-tie"></i> Menu & Akses</h3>
-            </div>
-            <div class="card-body">
-              <div class="setting-item">
-                <div class="setting-info">
-                  <div class="setting-label">Tampilkan Menu Keuangan Owner</div>
-                  <div class="setting-desc">Menu laporan keuangan pribadi owner (hanya role Owner)</div>
-                </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="settingOwnerFinance">
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-            </div>
+    <!-- TAB 2: TOKO -->
+    <div class="tab-panel" id="tab-toko">
+      <div class="settings-grid" style="grid-template-columns:1fr;max-width:600px;">
+        <div class="card">
+          <div class="card-header"><h3 class="card-title"><i class="fas fa-store"></i> Pengaturan Toko</h3></div>
+          <div class="card-body">
+            <div class="form-group"><label class="form-label">Nama Toko</label><input type="text" class="form-input" id="storeName" placeholder="Nama Toko"></div>
+            <div class="form-group"><label class="form-label">Alamat</label><textarea class="form-textarea" id="storeAddress" rows="2" placeholder="Alamat Toko"></textarea></div>
+            <div class="form-group"><label class="form-label">Telepon</label><input type="tel" class="form-input" id="storePhone" placeholder="Nomor Telepon"></div>
+            <div class="form-group"><label class="form-label">Catatan Footer Struk</label><textarea class="form-textarea" id="receiptFooterNote" rows="2" placeholder="Terima kasih telah berbelanja..."></textarea></div>
+            <button class="btn btn-primary btn-block" id="btnSaveStore"><i class="fas fa-save"></i> Simpan Perubahan</button>
           </div>
+        </div>
+      </div>
+    </div>
 
-                    <!-- Pengaturan Menu Sidebar -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title"><i class="fas fa-th-list"></i> Menu Sidebar</h3>
-              <span class="badge badge-primary">Baru</span>
-            </div>
-            <div class="card-body">
-              <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem">
-                Centang menu yang ingin ditampilkan. Nonaktifkan yang tidak perlu untuk menyederhanakan tampilan.
-              </p>
-              <div id="menuConfigList">
-                <!-- Di-render oleh JS -->
-              </div>
-            </div>
+    <!-- TAB 3: AKUN -->
+    <div class="tab-panel" id="tab-akun">
+      <div class="settings-grid" style="grid-template-columns:1fr;max-width:600px;">
+        <div class="card">
+          <div class="card-header"><h3 class="card-title"><i class="fas fa-user-circle"></i> Profil Akun</h3></div>
+          <div class="card-body">
+            <div class="form-group"><label class="form-label">Nama Lengkap</label><input type="text" class="form-input" id="userFullName" placeholder="Nama Lengkap"></div>
+            <div class="form-group"><label class="form-label">Username</label><input type="text" class="form-input" id="userUsername" disabled></div>
+            <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="userEmail" disabled></div>
+            <button class="btn btn-primary btn-block" id="btnSaveProfile" style="margin-bottom:0.75rem;"><i class="fas fa-save"></i> Simpan Nama</button>
+            <button class="btn btn-secondary btn-block" id="btnChangePassword"><i class="fas fa-key"></i> Ganti Password</button>
           </div>
+        </div>
+      </div>
+    </div>
 
-          <!-- Store Settings -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title"><i class="fas fa-store"></i> Toko</h3>
+    <!-- TAB 4: PRINTER (BARU) -->
+    <div class="tab-panel" id="tab-printer">
+      <div class="settings-grid" style="grid-template-columns:1fr;max-width:600px;">
+        <div class="card">
+          <div class="card-header"><h3 class="card-title"><i class="fas fa-print"></i> Printer Bluetooth</h3></div>
+          <div class="card-body">
+            <div id="printerStatusBox" style="padding:1rem;background:var(--bg-secondary);border-radius:var(--radius-lg);margin-bottom:1rem;text-align:center;">
+              <i class="fas fa-print" style="font-size:2rem;color:var(--text-muted);margin-bottom:0.5rem;"></i>
+              <div style="font-weight:600;color:var(--text-primary);" id="printerStatusText">Tidak terhubung</div>
+              <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem;" id="printerMacText">-</div>
             </div>
-            <div class="card-body">
-              <div class="form-group">
-                <label class="form-label">Nama Toko</label>
-                <input type="text" class="form-input" id="storeName" placeholder="Nama Toko">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Alamat</label>
-                <textarea class="form-textarea" id="storeAddress" rows="2" placeholder="Alamat Toko"></textarea>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Telepon</label>
-                <input type="tel" class="form-input" id="storePhone" placeholder="Nomor Telepon">
-              </div>
-              <div class="form-group">
-  <label class="form-label">Catatan Footer Struk</label>
-  <textarea class="form-textarea" id="receiptFooterNote" rows="2" placeholder="Terima kasih telah berbelanja..."></textarea>
-</div>
-              <button class="btn btn-primary btn-block" id="btnSaveStore">
-                <i class="fas fa-save"></i> Simpan Perubahan
+
+            <button class="btn btn-primary btn-block" id="btnScanBluetooth" style="margin-bottom:1rem;">
+              <i class="fas fa-search"></i> Scan Perangkat Bluetooth
+            </button>
+
+            <div id="bluetoothDeviceList" style="display:none;">
+              <div style="font-weight:600;margin-bottom:0.75rem;color:var(--text-secondary);">Perangkat Ditemukan:</div>
+              <div id="btDevicesContainer" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+            </div>
+
+            <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border-color);">
+              <button class="btn btn-outline btn-block" id="btnTestPrint" disabled>
+                <i class="fas fa-file-alt"></i> Test Print
+              </button>
+              <button class="btn btn-danger btn-block" id="btnDisconnectPrinter" style="margin-top:0.5rem;" disabled>
+                <i class="fas fa-unlink"></i> Putuskan Koneksi
               </button>
             </div>
-          </div>
 
-          <!-- Account -->
-<div class="card">
-  <div class="card-header">
-    <h3 class="card-title"><i class="fas fa-user-circle"></i> Akun</h3>
-  </div>
-  <div class="card-body">
-    <div class="form-group">
-      <label class="form-label">Nama Lengkap</label>
-      <input type="text" class="form-input" id="userFullName" placeholder="Nama Lengkap">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Username</label>
-      <input type="text" class="form-input" id="userUsername" disabled>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Email</label>
-      <input type="email" class="form-input" id="userEmail" disabled>
-    </div>
-    
-    <!-- Tombol Simpan Nama -->
-    <button class="btn btn-primary btn-block" id="btnSaveProfile" style="margin-bottom: 0.75rem;">
-      <i class="fas fa-save"></i> Simpan Perubahan Nama
-    </button>
-    
-    <button class="btn btn-secondary btn-block" id="btnChangePassword">
-      <i class="fas fa-key"></i> Ganti Password
-    </button>
-
-          <!-- Danger Zone -->
-          <div class="card" style="grid-column: 1/-1;">
-            <div class="card-body">
-              <div class="danger-zone">
-                <div class="danger-zone-title"><i class="fas fa-exclamation-triangle"></i> Zona Berbahaya</div>
-                <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
-                  Tindakan berikut tidak dapat dibatalkan. Harap berhati-hati.
-                </p>
-                <button class="btn btn-danger" id="btnClearData">
-                  <i class="fas fa-trash"></i> Hapus Semua Data
-                </button>
-              </div>
+            <div style="margin-top:1rem;padding:0.75rem;background:rgba(245,158,11,0.1);border:1px solid var(--warning);border-radius:var(--radius-lg);font-size:0.8rem;color:var(--warning);">
+              <i class="fas fa-info-circle"></i> Fitur Bluetooth hanya berfungsi di APK Android. Di browser, gunakan tombol Test untuk simulasi.
             </div>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- TAB 5: NOTIFIKASI -->
+    <div class="tab-panel" id="tab-notifikasi">
+      <div class="settings-grid" style="grid-template-columns:1fr;max-width:600px;">
+        <div class="card">
+          <div class="card-header"><h3 class="card-title"><i class="fas fa-bell"></i> Notifikasi</h3></div>
+          <div class="card-body">
+            <div class="setting-item">
+              <div class="setting-info"><div class="setting-label">Notifikasi Stok Rendah</div><div class="setting-desc">Dapatkan notifikasi saat stok menipis</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="stockNotif" checked><span class="toggle-slider"></span></label>
+            </div>
+            <div class="setting-item">
+              <div class="setting-info"><div class="setting-label">Suara Transaksi</div><div class="setting-desc">Putar suara saat transaksi berhasil</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="soundToggle" checked><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: LANJUTAN -->
+    <div class="tab-panel" id="tab-lanjutan">
+      <div class="settings-grid" style="grid-template-columns:1fr;max-width:600px;">
+        <div class="card">
+          <div class="card-header"><h3 class="card-title"><i class="fas fa-user-tie"></i> Menu & Akses</h3></div>
+          <div class="card-body">
+            <div class="setting-item">
+              <div class="setting-info"><div class="setting-label">Menu Keuangan Owner</div><div class="setting-desc">Menu laporan keuangan pribadi owner</div></div>
+              <label class="toggle-switch"><input type="checkbox" id="settingOwnerFinance"><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="danger-zone">
+              <div class="danger-zone-title"><i class="fas fa-exclamation-triangle"></i> Zona Berbahaya</div>
+              <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:1rem;">Tindakan berikut tidak dapat dibatalkan.</p>
+              <button class="btn btn-danger" id="btnClearData"><i class="fas fa-trash"></i> Hapus Semua Data</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
     </main>
 
     <nav class="mobile-nav">
@@ -1690,6 +1784,167 @@ themeGrid.innerHTML = allThemes.map(theme => `
 
          // ⭐ TAMBAH 1 BARIS INI
         applyMenuVisibility();
+
+                // ===== TAB SWITCHING =====
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(btn.dataset.tab).classList.add('active');
+            // Simpan tab aktif
+            localStorage.setItem('settings_active_tab', btn.dataset.tab);
+          });
+        });
+        // Restore tab
+        const savedTab = localStorage.getItem('settings_active_tab');
+        if (savedTab && document.getElementById(savedTab)) {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          document.querySelector(`.tab-btn[data-tab="${savedTab}"]`)?.classList.add('active');
+          document.getElementById(savedTab)?.classList.add('active');
+        }
+
+        // ===== DARK MODE FIX =====
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const htmlEl = document.documentElement;
+        // Cek dari localStorage langsung (fallback kalau Utils tidak set)
+        const isDark = localStorage.getItem('webpos_theme') === 'dark' || Utils.Theme.isDarkMode();
+        darkModeToggle.checked = isDark;
+        if (isDark) htmlEl.setAttribute('data-theme', 'dark');
+        else htmlEl.setAttribute('data-theme', 'light');
+
+        darkModeToggle.addEventListener('change', () => {
+          const on = darkModeToggle.checked;
+          htmlEl.setAttribute('data-theme', on ? 'dark' : 'light');
+          localStorage.setItem('webpos_theme', on ? 'dark' : 'light');
+          localStorage.setItem('webpos_theme_broadcast', Date.now().toString());
+          // Panggil Utils juga kalau ada
+          if (Utils.Theme.setDarkMode) Utils.Theme.setDarkMode(on);
+        });
+
+        document.getElementById('btnTheme').addEventListener('click', () => {
+          const current = htmlEl.getAttribute('data-theme') === 'dark';
+          const next = !current;
+          htmlEl.setAttribute('data-theme', next ? 'dark' : 'light');
+          localStorage.setItem('webpos_theme', next ? 'dark' : 'light');
+          darkModeToggle.checked = next;
+          if (Utils.Theme.setDarkMode) Utils.Theme.setDarkMode(next);
+        });
+
+        // ===== BLUETOOTH PRINTER =====
+        const printerMac = localStorage.getItem('webpos_printer_mac');
+        const printerName = localStorage.getItem('webpos_printer_name');
+        const statusBox = document.getElementById('printerStatusBox');
+        const statusText = document.getElementById('printerStatusText');
+        const macText = document.getElementById('printerMacText');
+        const btnTest = document.getElementById('btnTestPrint');
+        const btnDisconnect = document.getElementById('btnDisconnectPrinter');
+
+        function updatePrinterUI() {
+          const mac = localStorage.getItem('webpos_printer_mac');
+          const name = localStorage.getItem('webpos_printer_name');
+          if (mac) {
+            statusBox.style.background = 'rgba(16,185,129,0.1)';
+            statusBox.style.border = '1.5px solid var(--success)';
+            statusText.textContent = name || 'Printer Terhubung';
+            statusText.style.color = 'var(--success)';
+            macText.textContent = mac;
+            btnTest.disabled = false;
+            btnDisconnect.disabled = false;
+          } else {
+            statusBox.style.background = 'var(--bg-secondary)';
+            statusBox.style.border = 'none';
+            statusText.textContent = 'Tidak terhubung';
+            statusText.style.color = 'var(--text-primary)';
+            macText.textContent = '-';
+            btnTest.disabled = true;
+            btnDisconnect.disabled = true;
+          }
+        }
+        updatePrinterUI();
+
+        // Scan Bluetooth
+        document.getElementById('btnScanBluetooth').addEventListener('click', async () => {
+          const container = document.getElementById('bluetoothDeviceList');
+          const list = document.getElementById('btDevicesContainer');
+          list.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Mencari...</div>';
+          container.style.display = 'block';
+
+          // Coba pakai bluetoothSerial (Cordova/Capacitor)
+          if (window.bluetoothSerial) {
+            window.bluetoothSerial.list((devices) => {
+              renderBTDevices(devices);
+            }, (err) => {
+              list.innerHTML = `<div style="color:var(--danger);text-align:center;">Gagal scan: ${err}</div>`;
+            });
+          } else {
+            // Fallback: simulasi/demo mode
+            setTimeout(() => {
+              renderBTDevices([
+                { name: 'Printer Thermal XP-58', id: '00:11:22:33:44:55' },
+                { name: 'Bluetooth Printer', id: '66:77:88:99:AA:BB' }
+              ], true);
+            }, 1500);
+          }
+        });
+
+        function renderBTDevices(devices, isDemo = false) {
+          const list = document.getElementById('btDevicesContainer');
+          if (!devices || devices.length === 0) {
+            list.innerHTML = '<div style="text-align:center;color:var(--text-muted);">Tidak ada perangkat ditemukan</div>';
+            return;
+          }
+          list.innerHTML = devices.map(d => `
+            <div class="bt-device-item" onclick="connectPrinter('${d.id}', '${d.name.replace(/'/g,"\\'")}')">
+              <div class="bt-device-info">
+                <span class="bt-device-name"><i class="fas fa-print" style="margin-right:0.35rem;color:var(--primary);"></i>${d.name || 'Unknown'}</span>
+                <span class="bt-device-mac">${d.id}</span>
+              </div>
+              <button class="btn btn-sm btn-primary" style="padding:0.4rem 0.75rem;font-size:0.75rem;">
+                <i class="fas fa-link"></i> Hubungkan
+              </button>
+            </div>
+          `).join('');
+          if (isDemo) {
+            list.innerHTML += '<div style="font-size:0.7rem;color:var(--warning);text-align:center;margin-top:0.5rem;">⚠️ Mode demo (browser). Install APK untuk scan real.</div>';
+          }
+        }
+
+        window.connectPrinter = (mac, name) => {
+          localStorage.setItem('webpos_printer_mac', mac);
+          localStorage.setItem('webpos_printer_name', name || 'Printer');
+          Utils.showToast(`Printer ${name} tersimpan`, 'success');
+          updatePrinterUI();
+          document.getElementById('bluetoothDeviceList').style.display = 'none';
+        };
+
+        // Test Print
+        document.getElementById('btnTestPrint').addEventListener('click', () => {
+          const mac = localStorage.getItem('webpos_printer_mac');
+          if (!mac) return;
+          if (window.bluetoothSerial) {
+            const ESC = '\x1B';
+            const GS = '\x1D';
+            const data = ESC + '\x40' + ESC + '\x61\x01' + 'TEST PRINT\n' + 'WebPOS Printer OK\n' + '\n\n\n' + GS + '\x56\x41\x03';
+            window.bluetoothSerial.connect(mac, () => {
+              window.bluetoothSerial.write(data, () => {
+                window.bluetoothSerial.disconnect(() => {}, () => {});
+                Utils.showToast('Test print berhasil', 'success');
+              }, (err) => Utils.showToast('Gagal print: ' + err, 'error'));
+            }, (err) => Utils.showToast('Gagal konek: ' + err, 'error'));
+          } else {
+            Utils.showToast('Test print (simulasi browser) - OK', 'info');
+          }
+        });
+
+        // Disconnect
+        document.getElementById('btnDisconnectPrinter').addEventListener('click', () => {
+          localStorage.removeItem('webpos_printer_mac');
+          localStorage.removeItem('webpos_printer_name');
+          updatePrinterUI();
+          Utils.showToast('Printer diputuskan', 'info');
+        });
         
         // Dropdown menus
         document.querySelectorAll('[data-dropdown]').forEach(dropdown => {
