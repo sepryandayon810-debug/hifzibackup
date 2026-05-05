@@ -1545,19 +1545,6 @@ themeGrid.innerHTML = allThemes.map(theme => `
           Utils.confirm('Yakin ingin logout?', () => Auth.logout());
         });
 
-        // Dark mode toggle
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        darkModeToggle.checked = Utils.Theme.isDarkMode();
-        
-        darkModeToggle.addEventListener('change', () => {
-          Utils.Theme.setDarkMode(darkModeToggle.checked);
-        });
-
-        // Theme button in header
-        document.getElementById('btnTheme').addEventListener('click', () => {
-          const isDark = Utils.Theme.toggleDarkMode();
-          darkModeToggle.checked = isDark;
-        });
 
         // Load store settings
         loadStoreSettings();
@@ -1989,7 +1976,10 @@ themeGrid.innerHTML = allThemes.map(theme => `
         })();
 
          // ⭐ TAMBAH 1 BARIS INI
-        applyMenuVisibility();
+        // applyMenuVisibility - aman kalau fungsi tidak ada
+        if (typeof applyMenuVisibility === 'function') {
+          applyMenuVisibility();
+        }
 
                 // ===== TAB SWITCHING =====
         document.querySelectorAll('.tab-btn').forEach(btn => {
