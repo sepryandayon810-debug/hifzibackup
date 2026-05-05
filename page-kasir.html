@@ -1098,6 +1098,106 @@ html,body{overflow-x:hidden;max-width:100vw}
       border-top: 1px solid var(--border-color);
     }
     .struk-actions .btn { flex: 1; }
+
+    /* ============================================
+   MODAL PEMBAYARAN - TOMBOL ATAS MOBILE
+   ============================================ */
+
+/* Default: tombol atas hidden di desktop */
+.modal-actions-mobile{display:none;align-items:center;gap:0.75rem}
+
+/* Desktop: footer normal, tombol atas hidden */
+@media(min-width:769px){
+  .modal-actions-mobile{display:none!important}
+}
+
+/* Mobile: pindah ke atas */
+@media(max-width:768px){
+  /* Tampilkan tombol aksi di header */
+  .modal-actions-mobile{display:flex!important}
+  
+  /* Sembunyikan close button bawaan (sudah diganti X batal) */
+  #paymentModal .modal-header .modal-close{display:none!important}
+  
+  /* Sembunyikan footer modal di mobile */
+  #paymentModal .modal-footer{display:none!important}
+  
+  /* Header modal lebih tinggi buat tombol */
+  #paymentModal .modal-header{
+    padding:0.75rem 1rem!important;
+    height:64px!important;
+    min-height:64px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+  }
+  
+  #paymentModal .modal-title{font-size:1.2rem!important;font-weight:700!important}
+  
+  /* Tombol X Batal */
+  .btn-mobile-cancel{
+    width:48px!important;
+    height:48px!important;
+    min-width:48px!important;
+    min-height:48px!important;
+    border-radius:50%!important;
+    padding:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    background:#f1f5f9!important;
+    border:2px solid #e2e8f0!important;
+    color:#64748b!important;
+    font-size:1.25rem!important;
+    cursor:pointer;
+    transition:all 0.15s;
+    box-shadow:0 2px 6px rgba(0,0,0,0.08)!important;
+  }
+  .btn-mobile-cancel:active{
+    transform:scale(0.92)!important;
+    background:#e2e8f0!important;
+  }
+  
+  /* Tombol ✓ Bayar */
+  .btn-mobile-confirm{
+    width:52px!important;
+    height:52px!important;
+    min-width:52px!important;
+    min-height:52px!important;
+    border-radius:50%!important;
+    padding:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    background:linear-gradient(135deg,#059669,#10b981)!important;
+    border:none!important;
+    color:white!important;
+    font-size:1.4rem!important;
+    cursor:pointer;
+    transition:all 0.15s;
+    box-shadow:0 4px 14px rgba(5,150,105,0.35)!important;
+  }
+  .btn-mobile-confirm:active{
+    transform:scale(0.92)!important;
+    filter:brightness(0.95)!important;
+  }
+  
+  /* Modal body lebih lega karena footer hilang */
+  #paymentModal .modal-body{
+    padding:0.75rem 1rem 1.25rem!important;
+    gap:0.5rem!important;
+  }
+  
+  /* Numpad lebih lega */
+  #paymentModal .numpad{
+    margin-bottom:0.5rem!important;
+    min-height:280px!important;
+  }
+  #paymentModal .numpad-btn{
+    font-size:1.5rem!important;
+    font-weight:700!important;
+  }
+}
     
 </style>
 </head>
@@ -1514,11 +1614,19 @@ html,body{overflow-x:hidden;max-width:100vw}
   <div class="modal-overlay" id="paymentModal">
     <div class="modal" style="max-width:400px;">
       <div class="modal-header">
-        <h3 class="modal-title">Pembayaran</h3>
-        <button class="modal-close" id="closePaymentModal">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
+  <h3 class="modal-title">Pembayaran</h3>
+  <div class="modal-actions-mobile">
+    <button class="btn btn-mobile-cancel" id="btnCancelPayment" title="Batal">
+      <i class="fas fa-times"></i>
+    </button>
+    <button class="btn btn-mobile-confirm" id="btnConfirmPayment" title="Proses Bayar">
+      <i class="fas fa-check"></i>
+    </button>
+  </div>
+  <button class="modal-close" id="closePaymentModal">
+    <i class="fas fa-times"></i>
+  </button>
+</div>
       <div class="modal-body">
         <div class="payment-methods">
           <div class="payment-method active" data-method="cash">
