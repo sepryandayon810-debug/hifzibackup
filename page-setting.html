@@ -285,7 +285,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
   
   <style>
-        .settings-grid {
+    .settings-grid {
       display: grid;
       grid-template-columns: 1fr;
       gap: 1.5rem;
@@ -370,7 +370,7 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
       transform: translateX(24px);
     }
 
-       .theme-grid {
+         .theme-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
@@ -379,9 +379,9 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 
 @media (max-width: 480px) {
   .theme-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
-  .theme-option { padding: 0.5rem 0.25rem; }
+  .theme-option { padding: 0.5rem 0.25rem; min-width: 0; overflow: hidden; }
   .theme-color { width: 32px; height: 32px; }
-  .theme-name { font-size: 0.7rem; }
+  .theme-name { font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 
 @media (min-width: 481px) and (max-width: 768px) {
@@ -1025,219 +1025,6 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
   }
 }
 
-/* ===== SAFETY: PASTIKAN TIDAK ADA HORIZONTAL SCROLL ===== */
-html, body {
-  overflow-x: hidden !important;
-  max-width: 100vw !important;
-}
-
-.tab-panel {
-  overflow-x: hidden !important;
-  width: 100% !important;
-}
-
-   /* ============================================
-   FIX ANTI-TERPOTONG / OVERFLOW ALL DEVICES
-   ============================================ */
-
-/* 1. Semua container grid bisa shrink */
-.settings-grid,
-.tab-panel > .settings-grid,
-.tab-panel .settings-grid {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
-}
-
-/* 2. Card tidak pernah melebihi layar */
-.card {
-  max-width: 100% !important;
-  min-width: 0 !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-}
-.card-body {
-  max-width: 100% !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
-}
-
-/* 3. Theme grid: pakai fr agar selalu muat, hapus auto-fill */
-.theme-grid {
-  display: grid !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
-  /* Default aman: 3 kolom */
-  grid-template-columns: repeat(3, 1fr) !important;
-  gap: 0.5rem !important;
-}
-
-/* Theme option: boleh shrink sampai 0 */
-.theme-option {
-  min-width: 0 !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-  padding: 0.5rem 0.25rem !important;
-}
-
-/* Theme color: responsif, tidak memaksa lebar */
-.theme-color {
-  width: clamp(28px, 10vw, 40px) !important;
-  height: clamp(28px, 10vw, 40px) !important;
-  min-width: 0 !important;
-  margin: 0 auto !important;
-}
-
-/* Theme name: wrap jika panjang */
-.theme-name {
-  font-size: 0.7rem !important;
-  word-break: break-word !important;
-  overflow-wrap: anywhere !important;
-  text-align: center !important;
-  line-height: 1.2 !important;
-  min-width: 0 !important;
-}
-
-/* 4. Per breakpoint theme grid */
-@media (min-width: 481px) {
-  .theme-grid { grid-template-columns: repeat(4, 1fr) !important; }
-}
-@media (min-width: 769px) {
-  .theme-grid { grid-template-columns: repeat(5, 1fr) !important; gap: 0.75rem !important; }
-  .theme-option { padding: 0.75rem 0.5rem !important; }
-}
-@media (min-width: 1025px) {
-  .theme-grid { grid-template-columns: repeat(6, 1fr) !important; }
-}
-
-/* 5. Tab contents & page safety */
-.tab-contents,
-.tab-panel,
-.page-content {
-  max-width: 100% !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
-}
-.tab-panel {
-  overflow-x: hidden !important;
-}
-
-/* 6. Settings tabs wrapper tidak overflow */
-.settings-tabs-wrapper {
-  max-width: 100% !important;
-  overflow: hidden !important;
-}
-.settings-tabs {
-  max-width: 100% !important;
-  min-width: 0 !important;
-}
-
-/* 7. Form tidak overflow */
-.form-input,
-.form-textarea {
-  max-width: 100% !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
-}
-
-/* 8. BT device list tidak overflow */
-.bt-device-item {
-  max-width: 100% !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
-}
-.bt-device-name {
-  word-break: break-word !important;
-  min-width: 0 !important;
-}
-
-/* 9. Safety html body */
-html, body {
-  max-width: 100vw !important;
-  overflow-x: hidden !important;
-}
-
-    /* ============================================
-   FIX: FONT BESAR + ANTI OVERFLOW/TERPOTONG
-   ============================================ */
-
-/* 1. BASE FONT BESAR SEMUA DEVICE */
-.page-content { font-size: 1rem !important; }
-.setting-label { font-size: 1rem !important; font-weight: 700 !important; }
-.setting-desc { font-size: 0.875rem !important; }
-.card-title { font-size: 1.1rem !important; }
-
-/* 2. THEME GRID: PAKAI % AGAR TIDAK OVERFLOW */
-.theme-grid {
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 0.5rem !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-}
-.theme-option {
-  min-width: 0 !important;
-  padding: 0.625rem 0.25rem !important;
-  border-radius: 0.75rem !important;
-}
-.theme-color {
-  width: clamp(32px, 12vw, 44px) !important;
-  height: clamp(32px, 12vw, 44px) !important;
-  margin: 0 auto !important;
-}
-.theme-name {
-  font-size: 0.75rem !important;
-  font-weight: 600 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  width: 100% !important;
-  text-align: center !important;
-}
-
-/* 3. CARD & CONTAINER TIDAK BOLEH MELEBAR */
-.card, .card-body, .tab-panel, .tab-contents {
-  max-width: 100% !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
-  overflow-x: hidden !important;
-}
-.card-body { padding: 1.25rem 1rem !important; }
-
-/* 4. FORM INPUT BESAR & TIDAK OVERFLOW */
-.form-input, .form-textarea {
-  font-size: 1rem !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-}
-
-/* 5. TAB BUTTON BESAR */
-.tab-btn {
-  font-size: 0.85rem !important;
-  font-weight: 700 !important;
-  padding: 0.5rem 0.875rem !important;
-}
-
-/* 6. PER DEVICE */
-@media (min-width: 481px) {
-  .theme-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
-}
-@media (min-width: 769px) {
-  .theme-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 0.75rem !important; }
-  .theme-option { padding: 1rem 0.5rem !important; }
-  .theme-name { font-size: 0.8rem !important; }
-}
-@media (max-width: 380px) {
-  .theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-  .theme-color { width: 40px !important; height: 40px !important; }
-  .theme-name { font-size: 0.8rem !important; }
-  .setting-label { font-size: 0.95rem !important; }
-}
-
     /* ============================================
    FINAL FIX: THEME GRID ANTI OVERFLOW
    ============================================ */
@@ -1316,6 +1103,15 @@ html, body {
 .form-input, .form-textarea, .btn-block {
   max-width: 100% !important;
   box-sizing: border-box !important;
+}
+
+    /* ===== SAFETY ANTI OVERFLOW ===== */
+@media (max-width: 768px) {
+  .page-content { padding: 0.5rem !important; }
+  .card-body { padding: 1rem 0.75rem !important; overflow-x: hidden !important; }
+  .tab-btn { padding: 0.4rem 0.6rem !important; font-size: 0.75rem !important; }
+  .form-input, .form-textarea, .btn-block { max-width: 100% !important; box-sizing: border-box !important; }
+  .setting-item { gap: 0.5rem !important; }
 }
     
   </style>
