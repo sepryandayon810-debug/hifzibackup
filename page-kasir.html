@@ -1549,8 +1549,14 @@ html,body{overflow-x:hidden;max-width:100vw}
         </div>
 
         <!-- Hidden Kas Actions -->
-        <a href="page-kas-masuk.html" class="kas-hidden-btn kas-masuk" onclick="localStorage.setItem('fromKasir','true')">
-        <a href="page-kas-keluar.html" class="kas-hidden-btn kas-keluar" onclick="localStorage.setItem('fromKasir','true')">
+        <div class="kas-hidden-actions">
+          <a href="page-kas-masuk.html" class="kas-hidden-btn kas-masuk" onclick="localStorage.setItem('fromKasir','true')">
+            <i class="fas fa-arrow-up"></i> Kas Masuk
+          </a>
+          <a href="page-kas-keluar.html" class="kas-hidden-btn kas-keluar" onclick="localStorage.setItem('fromKasir','true')">
+            <i class="fas fa-arrow-down"></i> Kas Keluar
+          </a>
+        </div>
 
         <!-- Kasir Layout -->
         <div class="kasir-layout">
@@ -1810,8 +1816,8 @@ html,body{overflow-x:hidden;max-width:100vw}
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" id="btnCancelPayment">Batal</button>
-        <button class="btn btn-success" id="btnConfirmPayment">
+        <button class="btn btn-secondary" id="btnCancelPaymentDesktop">Batal</button>
+        <button class="btn btn-success" id="btnConfirmPaymentDesktop">
           <i class="fas fa-check"></i>
           Proses Bayar
         </button>
@@ -2471,9 +2477,14 @@ function renderCart() {
       paymentModal.classList.remove('active');
     });
 
-    document.getElementById('btnCancelPayment').addEventListener('click', () => {
-      paymentModal.classList.remove('active');
-    });
+   // Mobile cancel
+document.getElementById('btnCancelPayment').addEventListener('click', () => {
+  paymentModal.classList.remove('active');
+});
+// Desktop cancel
+document.getElementById('btnCancelPaymentDesktop').addEventListener('click', () => {
+  paymentModal.classList.remove('active');
+});
         // Payment method selection
     document.querySelectorAll('.payment-method').forEach(m => {
       m.addEventListener('click', () => {
@@ -2578,7 +2589,12 @@ function updatePaymentDisplay() {
     }
 
         // ===== PROSES BAYAR =====
-    document.getElementById('btnConfirmPayment').addEventListener('click', async () => {
+    // Mobile confirm
+document.getElementById('btnConfirmPayment').addEventListener('click', processPayment);
+// Desktop confirm  
+document.getElementById('btnConfirmPaymentDesktop').addEventListener('click', processPayment);
+
+async function processPayment() {
       const total = calculateTotal();
 
       // ⭐ MODE OFFLINE
