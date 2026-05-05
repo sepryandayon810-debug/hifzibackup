@@ -1234,6 +1234,71 @@ html, body {
   .theme-name { font-size: 0.8rem !important; }
   .setting-label { font-size: 0.95rem !important; }
 }
+
+    /* ============================================
+   FINAL FIX: THEME GRID ANTI OVERFLOW
+   ============================================ */
+
+/* 1. Grid tema: minmax(0,1fr) = kolom BOLEH shrink sampai 0 */
+#tab-tampilan .theme-grid,
+.tab-panel .theme-grid,
+.theme-grid {
+  display: grid !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0.5rem !important;
+}
+
+/* 2. Item theme: overflow hidden agar teks tidak memaksa lebar */
+#tab-tampilan .theme-option,
+.tab-panel .theme-option,
+.theme-option {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  padding: 0.5rem 0.25rem !important;
+}
+
+/* 3. Nama tema: ellipsis, tidak memaksa lebar parent */
+#tab-tampilan .theme-name,
+.tab-panel .theme-name,
+.theme-name {
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  text-align: center !important;
+  display: block !important;
+}
+
+/* 4. Card body: pastikan tidak overflow */
+#tab-tampilan .card-body,
+.tab-panel .card-body {
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* 5. Per device */
+@media (min-width: 481px) {
+  .theme-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+}
+@media (min-width: 769px) {
+  .theme-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; gap: 0.75rem !important; }
+  .theme-option { padding: 0.75rem 0.5rem !important; }
+}
+@media (max-width: 380px) {
+  .theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 0.35rem !important; }
+  .theme-option { padding: 0.4rem 0.2rem !important; }
+  .theme-color { width: 32px !important; height: 32px !important; }
+  .theme-name { font-size: 0.65rem !important; }
+}
     
   </style>
 </head>
