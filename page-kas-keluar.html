@@ -711,9 +711,16 @@ body{
           status: 'completed'
         });
 
-        Utils.hideLoading();
+                Utils.hideLoading();
         Utils.showToast(`Kas keluar ${Utils.formatRupiah(amount)} berhasil disimpan!`, 'success');
-        setTimeout(() => window.location.href = 'page-kas.html', 1500);
+
+        // ⭐ KEMBALI KE KASIR kalau dari kasir
+        if (localStorage.getItem('fromKasir') === 'true') {
+          localStorage.removeItem('fromKasir');
+          setTimeout(() => window.location.href = 'page-kasir.html', 800);
+        } else {
+          setTimeout(() => window.location.href = 'page-kas.html', 1500);
+        }
       } catch (error) {
         Utils.hideLoading();
         Utils.showToast('Gagal menyimpan: ' + error.message, 'error');
