@@ -1032,6 +1032,40 @@ html, body {
   overflow-x: hidden !important;
   width: 100% !important;
 }
+
+    /* ===== BATAS LEBAR KONTEN AGAR TIDAK MELEBAR ===== */
+.tab-contents {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Desktop: konten tab tampilan 2 kolom */
+@media (min-width: 1025px) {
+  .tab-contents {
+    max-width: 1200px;
+  }
+}
+
+/* Tablet: konten tetap rapi */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tab-contents {
+    max-width: 100%;
+    padding: 0 0.5rem;
+  }
+}
+
+/* Mobile: full width tanpa padding ekstra */
+@media (max-width: 768px) {
+  .tab-contents {
+    max-width: 100%;
+    padding: 0;
+  }
+  
+  .page-content {
+    padding: 0.75rem !important;
+  }
+}
     
   </style>
 </head>
