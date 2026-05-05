@@ -843,34 +843,16 @@ input:checked+.toggle-slider:before{transform:translateX(24px)}
 .settings-tabs-wrapper {
   position: relative;
   margin-bottom: 1.5rem;
-  max-width: 100%;
-  overflow: hidden;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.settings-tabs-wrapper::-webkit-scrollbar {
+  display: none;
 }
     
-.settings-tabs-wrapper::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0.5rem;
-  width: 40px;
-  background: linear-gradient(to right, transparent, var(--bg-primary));
-  pointer-events: none;
-  opacity: 0.8;
-  border-radius: 0 0 0 0.75rem;
-}
-[data-theme="dark"] .settings-tabs-wrapper::after {
-  background: linear-gradient(to right, transparent, #0f172a);
-}
-
-/* Tab base sudah ada, tambahkan snap biar enak di-swipe */
-.settings-tabs {
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-}
-.tab-btn {
-  scroll-snap-align: start;
-}
 
 /* ===== RESPONSIVE TAB ===== */
 @media (max-width: 768px) {
