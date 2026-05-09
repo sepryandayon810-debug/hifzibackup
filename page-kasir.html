@@ -2192,11 +2192,15 @@ Object.values(txData).forEach(tx => {
         document.getElementById('totalPenjualan').textContent = formatRupiah(totalPenjualan);
 document.getElementById('kasDitangan').textContent = formatRupiah(kasDitangan);
 document.getElementById('totalTransaksi').textContent = transaksiCount.toLocaleString('id-ID');
-try {
-  localStorage.setItem('header_totalPenjualan', formatRupiah(totalPenjualan));
-  localStorage.setItem('header_kasDitangan', formatRupiah(kasDitangan));
-  localStorage.setItem('header_totalTransaksi', transaksiCount.toString());
-} catch(e) {}
+        // Simpan ke localStorage untuk offline
+        try {
+          localStorage.setItem('header_totalPenjualan', formatRupiah(totalPenjualan));
+          localStorage.setItem('header_kasDitangan', formatRupiah(kasDitangan));
+          localStorage.setItem('header_totalTransaksi', transaksiCount.toString());
+        } catch(e) {}
+      } catch (err) {
+        console.error('Error loadHeaderStats:', err);
+      }
 }
     // ===== STATE =====
     let products = [];
