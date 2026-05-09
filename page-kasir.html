@@ -1624,15 +1624,19 @@ html,body{overflow-x:hidden;max-width:100vw}
         </div>
 
         <div class="header-stats" id="headerStats">
-          <div class="stat-item">
-            <span class="stat-label">Kas di Tangan</span>
-            <span class="stat-value" id="kasDitangan">Rp 0</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Total Penjualan</span>
-            <span class="stat-value positive" id="totalPenjualan">Rp 0</span>
-          </div>
-        </div>
+  <div class="stat-item">
+    <span class="stat-label">Kas di Tangan</span>
+    <span class="stat-value" id="kasDitangan">Rp 0</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-label">Total Transaksi</span>
+    <span class="stat-value" id="totalTransaksi">0</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-label">Total Penjualan</span>
+    <span class="stat-value positive" id="totalPenjualan">Rp 0</span>
+  </div>
+</div>
 
         <div class="header-actions">
           <button class="btn-icon" id="btnScan" title="Scan Barcode">
@@ -2094,45 +2098,66 @@ document.addEventListener('click', (e) => {
         async function loadHeaderStats() {
       // ⭐ OFFLINE: pakai data tersimpan
       if (!navigator.onLine) {
-        const savedPenjualan = localStorage.getItem('header_totalPenjualan');
-        const savedKas = localStorage.getItem('header_kasDitangan');
-        if (savedPenjualan) document.getElementById('totalPenjualan').textContent = savedPenjualan;
-        if (savedKas) document.getElementById('kasDitangan').textContent = savedKas;
-        return;
-      }
+  const savedPenjualan = localStorage.getItem('header_totalPenjualan');
+  const savedKas = localStorage.getItem('header_kasDitangan');
+  const savedTransaksi = localStorage.getItem('header_totalTransaksi');
+  if (savedPenjualan) document.getElementById('totalPenjualan').textContent = savedPenjualan;
+  if (savedKas) document.getElementById('kasDitangan').textContent = savedKas;
+  if (savedTransaksi) document.getElementById('totalTransaksi').textContent = savedTransaksi;
+  return;
+}
 
       const today = new Date();
       const todayStr = today.getFullYear() + '-' +
         String(today.getMonth() + 1).padStart(2, '0') + '-' +
         String(today.getDate()).padStart(2, '0');
+      const db = firebase.database();
       // --- Total Penjualan dari transaksi hari ini ---
       try {
         const txSnapshot = await firebase.database().ref('transactions/' + todayStr).once('value');
         const txData = txSnapshot.val() || {};
 
-        let totalPenjualan = 0;
-        let kasTunai = 0;
-        Object.values(txData).forEach(tx => {
-          if (tx.status === 'completed') {
-            totalPenjualan += tx.total || 0;
-            if (!tx.paymentMethod || tx.paymentMethod === 'cash') {
-              kasTunai += tx.total || 0;
-            }
-          }
-        });
+      let totalPenjualan = 0;
+let kasDariPenjualanTunai = 0;
+let transaksiCount = 0;
 
-                // Hitung kas ditangan dari transaksi hari ini (tunai)
-        let kasDariPenjualanTunai = 0;
-        let kasDitangan = 0;
-        
-        // Hitung penjualan tunai dari transaksi
-        Object.values(txData).forEach(tx => {
-          if (tx.status === 'completed' && (!tx.paymentMethod || tx.paymentMethod === 'cash')) {
-            kasDariPenjualanTunai += tx.total || 0;
-          }
-        });
+Object.values(txData).forEach(tx => {
+  // ⭐ SAMA PERSIS DASHBOARD: skip cancelled & voided
+  if (tx.status !== 'cancelled' && tx.status !== 'voided') {
+    switch (tx.type) {
+      case 'penjualan':
+        totalPenjualan += tx.total || 0;
+        if (!tx.paymentMethod || tx.paymentMethod === 'cash') {
+          kasDariPenjualanTunai += tx.total || 0;
+        }
+        // ⭐ SAMA DASHBOARD: jangan hitung kalau dari page hutang
+        if (tx.source !== 'hutang_page') {
+          transaksiCount++;
+        }
+        break;
+
+      case 'topup':
+      case 'tarik':
+        // ⭐ SAMA DASHBOARD: topup & tarik masuk hitungan
+        transaksiCount++;
+        break;
+
+      case 'kas_masuk':
+        // ⭐ SAMA DASHBOARD: skip kalau category penjualan_hutang
+        if (tx.category !== 'penjualan_hutang') {
+          // tidak nambah count (sama seperti dashboard)
+        }
+        break;
+
+      case 'kas_keluar':
+        // tidak nambah count
+        break;
+    }
+  }
+});
 
         // Coba ambil dari path kas/saldo dulu
+        let kasDitangan = 0;
         const kasPaths = ['kas/saldo', 'kas/currentBalance', 'settings/kas/saldo'];
         for (const path of kasPaths) {
           try {
@@ -2165,17 +2190,14 @@ document.addEventListener('click', (e) => {
         }
         
         document.getElementById('totalPenjualan').textContent = formatRupiah(totalPenjualan);
-        document.getElementById('kasDitangan').textContent = formatRupiah(kasDitangan);
-                // ⭐ Simpan ke localStorage untuk offline
-        try {
-          localStorage.setItem('header_totalPenjualan', formatRupiah(totalPenjualan));
-          localStorage.setItem('header_kasDitangan', formatRupiah(kasDitangan));
-        } catch(e) {}
-      } catch (err) {
-        console.error('Error loading header stats:', err);
-      }
-    }
-
+document.getElementById('kasDitangan').textContent = formatRupiah(kasDitangan);
+document.getElementById('totalTransaksi').textContent = transaksiCount.toLocaleString('id-ID');
+try {
+  localStorage.setItem('header_totalPenjualan', formatRupiah(totalPenjualan));
+  localStorage.setItem('header_kasDitangan', formatRupiah(kasDitangan));
+  localStorage.setItem('header_totalTransaksi', transaksiCount.toString());
+} catch(e) {}
+}
     // ===== STATE =====
     let products = [];
     let categories = [];
@@ -3368,7 +3390,8 @@ document.addEventListener('DOMContentLoaded', () => {
       
       document.getElementById('loadingOverlay').classList.remove('active');
       showToast(`${synced}/${pending.length} transaksi tersinkronkan`, synced > 0 ? 'success' : 'warning');
-      loadProducts(); loadHeaderStats();
+      loadProducts(); 
+      loadHeaderStats();
     });
 
         // ==========================================
