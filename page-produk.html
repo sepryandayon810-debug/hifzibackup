@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="light">
+<html lang="id" data-theme="light" data-theme-color="green">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -27,8 +27,7 @@
 
 *{margin:0;padding:0;box-sizing:border-box}
 html{font-size:16px;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif}
-body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-height:100vh}
-
+body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-height:100vh;animation:fadeInPage 0.35s ease}@keyframes fadeInPage{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 ::-webkit-scrollbar{width:8px}
 ::-webkit-scrollbar-track{background:var(--bg-secondary)}
 ::-webkit-scrollbar-thumb{background:var(--text-muted);border-radius:9999px}
@@ -508,33 +507,33 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 /* ============================================
    OVERRIDE: TEMA MINT FRESH HIJAU
    ============================================ */
-:root {
-  --primary: #059669 !important;
-  --primary-dark: #047857 !important;
-  --secondary: #84cc16 !important;
-  --success: #10b981 !important;
-  --warning: #f59e0b !important;
-  --danger: #ef4444 !important;
-  --info: #06b6d4 !important;
-  --bg-primary: #f0fdf4 !important;
-  --bg-secondary: #ecfdf5 !important;
-  --bg-card: #ffffff !important;
-  --text-primary: #064e3b !important;
-  --text-secondary: #065f46 !important;
-  --text-muted: #10b981 !important;
-  --border-color: #d1fae5 !important;
-  --shadow-sm: 0 1px 2px rgba(5,150,105,0.05) !important;
-  --shadow-md: 0 4px 12px rgba(5,150,105,0.08) !important;
-  --shadow-lg: 0 10px 30px rgba(5,150,105,0.12) !important;
+[data-theme-color="green"] {
+  --primary: #059669;
+  --primary-dark: #047857;
+  --secondary: #84cc16;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #06b6d4;
+  --bg-primary: #f0fdf4;
+  --bg-secondary: #ecfdf5;
+  --bg-card: #ffffff;
+  --text-primary: #064e3b;
+  --text-secondary: #065f46;
+  --text-muted: #10b981;
+  --border-color: #d1fae5;
+  --shadow-sm: 0 1px 2px rgba(5,150,105,0.05);
+  --shadow-md: 0 4px 12px rgba(5,150,105,0.08);
+  --shadow-lg: 0 10px 30px rgba(5,150,105,0.12);
 }
 [data-theme="dark"] {
-  --bg-primary: #022c22 !important;
-  --bg-secondary: #064e3b !important;
-  --bg-card: #065f46 !important;
-  --text-primary: #ecfdf5 !important;
-  --text-secondary: #6ee7b7 !important;
-  --text-muted: #34d399 !important;
-  --border-color: #047857 !important;
+  --bg-primary: #022c22;
+  --bg-secondary: #064e3b;
+  --bg-card: #065f46;
+  --text-primary: #ecfdf5;
+  --text-secondary: #6ee7b7;
+  --text-muted: #34d399;
+  --border-color: #047857;
 }
 body {
   background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%) !important;
@@ -631,7 +630,6 @@ body {
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   
   <script src="js/sidebar-filter.js"></script>
   <!-- Firebase Config (inline — tidak perlu file eksternal) -->
@@ -2335,5 +2333,6 @@ function getRandomColor() {
 
   })();
   </script>
+ <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </body>
 </html>
