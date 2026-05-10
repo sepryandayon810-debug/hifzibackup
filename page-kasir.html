@@ -407,6 +407,14 @@ body{
 .btn-pay:hover::before{left:100%}
 .btn-pay:active{transform:translateY(-1px)}
 
+    /* ===== LONG PRESS PRODUCT QUICK EDIT ===== */
+#productQuickModal .form-group{margin-bottom:1rem}
+#productQuickModal .form-label{font-size:.8rem;font-weight:600;color:var(--text-secondary);margin-bottom:.35rem;display:block}
+#productQuickModal .form-input{width:100%;padding:.65rem .875rem;border:1.5px solid var(--border-color);border-radius:var(--radius-lg);background:#f0fdf4;color:var(--text-primary);font-size:.9rem}
+#productQuickModal .form-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(5,150,105,.1)}
+#productQuickModal .form-input[readonly]{background:var(--bg-secondary);opacity:.8}
+.product-card{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+
 /* Mobile Cart Toggle */
 .cart-toggle{position:fixed;bottom:90px;right:1rem;width:56px;height:56px;background:linear-gradient(135deg,#059669,#10b981);color:white;border:none;border-radius:50%;box-shadow:0 4px 14px rgba(5,150,105,0.35);display:none;align-items:center;justify-content:center;font-size:1.25rem;z-index:101;cursor:pointer;transition:all .2s}
 .cart-toggle:hover{transform:scale(1.05)}
@@ -3525,6 +3533,98 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('Gagal print: ' + error, 'error');
       }
     }
+
+    // ===== LONG PRESS PRODUCT → QUICK EDIT =====
+let longPressTimer = null;
+let currentQuickEditId = null;
+
+function initLongPressOnProducts() {
+  const grid = document.getElementById('productsGrid');
+  
+  grid.addEventListener('mousedown', (e) => {
+    const card = e.target.closest('.product-card');
+    if (!card || card.classList.contains('skeleton')) return;
+    const m = card.getAttribute('onclick')?.match(/addToCart\('([^']+)'\)/);
+    if (!m) return;
+    longPressTimer = setTimeout(() => openProductQuickModal(m[1]), 800);
+  });
+  
+  grid.addEventListener('mouseup', cancelLongPress);
+  grid.addEventListener('mouseleave', cancelLongPress);
+  
+  grid.addEventListener('touchstart', (e) => {
+    const card = e.target.closest('.product-card');
+    if (!card || card.classList.contains('skeleton')) return;
+    const m = card.getAttribute('onclick')?.match(/addToCart\('([^']+)'\)/);
+    if (!m) return;
+    longPressTimer = setTimeout(() => openProductQuickModal(m[1]), 800);
+  }, {passive:true});
+  
+  grid.addEventListener('touchend', cancelLongPress);
+  grid.addEventListener('touchmove', cancelLongPress);
+}
+
+function cancelLongPress() {
+  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+}
+
+function openProductQuickModal(productId) {
+  const p = products.find(x => x.id === productId);
+  if (!p) return;
+  currentQuickEditId = productId;
+  
+  document.getElementById('quickEditName').value = p.name || '';
+  document.getElementById('quickEditCost').value = p.costPrice || 0;
+  document.getElementById('quickEditPrice').value = p.sellingPrice || 0;
+  
+  const isUnlimited = p.isUnlimited === true;
+  const stockInput = document.getElementById('quickEditStock');
+  const unlimitedLabel = document.getElementById('quickEditUnlimitedLabel');
+  
+  if (isUnlimited) {
+    stockInput.value = 999999; stockInput.disabled = true;
+    unlimitedLabel.style.display = 'block';
+  } else {
+    stockInput.value = p.stock || 0; stockInput.disabled = false;
+    unlimitedLabel.style.display = 'none';
+  }
+  
+  document.getElementById('productQuickModal').classList.add('active');
+}
+
+function closeProductQuickModal() {
+  document.getElementById('productQuickModal').classList.remove('active');
+  currentQuickEditId = null;
+}
+
+async function saveProductQuickEdit() {
+  if (!currentQuickEditId) return;
+  const cost = parseInt(document.getElementById('quickEditCost').value) || 0;
+  const price = parseInt(document.getElementById('quickEditPrice').value) || 0;
+  const stock = parseInt(document.getElementById('quickEditStock').value) || 0;
+  
+  if (price <= 0) { showToast('Harga jual harus > 0', 'error'); return; }
+  
+  try {
+    document.getElementById('loadingOverlay').classList.add('active');
+    const db = firebase.database();
+    const updates = { costPrice: cost, sellingPrice: price, updatedAt: Date.now() };
+    
+    const p = products.find(x => x.id === currentQuickEditId);
+    if (p && p.isUnlimited !== true) updates.stock = stock;
+    
+    await db.ref('products/' + currentQuickEditId).update(updates);
+    
+    if (p) { p.costPrice = cost; p.sellingPrice = price; if (p.isUnlimited !== true) p.stock = stock; }
+    
+    renderProducts(); closeProductQuickModal();
+    document.getElementById('loadingOverlay').classList.remove('active');
+    showToast('Produk diperbarui & sinkron ke Firebase', 'success');
+  } catch (e) {
+    document.getElementById('loadingOverlay').classList.remove('active');
+    showToast('Gagal simpan: ' + e.message, 'error');
+  }
+}
     
         // ===== INISIALISASI =====
     function runInit() {
@@ -3534,6 +3634,7 @@ document.addEventListener('DOMContentLoaded', () => {
       loadCart();
       loadHeaderStats();
       applyCurrentView();
+      initLongPressOnProducts();
       // ⭐ Safety: matikan loading overlay
       document.getElementById('loadingOverlay').classList.remove('active');
     }
@@ -3637,6 +3738,39 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     </div>
   </div>
+
+  <!-- Product Quick Edit Modal (Long Press) -->
+<div class="modal-overlay" id="productQuickModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="fas fa-box-open" style="margin-right:.5rem;"></i>Edit Produk</h3>
+      <button class="modal-close" onclick="closeProductQuickModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nama Produk</label>
+        <input type="text" class="form-input" id="quickEditName" readonly>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Harga Modal</label>
+        <input type="number" class="form-input" id="quickEditCost" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Harga Jual</label>
+        <input type="number" class="form-input" id="quickEditPrice" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sisa Stok</label>
+        <input type="number" class="form-input" id="quickEditStock" placeholder="0">
+        <small id="quickEditUnlimitedLabel" style="display:none;color:var(--text-muted);font-size:.75rem;margin-top:.25rem;">Produk ini tanpa batas stok (Digital)</small>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeProductQuickModal()">Batal</button>
+      <button class="btn btn-primary" onclick="saveProductQuickEdit()"><i class="fas fa-save"></i> Simpan</button>
+    </div>
+  </div>
+</div>
   
 </body>
 </html>
