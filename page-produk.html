@@ -1224,45 +1224,22 @@ document.querySelectorAll('.nav-link').forEach(function(link){
       setupEventListeners();
     }
 
-         // ============================================================
-    // DARK MODE (Sinkron dengan halaman lain)
-    // ============================================================
-        // ============================================================
-    // DARK MODE (Sinkron dengan Utils.Theme di halaman Setting)
-    // ============================================================
-    function applyTheme(){
-      var isDark = localStorage.getItem('webpos_dark_mode') === 'true';
-      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-      var btn = document.getElementById('btnTheme');
-      if(btn) {
-        btn.innerHTML = isDark 
-          ? '<i class="fas fa-sun" style="color:var(--warning)"></i>' 
-          : '<i class="fas fa-moon"></i>';
-      }
-    }
-    
-    applyTheme();
-    
-    window.addEventListener('storage', function(e){ 
-      if(e.key === 'webpos_dark_mode') applyTheme(); 
-    });
+        // ===== DARK MODE =====
+    var btnTheme = document.getElementById('btnTheme');
+    var savedTheme = localStorage.getItem('webpos_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    if(savedTheme === 'dark' && btnTheme) btnTheme.querySelector('i').className = 'fas fa-sun';
 
-    // ============================================================
-    // THEME COLOR (Sinkron dengan Setting)
-    // ============================================================
-    function applyThemeColor(){
-      var themeColor = localStorage.getItem('webpos_theme_color') || 'indigo';
-      document.documentElement.setAttribute('data-theme-color', themeColor);
+    if(btnTheme){
+      btnTheme.addEventListener('click', function(){
+        var current = document.documentElement.getAttribute('data-theme');
+        var next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('webpos_theme', next);
+        btnTheme.querySelector('i').className = next === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+      });
     }
-    
-    applyThemeColor();
-    
-    // Update jika ganti tema di tab lain
-    window.addEventListener('storage', function(e){ 
-      if(e.key === 'webpos_theme_color') {
-        applyThemeColor();
-      }
-    });
+
     
     // ============================================================
     // DATA LOADING
@@ -1641,17 +1618,6 @@ html += stockBadge;
       document.getElementById("btnExport").addEventListener("click", exportProducts);
       document.getElementById("btnAddProduk").addEventListener("click", openAddProdukModal);
       
-      // Dark Mode Toggle - Sinkron dengan Setting
-      var btnTheme = document.getElementById("btnTheme");
-      if(btnTheme){
-        btnTheme.addEventListener("click", function(){
-          var isDark = localStorage.getItem('webpos_dark_mode') === 'true';
-          localStorage.setItem('webpos_dark_mode', !isDark);
-          applyTheme();
-        });
-      }
-    }
-
     // ============================================================
     // FILTER
     // ============================================================
