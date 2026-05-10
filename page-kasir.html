@@ -145,7 +145,8 @@ body{
 .header-actions{display:flex;align-items:center;gap:.5rem}
 
 .header-stats{display:flex;align-items:center;gap:1.5rem}
-.stat-item{text-align:center}
+.stat-item{text-align:center;transition:all .15s}
+.stat-item[onclick]:hover{transform:translateY(-2px);opacity:.85}
 .stat-label{display:block;font-size:0.7rem;color:var(--text-muted);font-weight:500;text-transform:uppercase;letter-spacing:0.05em}
 .stat-value{display:block;font-size:1rem;font-weight:700;color:var(--text-primary)}
 .stat-value.positive{color:var(--success)}
@@ -1623,18 +1624,18 @@ html,body{overflow-x:hidden;max-width:100vw}
           <h1 class="header-title">Kasir</h1>
         </div>
 
-        <div class="header-stats" id="headerStats">
-  <div class="stat-item">
-    <span class="stat-label">Kas di Tangan</span>
-    <span class="stat-value" id="kasDitangan">Rp 0</span>
-  </div>
-  <div class="stat-item">
-    <span class="stat-label">Total Transaksi</span>
-    <span class="stat-value" id="totalTransaksi">0</span>
-  </div>
+       <div class="header-stats" id="headerStats">
   <div class="stat-item">
     <span class="stat-label">Total Penjualan</span>
-    <span class="stat-value positive" id="totalPenjualan">Rp 0</span>
+    <span class="stat-value" id="headerPenjualan">Rp 0</span>
+  </div>
+    <div class="stat-item" onclick="window.location.href='page-riwayat.html'" style="cursor:pointer;" title="Lihat riwayat transaksi">
+    <span class="stat-label">Total Transaksi</span>
+    <span class="stat-value" id="headerTransaksi">0</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-label">Total Laba</span>
+    <span class="stat-value positive" id="headerLaba">Rp 0</span>
   </div>
 </div>
 
@@ -2095,113 +2096,72 @@ document.addEventListener('click', (e) => {
     }
 
     // ===== LOAD HEADER STATS DARI FIREBASE =====
-        async function loadHeaderStats() {
-      // ⭐ OFFLINE: pakai data tersimpan
-      if (!navigator.onLine) {
-  const savedPenjualan = localStorage.getItem('header_totalPenjualan');
-  const savedKas = localStorage.getItem('header_kasDitangan');
-  const savedTransaksi = localStorage.getItem('header_totalTransaksi');
-  if (savedPenjualan) document.getElementById('totalPenjualan').textContent = savedPenjualan;
-  if (savedKas) document.getElementById('kasDitangan').textContent = savedKas;
-  if (savedTransaksi) document.getElementById('totalTransaksi').textContent = savedTransaksi;
-  return;
-}
-
-      const today = new Date();
-      const todayStr = today.getFullYear() + '-' +
-        String(today.getMonth() + 1).padStart(2, '0') + '-' +
-        String(today.getDate()).padStart(2, '0');
-      const db = firebase.database();
-      // --- Total Penjualan dari transaksi hari ini ---
-      try {
-        const txSnapshot = await firebase.database().ref('transactions/' + todayStr).once('value');
-        const txData = txSnapshot.val() || {};
-
-      let totalPenjualan = 0;
-let kasDariPenjualanTunai = 0;
-let transaksiCount = 0;
-
-Object.values(txData).forEach(tx => {
-  // ⭐ SAMA PERSIS DASHBOARD: skip cancelled & voided
-  if (tx.status !== 'cancelled' && tx.status !== 'voided') {
-    switch (tx.type) {
-      case 'penjualan':
-        totalPenjualan += tx.total || 0;
-        if (!tx.paymentMethod || tx.paymentMethod === 'cash') {
-          kasDariPenjualanTunai += tx.total || 0;
-        }
-        // ⭐ SAMA DASHBOARD: jangan hitung kalau dari page hutang
-        if (tx.source !== 'hutang_page') {
-          transaksiCount++;
-        }
-        break;
-
-      case 'topup':
-      case 'tarik':
-        // ⭐ SAMA DASHBOARD: topup & tarik masuk hitungan
-        transaksiCount++;
-        break;
-
-      case 'kas_masuk':
-        // ⭐ SAMA DASHBOARD: skip kalau category penjualan_hutang
-        if (tx.category !== 'penjualan_hutang') {
-          // tidak nambah count (sama seperti dashboard)
-        }
-        break;
-
-      case 'kas_keluar':
-        // tidak nambah count
-        break;
-    }
+       async function loadHeaderStats() {
+  // ⭐ OFFLINE: pakai data tersimpan
+  if (!navigator.onLine) {
+    const savedPenjualan = localStorage.getItem('header_penjualan');
+    const savedTransaksi = localStorage.getItem('header_transaksi');
+    const savedLaba = localStorage.getItem('header_laba');
+    if (savedPenjualan) document.getElementById('headerPenjualan').textContent = savedPenjualan;
+    if (savedTransaksi) document.getElementById('headerTransaksi').textContent = savedTransaksi;
+    if (savedLaba) document.getElementById('headerLaba').textContent = savedLaba;
+    return;
   }
-});
 
-        // Coba ambil dari path kas/saldo dulu
-        let kasDitangan = 0;
-        const kasPaths = ['kas/saldo', 'kas/currentBalance', 'settings/kas/saldo'];
-        for (const path of kasPaths) {
-          try {
-            const snap = await db.ref(path).once('value');
-            const val = snap.val();
-            if (val !== null && typeof val === 'number') {
-              kasDitangan = val;
-              break;
+  const today = new Date();
+  const todayStr = today.getFullYear() + '-' +
+    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+    String(today.getDate()).padStart(2, '0');
+
+  try {
+    const txSnapshot = await firebase.database().ref('transactions/' + todayStr).once('value');
+    const txData = txSnapshot.val() || {};
+
+    let totalPenjualan = 0;
+    let totalLaba = 0;
+    let transaksiCount = 0;
+
+    Object.values(txData).forEach(tx => {
+      if (tx.status !== 'cancelled' && tx.status !== 'voided') {
+        switch (tx.type) {
+          case 'penjualan':
+            totalPenjualan += tx.total || 0;
+            totalLaba += tx.profit || 0;
+            // Skip kalau dari page hutang (sama persis index)
+            if (tx.source !== 'hutang_page') {
+              transaksiCount++;
             }
-          } catch (e) {
-            // Path tidak bisa diakses, lanjut ke path berikutnya
-          }
-        }
+            break;
 
-        // Jika tidak ada saldo di database, hitung dari modal + penjualan tunai
-        if (kasDitangan === 0) {
-          try {
-            const modalSnap = await db.ref('kas_harian/' + todayStr).once('value');
-            const modalData = modalSnap.val() || {};
-            let modalAwal = 0;
-            Object.values(modalData).forEach(k => {
-              if (k.type === 'modal' || k.type === 'masuk') modalAwal += k.amount || 0;
-              if (k.type === 'keluar' || k.type === 'tarik') modalAwal -= k.amount || 0;
-            });
-            kasDitangan = modalAwal + kasDariPenjualanTunai;
-          } catch (e) {
-            // Fallback: hanya pakai penjualan tunai kalau modal error
-            kasDitangan = kasDariPenjualanTunai;
-          }
+          case 'topup':
+            totalLaba += tx.adminFee || 0;
+            transaksiCount++;
+            break;
+
+          case 'tarik':
+            totalLaba += tx.adminFee || 0;
+            transaksiCount++;
+            break;
         }
-        
-        document.getElementById('totalPenjualan').textContent = formatRupiah(totalPenjualan);
-document.getElementById('kasDitangan').textContent = formatRupiah(kasDitangan);
-document.getElementById('totalTransaksi').textContent = transaksiCount.toLocaleString('id-ID');
-        // Simpan ke localStorage untuk offline
-        try {
-          localStorage.setItem('header_totalPenjualan', formatRupiah(totalPenjualan));
-          localStorage.setItem('header_kasDitangan', formatRupiah(kasDitangan));
-          localStorage.setItem('header_totalTransaksi', transaksiCount.toString());
-        } catch(e) {}
-      } catch (err) {
-        console.error('Error loadHeaderStats:', err);
       }
+    });
+
+    document.getElementById('headerPenjualan').textContent = formatRupiah(totalPenjualan);
+    document.getElementById('headerTransaksi').textContent = transaksiCount.toLocaleString('id-ID');
+    document.getElementById('headerLaba').textContent = formatRupiah(totalLaba);
+
+    // Simpan ke localStorage untuk offline
+    try {
+      localStorage.setItem('header_penjualan', formatRupiah(totalPenjualan));
+      localStorage.setItem('header_transaksi', transaksiCount.toString());
+      localStorage.setItem('header_laba', formatRupiah(totalLaba));
+    } catch(e) {}
+
+  } catch (err) {
+    console.error('Error loadHeaderStats:', err);
+  }
 }
+    
     // ===== STATE =====
     let products = [];
     let categories = [];
