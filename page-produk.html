@@ -1617,11 +1617,12 @@ html += stockBadge;
       document.getElementById("btnImport").addEventListener("click", openImportModal);
       document.getElementById("btnExport").addEventListener("click", exportProducts);
       document.getElementById("btnAddProduk").addEventListener("click", openAddProdukModal);
-      
+    } // ⭐ TUTUP setupEventListeners() DI SINI
+
     // ============================================================
     // FILTER
     // ============================================================
-    function applyFilters(){
+  function applyFilters(){
   var search = (document.getElementById("searchProduk").value || "").toLowerCase();
   var category = document.getElementById("filterKategori").value;
   var status = document.getElementById("filterStatus").value;
