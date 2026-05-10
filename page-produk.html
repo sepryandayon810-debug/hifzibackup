@@ -632,6 +632,9 @@ body {
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
   
   <script src="js/sidebar-filter.js"></script>
+  <script src="js/utils.js?v=3"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/db-offline.js"></script>
   <!-- Firebase Config (inline — tidak perlu file eksternal) -->
   <script>
     var firebaseConfig = {
@@ -1059,35 +1062,6 @@ body {
   <script>
   (function(){
     "use strict";
-
-    // ============================================================
-    // UTILS (inline — tidak perlu utils.js eksternal)
-    // ============================================================
-    window.Utils = {
-      showLoading: function(msg){
-        var el = document.getElementById("loadingOverlay");
-        if(el) el.classList.add("active");
-      },
-      hideLoading: function(){
-        var el = document.getElementById("loadingOverlay");
-        if(el) el.classList.remove("active");
-      },
-      showToast: function(msg, type){
-        var icon = type === "success" ? "check-circle" : type === "error" ? "exclamation-circle" : type === "warning" ? "exclamation-triangle" : "info-circle";
-        var borderColor = type === "success" ? "var(--success)" : type === "error" ? "var(--danger)" : type === "warning" ? "var(--warning)" : "var(--info)";
-        var toast = document.createElement("div");
-        toast.style.cssText = "position:fixed;top:1rem;right:1rem;background:var(--bg-card);color:var(--text-primary);padding:1rem 1.5rem;border-radius:.75rem;box-shadow:0 10px 25px rgba(0,0,0,0.15);border-left:4px solid " + borderColor + ";z-index:9999;display:flex;align-items:center;gap:0.75rem;animation:slideIn 0.3s ease;max-width:380px;font-family:inherit;font-size:0.9rem;font-weight:500";
-        toast.innerHTML = '<i class="fas fa-' + icon + '" style="color:' + borderColor + ';font-size:1.1rem"></i><span>' + msg + '</span>';
-        document.body.appendChild(toast);
-        setTimeout(function(){ toast.style.opacity="0"; toast.style.transform="translateX(100%)"; toast.style.transition="all 0.3s ease"; setTimeout(function(){ toast.remove(); }, 300); }, 3500);
-      },
-      confirm: function(msg, callback){
-        if(window.confirm(msg)) callback();
-      },
-      formatRupiah: function(num){
-        return "Rp " + (num || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-      }
-    };
 
     // ============================================================
     // GLOBAL STATE
@@ -2265,11 +2239,8 @@ function getRandomColor() {
     // ============================================================
     // UTILITY FUNCTIONS
     // ============================================================
-    function generateProductCode(){
-      return "BRG" + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 1000).toString().padStart(3, "0");
-    }
 
-    function formatRupiah(num){
+        function formatRupiah(num){
       return "Rp " + (num || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
 
@@ -2287,6 +2258,10 @@ function getRandomColor() {
         clearTimeout(timeout);
         timeout = setTimeout(function(){ func.apply(context, args); }, wait);
       };
+    }
+    
+    function generateProductCode(){
+      return "BRG" + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 1000).toString().padStart(3, "0");
     }
 
     // ============================================================
