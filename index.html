@@ -2072,14 +2072,19 @@ if (namaDisplay) {
             const debtsData = debtsSnapshot.val() || {};
             
             Object.values(debtsData).forEach(d => {
-              if (d.status === 'active' && d.type === 'piutang') {
-                const createdAt = d.createdAt || 0;
-                // ✅ HANYA hitung yang dibuat hari ini
-                if (createdAt >= todayStart && createdAt < todayEnd) {
-                  totalPiutang += d.remaining || 0;
-                }
-              }
-            });
+  if (d.status === 'active' && d.type === 'piutang') {
+    const createdAt = d.createdAt || 0;
+    if (createdAt >= todayStart && createdAt < todayEnd) {
+      // ⭐ HANYA hitung yang kasRecorded !== false
+      // undefined (dari kasir) = dianggap true, jadi dihitung
+      // true (dicentang) = dihitung
+      // false (tidak dicentang) = di-skip, tidak masuk dashboard
+      if (d.kasRecorded !== false) {
+        totalPiutang += d.remaining || 0;
+      }
+    }
+  }
+});
           } catch (e) {
             console.error('Error loading debts:', e);
           }
