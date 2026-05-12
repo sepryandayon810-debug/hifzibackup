@@ -2075,6 +2075,7 @@ if (namaDisplay) {
   if (d.status === 'active' && d.type === 'piutang') {
     const createdAt = d.createdAt || 0;
     if (createdAt >= todayStart && createdAt < todayEnd) {
+      console.log('🔍 Piutang:', d.name, '| kasRecorded:', d.kasRecorded, '| source:', d.source, '| include:', d.kasRecorded !== false);
       // ⭐ HANYA hitung yang kasRecorded !== false
       // undefined (dari kasir) = dianggap true, jadi dihitung
       // true (dicentang) = dihitung
