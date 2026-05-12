@@ -560,7 +560,15 @@ html,body{overflow-x:hidden;max-width:100vw}
   #paymentModal .modal-header{padding:0.4rem 0.75rem!important;flex-shrink:0!important;height:40px!important;min-height:40px!important;display:flex!important;align-items:center!important}
   #paymentModal .modal-title{font-size:0.9rem!important;font-weight:600!important}
   #paymentModal .modal-close{width:26px!important;height:26px!important;font-size:0.75rem!important;border-radius:50%!important}
-  #paymentModal .modal-body{padding:0.25rem 0.5rem!important;flex:1!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;gap:0.25rem!important}
+  #paymentModal .modal-body{
+    padding:0.25rem 0.5rem!important;
+    flex:1!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow-y:auto!important;   /* ✅ BISA SCROLL */
+    gap:0.25rem!important;
+    min-height:0!important;
+  }
   #paymentModal .payment-methods{display:flex!important;gap:0.25rem!important;margin-bottom:0!important;flex-shrink:0!important;height:50px!important}
   #paymentModal .payment-method{flex:1!important;padding:0.25rem 0.2rem!important;height:100%!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;border-width:1px!important;border-radius:0.4rem!important;min-height:auto!important}
   #paymentModal .payment-method i{font-size:0.8rem!important;margin-bottom:0.1rem!important;line-height:1!important}
