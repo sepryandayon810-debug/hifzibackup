@@ -2251,6 +2251,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (lunasCheckbox) {
             lunasCheckbox.checked = false;
             lunasCheckbox.removeEventListener('change', handleLunasToggle);
+            lunasCheckbox.parentElement.style.display = '';
           }
           // Reset payment amount field
           const paymentInput = document.getElementById('paymentAmount');
@@ -2689,7 +2690,8 @@ renderCustomerList();
           document.getElementById('remainingAmount').textContent = Utils.formatRupiah(remaining);
           document.getElementById('paymentModal').dataset.remainingAmount = remaining;
            // Reset checkbox lunasi sekaligus
-          const lunasCheckbox = document.getElementById('lunasSekaligus');lunasCheckbox.checked = false;
+          const lunasCheckbox = document.getElementById('lunasSekaligus');
+          lunasCheckbox.checked = false;
           lunasCheckbox.removeEventListener('change', handleLunasToggle);
           lunasCheckbox.addEventListener('change', handleLunasToggle);
           document.getElementById('paymentAmount').value = '';
