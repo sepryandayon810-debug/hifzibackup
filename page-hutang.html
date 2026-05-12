@@ -2248,11 +2248,12 @@ document.addEventListener('DOMContentLoaded', () => {
           currentBatchItems = null;
           // Reset lunasi sekaligus checkbox
           const lunasCheckbox = document.getElementById('lunasSekaligus');
-          if (lunasCheckbox) {
-            lunasCheckbox.checked = false;
-            lunasCheckbox.removeEventListener('change', handleLunasToggle);
-            lunasCheckbox.parentElement.style.display = '';
-          }
+           if (lunasCheckbox) {
+    lunasCheckbox.checked = false;
+    lunasCheckbox.disabled = false; // ⭐ RESET DISABLED
+    lunasCheckbox.removeEventListener('change', handleLunasToggle);
+    lunasCheckbox.parentElement.style.display = '';
+  }
           // Reset payment amount field
           const paymentInput = document.getElementById('paymentAmount');
           if (paymentInput) {
@@ -2743,7 +2744,7 @@ renderCustomerList();
   
   // Sembunyikan lunasi sekaligus (karena memang bayar semua)
   document.getElementById('lunasSekaligus').checked = true;
-  document.getElementById('lunasSekaligus').parentElement.style.display = 'none';
+  document.getElementById('lunasSekaligus').disabled = true;
   
   // Set payment amount = total (readonly)
   const paymentInput = document.getElementById('paymentAmount');
