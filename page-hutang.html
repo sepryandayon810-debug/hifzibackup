@@ -1613,7 +1613,7 @@
             </span>
           </div>
           <label class="checkbox-group" id="kasCheckboxLabel">
-            <input type="checkbox" id="affectKas">
+            <input type="checkbox" id="affectKas" checked>
             <div>
               <span class="checkbox-label" id="kasLabelText">Catat ke Kas Masuk</span>
               <span class="checkbox-sublabel" id="kasSubLabelText">Otomatis menambah saldo kas saat menerima pembayaran</span>
@@ -1837,7 +1837,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let hutangData = {};
         let customerData = {};
         let currentPaymentType = null; // 'hutang' or 'piutang'
-        let currentGroupPayment = null;
 
         // Format currency inputs
         document.getElementById('hutangAmount').addEventListener('input', (e) => {
@@ -2065,26 +2064,16 @@ document.addEventListener('DOMContentLoaded', () => {
           document.getElementById('hutangModal').classList.remove('active');
         }
 
-               function closePaymentModal() {
+        function closePaymentModal() {
           document.getElementById('paymentModal').classList.remove('active');
           currentPaymentId = null;
           currentPaymentType = null;
-          currentGroupPayment = null;
-          document.querySelector('#paymentModal .modal-title').textContent = 'Bayar Hutang/Piutang';
-          
           // Reset lunasi sekaligus checkbox
           const lunasCheckbox = document.getElementById('lunasSekaligus');
           if (lunasCheckbox) {
             lunasCheckbox.checked = false;
             lunasCheckbox.removeEventListener('change', handleLunasToggle);
           }
-          
-          // ⭐ RESET CHECKBOX KAS JUGA
-          const kasCheckbox = document.getElementById('affectKas');
-          if (kasCheckbox) {
-            kasCheckbox.checked = false;
-          }
-          
           // Reset payment amount field
           const paymentInput = document.getElementById('paymentAmount');
           if (paymentInput) {
@@ -2277,19 +2266,14 @@ filteredItems.forEach(item => {
                       </div>
                     </div>
                   </div>
-                  <div class="hutang-amount-section" onclick="event.stopPropagation();" style="gap: 0.5rem;">
-  <span class="hutang-amount ${group.type}" style="font-size: 1rem; ${isPaid ? 'text-decoration: line-through; opacity: 0.6;' : ''}">
-    ${Utils.formatRupiah(group.totalRemaining)}
-  </span>
-  <span class="status-badge ${isPaid ? 'inactive' : 'active'}" style="margin-top: 0.25rem;">
-    ${isPaid ? 'Lunas' : 'Aktif'}
-  </span>
-  ${!isPaid ? `
-    <button class="btn-icon-sm btn-pay" onclick="window.openGroupPayment('${group.type}', '${group.displayName.replace(/'/g, "\\'")}')" title="Bayar Semua" style="width:auto;height:auto;padding:0.35rem 0.75rem;font-size:0.75rem;border-radius:0.5rem;margin-top:0.25rem;display:inline-flex;align-items:center;gap:0.35rem;">
-      <i class="fas fa-money-bill-wave"></i> Bayar Semua
-    </button>
-  ` : ''}
-</div>
+                  <div class="hutang-amount-section" onclick="event.stopPropagation();">
+                    <span class="hutang-amount ${group.type}" style="font-size: 1rem; ${isPaid ? 'text-decoration: line-through; opacity: 0.6;' : ''}">
+                      ${Utils.formatRupiah(group.totalRemaining)}
+                    </span>
+                    <span class="status-badge ${isPaid ? 'inactive' : 'active'}" style="margin-top: 0.25rem;">
+                      ${isPaid ? 'Lunas' : 'Aktif'}
+                    </span>
+                  </div>
                 </div>
                 
                 <!-- DETAIL PER TANGGAL -->
@@ -2374,22 +2358,20 @@ filteredItems.forEach(item => {
     const hutangId = id || 'debt_' + Date.now();
     
     const hutangPayload = {
-  id: hutangId,
-  type,
-  name,
-  amount,
-  remaining: amount,
-  dueDate: dueDate || null,
-  note,
-  status: 'active',
-  userId: user.uid,
-  userName: user.name || user.email,
-  createdAt: id ? (hutangData[id]?.createdAt || Date.now()) : Date.now(),
-  updatedAt: Date.now(),
-  affectKas: affectKas,
-  // ⭐ TAMBAH INI
-  kasRecorded: false
-};
+      id: hutangId,
+      type,
+      name,
+      amount,
+      remaining: amount,
+      dueDate: dueDate || null,
+      note,
+      status: 'active',
+      userId: user.uid,
+      userName: user.name || user.email,
+      createdAt: id ? (hutangData[id]?.createdAt || Date.now()) : Date.now(),
+      updatedAt: Date.now(),
+      affectKas: affectKas
+    };
     
         await database.ref('debts/' + hutangId).set(hutangPayload);
     
@@ -2542,53 +2524,6 @@ renderCustomerList();
           document.getElementById('paymentModal').classList.add('active');
         };
 
-        // ===== BAYAR SEMUA PER NAMA =====
-window.openGroupPayment = (type, displayName) => {
-  const activeItems = Object.values(hutangData).filter(item => 
-    item.name === displayName && item.status === 'active'
-  );
-  
-  if (activeItems.length === 0) {
-    Utils.showToast('Tidak ada data aktif untuk dibayar', 'warning');
-    return;
-  }
-  
-  const totalRemaining = activeItems.reduce((sum, item) => sum + (item.remaining || item.amount || 0), 0);
-  
-  currentPaymentId = null;
-  currentGroupPayment = {
-    name: displayName,
-    type: type,
-    items: activeItems,
-    totalRemaining: totalRemaining
-  };
-  
-  document.querySelector('#paymentModal .modal-title').textContent = 'Bayar Semua - ' + displayName;
-  document.getElementById('remainingAmount').textContent = Utils.formatRupiah(totalRemaining);
-  document.getElementById('paymentModal').dataset.remainingAmount = totalRemaining;
-  
-  const lunasCheckbox = document.getElementById('lunasSekaligus');
-  lunasCheckbox.checked = true;
-  lunasCheckbox.removeEventListener('change', handleLunasToggle);
-  lunasCheckbox.addEventListener('change', handleLunasToggle);
-  handleLunasToggle({ target: { checked: true } });
-  
-  const labelText = document.getElementById('kasLabelText');
-  const subLabelText = document.getElementById('kasSubLabelText');
-  const checkbox = document.getElementById('affectKas');
-  checkbox.checked = false;
-  
-  if (type === 'hutang') {
-    labelText.textContent = 'Catat ke Kas Keluar';
-    subLabelText.textContent = 'Otomatis mencatat pengeluaran kas saat melunasi semua hutang';
-  } else {
-    labelText.textContent = 'Catat ke Kas Masuk';
-    subLabelText.textContent = 'Otomatis mencatat pemasukan kas saat menerima pelunasan piutang';
-  }
-  
-  document.getElementById('paymentModal').classList.add('active');
-};
-
         window.editHutang = (id) => {
           const item = hutangData[id];
           if (!item) return;
@@ -2650,84 +2585,9 @@ document.getElementById('hutangDueDate').value = dueDateVal;
         };
 
         async function processPayment() {
-  
-  // ⭐ MODE BAYAR SEMUA (GROUP)
-  if (currentGroupPayment) {
-    const items = currentGroupPayment.items;
-    const type = currentGroupPayment.type;
-    const displayName = currentGroupPayment.name;
-    const totalRemaining = currentGroupPayment.totalRemaining;
-    
-    const paymentAmount = parseInt(document.getElementById('paymentAmount').value.replace(/\./g, '')) || 0;
-    const note = document.getElementById('paymentNote').value;
-    const affectKas = document.getElementById('affectKas').checked;
-    console.log('⭐ Bayar Semua — affectKas:', affectKas, '| totalRemaining:', totalRemaining);
-
-        
-    if (paymentAmount <= 0) {
-      Utils.showToast('Jumlah pembayaran harus lebih dari 0', 'error');
-      return;
-    }
-    
-    if (paymentAmount > totalRemaining) {
-      Utils.showToast('Jumlah pembayaran melebihi total sisa', 'error');
-      return;
-    }
-    
-    Utils.showLoading();
-    
-    try {
-      const user = Auth.getCurrentUser();
-      const updates = [];
-      
-      for (const item of items) {
-        const itemRemaining = item.remaining || item.amount || 0;
-        updates.push(
-  database.ref('debts/' + item.id).update({
-    remaining: 0,
-    status: 'paid',
-    paidAt: Date.now(),
-    updatedAt: Date.now(),
-    // ⭐ TAMBAH INI
-    kasRecorded: affectKas
-  })
-);
-        updates.push(
-          database.ref('debt_payments/' + item.id + '/' + Date.now()).set({
-            amount: itemRemaining,
-            note: note || 'Pelunasan massal',
-            affectKas: false,
-            userId: user.uid,
-            userName: user.name || user.email,
-            timestamp: Date.now()
-          })
-        );
-      }
-      await Promise.all(updates);
-      
-      if (affectKas) {
-        if (type === 'hutang') {
-          await recordToKas('keluar', totalRemaining, `Pelunasan massal hutang - ${displayName}`, user);
-        } else {
-          await recordToKas('masuk', totalRemaining, `Pelunasan massal piutang - ${displayName}`, user);
-        }
-      }
-      
-      Utils.showToast(`Semua ${type === 'hutang' ? 'hutang' : 'piutang'} ${displayName} telah dilunasi!`, 'success');
-      closePaymentModal();
-      loadAllData();
-    } catch (error) {
-      console.error('Error batch payment:', error);
-      Utils.showToast('Gagal pelunasan massal', 'error');
-    }
-    
-    Utils.hideLoading();
-    return;
-  }
-  
-  // ⭐ MODE BAYAR SATUAN (EXISTING)
   if (!currentPaymentId) return;
   
+  // ✅ PINDAHKAN KE ATAS SINI
   const item = hutangData[currentPaymentId];
   const remaining = item.remaining || item.amount || 0;
   
@@ -2760,14 +2620,12 @@ document.getElementById('hutangDueDate').value = dueDateVal;
             const user = Auth.getCurrentUser();
             
             // Update debt
-           await database.ref('debts/' + currentPaymentId).update({
-  remaining: newRemaining,
-  status: isFullyPaid ? 'paid' : 'active',
-  paidAt: isFullyPaid ? Date.now() : null,
-  updatedAt: Date.now(),
-  // ⭐ TAMBAH INI
-  kasRecorded: isFullyPaid ? affectKas : (hutangData[currentPaymentId]?.kasRecorded || false)
-});
+            await database.ref('debts/' + currentPaymentId).update({
+              remaining: newRemaining,
+              status: isFullyPaid ? 'paid' : 'active',
+              paidAt: isFullyPaid ? Date.now() : null,
+              updatedAt: Date.now()
+            });
             
             // Add payment record
             await database.ref('debt_payments/' + currentPaymentId + '/' + Date.now()).set({
