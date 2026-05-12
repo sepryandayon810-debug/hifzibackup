@@ -1613,7 +1613,7 @@
             </span>
           </div>
           <label class="checkbox-group" id="kasCheckboxLabel">
-            <input type="checkbox" id="affectKas" checked>
+            <input type="checkbox" id="affectKas">
             <div>
               <span class="checkbox-label" id="kasLabelText">Catat ke Kas Masuk</span>
               <span class="checkbox-sublabel" id="kasSubLabelText">Otomatis menambah saldo kas saat menerima pembayaran</span>
@@ -2065,18 +2065,26 @@ document.addEventListener('DOMContentLoaded', () => {
           document.getElementById('hutangModal').classList.remove('active');
         }
 
-        function closePaymentModal() {
+               function closePaymentModal() {
           document.getElementById('paymentModal').classList.remove('active');
           currentPaymentId = null;
           currentPaymentType = null;
-          currentGroupPayment = null; // ⭐ RESET BATCH
-          document.querySelector('#paymentModal .modal-title').textContent = 'Bayar Hutang/Piutang'; // ⭐ RESET TITLE
+          currentGroupPayment = null;
+          document.querySelector('#paymentModal .modal-title').textContent = 'Bayar Hutang/Piutang';
+          
           // Reset lunasi sekaligus checkbox
           const lunasCheckbox = document.getElementById('lunasSekaligus');
           if (lunasCheckbox) {
             lunasCheckbox.checked = false;
             lunasCheckbox.removeEventListener('change', handleLunasToggle);
           }
+          
+          // ⭐ RESET CHECKBOX KAS JUGA
+          const kasCheckbox = document.getElementById('affectKas');
+          if (kasCheckbox) {
+            kasCheckbox.checked = false;
+          }
+          
           // Reset payment amount field
           const paymentInput = document.getElementById('paymentAmount');
           if (paymentInput) {
@@ -2650,7 +2658,8 @@ document.getElementById('hutangDueDate').value = dueDateVal;
     
     const paymentAmount = parseInt(document.getElementById('paymentAmount').value.replace(/\./g, '')) || 0;
     const note = document.getElementById('paymentNote').value;
-    const affectKas = document.getElementById('affectKas').checked;
+        const affectKas = document.getElementById('affectKas').checked;
+    console.log('⭐ Bayar Semua — affectKas:', affectKas, '| totalRemaining:', totalRemaining);
     
     if (paymentAmount <= 0) {
       Utils.showToast('Jumlah pembayaran harus lebih dari 0', 'error');
