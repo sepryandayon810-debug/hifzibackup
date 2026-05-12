@@ -2658,9 +2658,10 @@ document.getElementById('hutangDueDate').value = dueDateVal;
     
     const paymentAmount = parseInt(document.getElementById('paymentAmount').value.replace(/\./g, '')) || 0;
     const note = document.getElementById('paymentNote').value;
-        const affectKas = document.getElementById('affectKas').checked;
+    const affectKas = document.getElementById('affectKas').checked;
     console.log('⭐ Bayar Semua — affectKas:', affectKas, '| totalRemaining:', totalRemaining);
-    
+
+        
     if (paymentAmount <= 0) {
       Utils.showToast('Jumlah pembayaran harus lebih dari 0', 'error');
       return;
