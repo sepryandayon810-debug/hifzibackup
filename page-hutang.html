@@ -1108,6 +1108,121 @@
   padding: 0.75rem; /* dari 1rem */
   font-size: 0.8rem; /* dari 0.875rem */
 }
+
+/* ============================================
+   MOBILE FIX — Supaya Tidak Terpotong
+   ============================================ */
+
+@media (max-width: 640px) {
+  /* Import/Export tetap horizontal, lebih kecil */
+  .import-export-group {
+    flex-direction: row !important;
+    gap: 0.5rem;
+    width: auto !important;
+  }
+  .import-export-group .btn-sm {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.75rem;
+    flex: 1;
+    white-space: nowrap;
+  }
+
+  /* Card header jangan column, tapi wrap dengan gap kecil */
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+    padding: 0.875rem 1rem;
+  }
+  .card-header > div {
+    width: 100%;
+  }
+
+  /* Filter tabs bisa scroll horizontal */
+  .filter-tabs {
+    width: 100%;
+    padding-bottom: 2px;
+  }
+  .filter-tab {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  /* Hutang item lebih compact */
+  .hutang-item {
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+  }
+  .hutang-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  .hutang-name {
+    font-size: 0.85rem;
+  }
+
+  /* Detail transaksi — tombol jangan terpotong */
+  .hutang-detail-content {
+    padding: 0.75rem !important;
+  }
+  .hutang-detail-content > div:last-child > div {
+    padding: 0.5rem !important;
+  }
+  /* Tombol di detail: lebih kecil & rapat */
+  .hutang-detail-content .btn-icon-sm {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+  }
+  .hutang-detail-content .btn-icon-sm i {
+    font-size: 0.75rem !important;
+  }
+
+  /* Batch button di header grup: lebih kecil */
+  .hutang-item .btn-pay[style*="margin-left: auto"] {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+  }
+  .hutang-item .btn-pay[style*="margin-left: auto"] i {
+    font-size: 0.7rem !important;
+  }
+
+  /* Summary card di atas */
+  .summary-card {
+    padding: 1rem;
+  }
+  .summary-amount {
+    font-size: 1.1rem !important;
+  }
+  .summary-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .hutang-item {
+    padding: 0.625rem 0.75rem;
+  }
+  .hutang-details div[style*="font-size: 0.8rem"] {
+    font-size: 0.7rem !important;
+  }
+  .hutang-amount {
+    font-size: 0.85rem !important;
+  }
+  .status-badge {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.4rem;
+  }
+  .import-export-group .btn-sm {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.5rem;
+  }
+}
     
   </style>
 </head>
