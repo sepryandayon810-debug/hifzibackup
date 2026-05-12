@@ -2641,17 +2641,7 @@ document.getElementById('hutangDueDate').value = dueDateVal;
               timestamp: Date.now()
             });
             
-            // Record to kas if checked
-            if (affectKas) {
-              if (item.type === 'hutang') {
-                // Bayar hutang = kas keluar
-                await recordToKas('keluar', paymentAmount, `Pembayaran hutang - ${item.name}`, user);
-              } else {
-                // Terima piutang = kas masuk
-                await recordToKas('masuk', paymentAmount, `Pembayaran piutang - ${item.name}`, user);
-              }
-            }
-            
+                        
             Utils.showToast('Pembayaran berhasil' + (affectKas ? ' dan tercatat di kas' : ''), 'success');
             closePaymentModal();
             loadAllData();
