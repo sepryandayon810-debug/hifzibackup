@@ -329,7 +329,24 @@ body{
 .cart-item-actions{display:flex;align-items:center;gap:.5rem;margin-top:.5rem}
 .qty-btn{width:28px;height:28px;border:1px solid var(--border-color);background:var(--bg-card);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem;transition:all .15s}
 .qty-btn:hover{background:var(--primary);color:white;border-color:var(--primary)}
-.qty-input{width:40px;text-align:center;border:1px solid var(--border-color);background:var(--bg-card);border-radius:var(--radius-md);padding:.25rem;font-size:.875rem;font-weight:600;color:var(--text-primary)}
+.qty-input{
+  width:48px;
+  text-align:center;
+  border:1.5px solid var(--border-color);
+  background:var(--bg-card);
+  border-radius:var(--radius-md);
+  padding:.25rem;
+  font-size:.875rem;
+  font-weight:600;
+  color:var(--text-primary);
+  transition:all .15s;
+}
+.qty-input:focus{
+  outline:none;
+  border-color:var(--primary);
+  box-shadow:0 0 0 3px rgba(5,150,105,.15);
+  background:#fff;
+}
 .cart-item-total{font-weight:700;color:var(--primary);font-size:.9375rem;align-self:center}
 .cart-item-remove{position:absolute;top:.5rem;right:.5rem;width:24px;height:24px;border:none;background:rgba(239,68,68,.1);color:var(--danger);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem;opacity:0;transition:all .15s}
 .cart-item:hover .cart-item-remove{opacity:1}
@@ -2458,6 +2475,33 @@ function renderProducts() {
   updateSummary();
 };
 
+    // ===== EDIT QTY LANGSUNG VIA INPUT =====
+window.editQtyDirect = function(productId, rawValue) {
+  const item = cart.find(i => i.productId === productId);
+  if (!item) return;
+
+  // Bersihkan: hanya ambil angka
+  let newQty = parseInt(rawValue.toString().replace(/\D/g, '')) || 0;
+
+  // Minimal 1, kalau 0 atau kosong anggap 1
+  if (newQty < 1) newQty = 1;
+
+  // Cek stok (kecuali produk unlimited)
+  const product = products.find(p => p.id === productId);
+  if (!item.isUnlimited && product && newQty > product.stock) {
+    showToast('Stok tidak mencukupi (tersisa ' + product.stock + ')', 'warning');
+    newQty = product.stock; // auto-crop ke stok maksimal
+  }
+
+  // Update
+  item.quantity = newQty;
+  item.total = item.quantity * item.price;
+
+  saveCart();
+  renderCart();
+  updateSummary();
+};
+
     // ===== REMOVE FROM CART =====
     window.removeFromCart = function(productId) {
       cart = cart.filter(i => i.productId !== productId);
@@ -2498,7 +2542,9 @@ function renderCart() {
         <div class="cart-item-price">${formatRupiah(item.price)}</div>
         <div class="cart-item-actions">
           <button class="qty-btn" onclick="updateQty('${item.productId}', -1)">-</button>
-          <input type="text" class="qty-input" value="${item.quantity}" readonly>
+          <input type="text" class="qty-input" value="${item.quantity}" 
+  onchange="editQtyDirect('${item.productId}', this.value)" 
+  onclick="this.select()">
           <button class="qty-btn" onclick="updateQty('${item.productId}', 1)">+</button>
         </div>
       </div>
