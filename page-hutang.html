@@ -2374,20 +2374,22 @@ filteredItems.forEach(item => {
     const hutangId = id || 'debt_' + Date.now();
     
     const hutangPayload = {
-      id: hutangId,
-      type,
-      name,
-      amount,
-      remaining: amount,
-      dueDate: dueDate || null,
-      note,
-      status: 'active',
-      userId: user.uid,
-      userName: user.name || user.email,
-      createdAt: id ? (hutangData[id]?.createdAt || Date.now()) : Date.now(),
-      updatedAt: Date.now(),
-      affectKas: affectKas
-    };
+  id: hutangId,
+  type,
+  name,
+  amount,
+  remaining: amount,
+  dueDate: dueDate || null,
+  note,
+  status: 'active',
+  userId: user.uid,
+  userName: user.name || user.email,
+  createdAt: id ? (hutangData[id]?.createdAt || Date.now()) : Date.now(),
+  updatedAt: Date.now(),
+  affectKas: affectKas,
+  // ⭐ TAMBAH INI
+  kasRecorded: false
+};
     
         await database.ref('debts/' + hutangId).set(hutangPayload);
     
@@ -2681,13 +2683,15 @@ document.getElementById('hutangDueDate').value = dueDateVal;
       for (const item of items) {
         const itemRemaining = item.remaining || item.amount || 0;
         updates.push(
-          database.ref('debts/' + item.id).update({
-            remaining: 0,
-            status: 'paid',
-            paidAt: Date.now(),
-            updatedAt: Date.now()
-          })
-        );
+  database.ref('debts/' + item.id).update({
+    remaining: 0,
+    status: 'paid',
+    paidAt: Date.now(),
+    updatedAt: Date.now(),
+    // ⭐ TAMBAH INI
+    kasRecorded: affectKas
+  })
+);
         updates.push(
           database.ref('debt_payments/' + item.id + '/' + Date.now()).set({
             amount: itemRemaining,
@@ -2756,12 +2760,14 @@ document.getElementById('hutangDueDate').value = dueDateVal;
             const user = Auth.getCurrentUser();
             
             // Update debt
-            await database.ref('debts/' + currentPaymentId).update({
-              remaining: newRemaining,
-              status: isFullyPaid ? 'paid' : 'active',
-              paidAt: isFullyPaid ? Date.now() : null,
-              updatedAt: Date.now()
-            });
+           await database.ref('debts/' + currentPaymentId).update({
+  remaining: newRemaining,
+  status: isFullyPaid ? 'paid' : 'active',
+  paidAt: isFullyPaid ? Date.now() : null,
+  updatedAt: Date.now(),
+  // ⭐ TAMBAH INI
+  kasRecorded: isFullyPaid ? affectKas : (hutangData[currentPaymentId]?.kasRecorded || false)
+});
             
             // Add payment record
             await database.ref('debt_payments/' + currentPaymentId + '/' + Date.now()).set({
