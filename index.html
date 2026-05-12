@@ -2072,14 +2072,27 @@ if (namaDisplay) {
             const debtsData = debtsSnapshot.val() || {};
             
             Object.values(debtsData).forEach(d => {
-              if (d.status === 'active' && d.type === 'piutang') {
-                const createdAt = d.createdAt || 0;
-                // ✅ HANYA hitung yang dibuat hari ini
-                if (createdAt >= todayStart && createdAt < todayEnd) {
-                  totalPiutang += d.remaining || 0;
-                }
-              }
-            });
+  if (d.type === 'piutang') {
+    const createdAt = d.createdAt || 0;
+    if (createdAt >= todayStart && createdAt < todayEnd) {
+      
+      // Belum dibayar
+      if (d.status === 'active') {
+        totalPiutang += d.remaining || 0;
+      }
+      
+      // Sudah dibayar DAN dicentang kas: uang masuk laci → tidak dihitung lagi
+      else if (d.status === 'paid' && d.kasRecorded === true) {
+        // skip
+      }
+      
+      // Sudah dibayar TAPI tidak dicentang kas: uang belum masuk laci → tetap dihitung
+      else if (d.status === 'paid' && d.kasRecorded === false) {
+        totalPiutang += d.amount || 0;
+      }
+    }
+  }
+});
           } catch (e) {
             console.error('Error loading debts:', e);
           }
