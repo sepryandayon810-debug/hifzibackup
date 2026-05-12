@@ -1837,6 +1837,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let hutangData = {};
         let customerData = {};
         let currentPaymentType = null; // 'hutang' or 'piutang'
+        let currentBatchItems = null;
 
         // Format currency inputs
         document.getElementById('hutangAmount').addEventListener('input', (e) => {
@@ -2068,6 +2069,7 @@ document.addEventListener('DOMContentLoaded', () => {
           document.getElementById('paymentModal').classList.remove('active');
           currentPaymentId = null;
           currentPaymentType = null;
+          currentBatchItems = null;
           // Reset lunasi sekaligus checkbox
           const lunasCheckbox = document.getElementById('lunasSekaligus');
           if (lunasCheckbox) {
@@ -2255,9 +2257,14 @@ filteredItems.forEach(item => {
                         <span style="background: var(--bg-secondary); color: var(--text-muted); padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">
                           ${group.items.length} transaksi
                         </span>
-                        <button class="expand-btn" id="expand-${groupId}" onclick="event.stopPropagation(); window.toggleDetail('${groupId}')" style="margin-left: auto;">
-                          <i class="fas fa-chevron-down"></i>
-                        </button>
+                        ${!isPaid ? `
+  <button class="btn-icon-sm btn-pay" onclick="event.stopPropagation(); window.openPaymentBatch('${group.displayName}')" title="Bayar Semua" style="width: 32px; height: 32px; min-width: 32px; margin-left: auto;">
+    <i class="fas fa-check-double" style="font-size: 0.8rem;"></i>
+  </button>
+` : ''}
+<button class="expand-btn" id="expand-${groupId}" onclick="event.stopPropagation(); window.toggleDetail('${groupId}')" style="${!isPaid ? '' : 'margin-left: auto;'}">
+  <i class="fas fa-chevron-down"></i>
+</button>
                       </div>
                       <div style="display: flex; gap: 1rem; margin-top: 0.25rem; font-size: 0.8rem; color: var(--text-muted);">
                         <span>Total: ${Utils.formatRupiah(totalAmount)}</span>
@@ -2529,6 +2536,60 @@ renderCustomerList();
           document.getElementById('paymentModal').classList.add('active');
         };
 
+        window.openPaymentBatch = (groupName) => {
+  // Cari semua item aktif dengan nama ini
+  const items = Object.values(hutangData).filter(d => 
+    d.name === groupName && d.status === 'active'
+  );
+  
+  if (items.length === 0) {
+    Utils.showToast('Tidak ada hutang/piutang aktif untuk dibayar', 'warning');
+    return;
+  }
+  
+  // Hitung total sisa
+  const totalRemaining = items.reduce((sum, item) => sum + (item.remaining || item.amount || 0), 0);
+  const type = items[0].type; // hutang atau piutang
+  
+  // Simpan ke variabel batch
+  currentBatchItems = items;
+  currentPaymentId = null; // ⭐ Marker: null = batch mode
+  
+  // Setup modal
+  document.getElementById('remainingAmount').textContent = Utils.formatRupiah(totalRemaining);
+  document.getElementById('paymentModal').dataset.remainingAmount = totalRemaining;
+  
+  // Sembunyikan lunasi sekaligus (karena memang bayar semua)
+  document.getElementById('lunasSekaligus').checked = true;
+  document.getElementById('lunasSekaligus').parentElement.style.display = 'none';
+  
+  // Set payment amount = total (readonly)
+  const paymentInput = document.getElementById('paymentAmount');
+  paymentInput.value = Utils.formatNumberInput(totalRemaining.toString());
+  paymentInput.readOnly = true;
+  paymentInput.style.background = 'var(--bg-secondary)';
+  paymentInput.style.cursor = 'not-allowed';
+  
+  document.getElementById('paymentNote').value = '';
+  
+  // Update kas option
+  const labelText = document.getElementById('kasLabelText');
+  const subLabelText = document.getElementById('kasSubLabelText');
+  const checkbox = document.getElementById('affectKas');
+  
+  checkbox.checked = false;
+  
+  if (type === 'hutang') {
+    labelText.textContent = 'Catat ke Kas Keluar';
+    subLabelText.textContent = 'Otomatis mencatat pengeluaran kas saat membayar semua hutang';
+  } else {
+    labelText.textContent = 'Catat ke Kas Masuk';
+    subLabelText.textContent = 'Otomatis mencatat pemasukan kas saat menerima pembayaran semua piutang';
+  }
+  
+  document.getElementById('paymentModal').classList.add('active');
+};
+
         window.editHutang = (id) => {
           const item = hutangData[id];
           if (!item) return;
@@ -2590,15 +2651,72 @@ document.getElementById('hutangDueDate').value = dueDateVal;
         };
 
         async function processPayment() {
+  const affectKas = document.getElementById('affectKas').checked;
+  const note = document.getElementById('paymentNote').value;
+  const user = Auth.getCurrentUser();
+  
+  // ⭐ MODE BATCH: Bayar Semua per Nama
+  if (!currentPaymentId && currentBatchItems && currentBatchItems.length > 0) {
+    Utils.showLoading();
+    
+    try {
+      let totalBayar = 0;
+      const type = currentBatchItems[0].type;
+      
+      for (const item of currentBatchItems) {
+        const remaining = item.remaining || item.amount || 0;
+        totalBayar += remaining;
+        
+        // Update debt jadi paid
+        await database.ref('debts/' + item.id).update({
+          remaining: 0,
+          status: 'paid',
+          paidAt: Date.now(),
+          updatedAt: Date.now(),
+          kasRecorded: affectKas
+        });
+        
+        // Payment record
+        await database.ref('debt_payments/' + item.id + '/' + Date.now()).set({
+          amount: remaining,
+          note: note || `Bayar semua - ${item.name}`,
+          affectKas,
+          userId: user.uid,
+          userName: user.name || user.email,
+          timestamp: Date.now()
+        });
+        
+        // Record ke kas (sama logic dengan single)
+        const wasKasRecorded = item.kasRecorded !== false;
+        if (affectKas && !wasKasRecorded) {
+          if (type === 'hutang') {
+            await recordToKas('keluar', remaining, `Pembayaran hutang - ${item.name}`, user);
+          } else {
+            await recordToKas('masuk', remaining, `Pembayaran piutang - ${item.name}`, user);
+          }
+        }
+      }
+      
+      Utils.showToast(`${currentBatchItems.length} pembayaran berhasil` + (affectKas ? ' dan tercatat di kas' : ''), 'success');
+      closePaymentModal();
+      loadAllData();
+      
+    } catch (error) {
+      console.error('Error batch payment:', error);
+      Utils.showToast('Gagal memproses pembayaran batch', 'error');
+    }
+    
+    Utils.hideLoading();
+    return;
+  }
+  
+  // ⭐ MODE SINGLE (kode existing, tidak diubah)
   if (!currentPaymentId) return;
   
-  // ✅ PINDAHKAN KE ATAS SINI
   const item = hutangData[currentPaymentId];
   const remaining = item.remaining || item.amount || 0;
   
   const paymentAmount = parseInt(document.getElementById('paymentAmount').value.replace(/\./g, '')) || 0;
-  const note = document.getElementById('paymentNote').value;
-  const affectKas = document.getElementById('affectKas').checked;
   
   if (paymentAmount <= 0) {
     Utils.showToast('Jumlah pembayaran harus lebih dari 0', 'error');
@@ -2607,7 +2725,6 @@ document.getElementById('hutangDueDate').value = dueDateVal;
 
   const lunasSekaligus = document.getElementById('lunasSekaligus').checked;
   
-  // Optional: Hapus blok if ini kalau tidak perlu, atau biarkan saja
   if (lunasSekaligus && paymentAmount !== remaining) {
      console.log('Lunasi sekaligus dipilih, jumlah:', paymentAmount);
   }
@@ -2617,53 +2734,49 @@ document.getElementById('hutangDueDate').value = dueDateVal;
     return;
   }
           
-          Utils.showLoading();
-          
-          try {
-            const newRemaining = remaining - paymentAmount;
-            const isFullyPaid = newRemaining <= 0;
-            const user = Auth.getCurrentUser();
-            
-            // Update debt
-            await database.ref('debts/' + currentPaymentId).update({
-  remaining: newRemaining,
-  status: isFullyPaid ? 'paid' : 'active',
-  paidAt: isFullyPaid ? Date.now() : null,
-  updatedAt: Date.now(),
-  // ⭐ TAMBAH BARIS INI
-  kasRecorded: affectKas
-});
-            
-            // Add payment record
-            await database.ref('debt_payments/' + currentPaymentId + '/' + Date.now()).set({
-              amount: paymentAmount,
-              note,
-              affectKas,
-              userId: user.uid,
-              userName: user.name || user.email,
-              timestamp: Date.now()
-            });
+  Utils.showLoading();
+  
+  try {
+    const newRemaining = remaining - paymentAmount;
+    const isFullyPaid = newRemaining <= 0;
+    
+    await database.ref('debts/' + currentPaymentId).update({
+      remaining: newRemaining,
+      status: isFullyPaid ? 'paid' : 'active',
+      paidAt: isFullyPaid ? Date.now() : null,
+      updatedAt: Date.now(),
+      kasRecorded: affectKas
+    });
+    
+    await database.ref('debt_payments/' + currentPaymentId + '/' + Date.now()).set({
+      amount: paymentAmount,
+      note,
+      affectKas,
+      userId: user.uid,
+      userName: user.name || user.email,
+      timestamp: Date.now()
+    });
 
-            const wasKasRecorded = item.kasRecorded !== false;
-            
-            if (affectKas && !wasKasRecorded) {
-              if (item.type === 'hutang') {
-                await recordToKas('keluar', paymentAmount, `Pembayaran hutang - ${item.name}`, user);
-              } else {
-                await recordToKas('masuk', paymentAmount, `Pembayaran piutang - ${item.name}`, user);
-              }
-            }
-                                    
-            Utils.showToast('Pembayaran berhasil' + (affectKas ? ' dan tercatat di kas' : ''), 'success');
-            closePaymentModal();
-            loadAllData();
-          } catch (error) {
-            console.error('Error processing payment:', error);
-            Utils.showToast('Gagal memproses pembayaran', 'error');
-          }
-          
-          Utils.hideLoading();
-        }
+    const wasKasRecorded = item.kasRecorded !== false;
+    
+    if (affectKas && !wasKasRecorded) {
+      if (item.type === 'hutang') {
+        await recordToKas('keluar', paymentAmount, `Pembayaran hutang - ${item.name}`, user);
+      } else {
+        await recordToKas('masuk', paymentAmount, `Pembayaran piutang - ${item.name}`, user);
+      }
+    }
+                            
+    Utils.showToast('Pembayaran berhasil' + (affectKas ? ' dan tercatat di kas' : ''), 'success');
+    closePaymentModal();
+    loadAllData();
+  } catch (error) {
+    console.error('Error processing payment:', error);
+    Utils.showToast('Gagal memproses pembayaran', 'error');
+  }
+  
+  Utils.hideLoading();
+}
 
         async function recordToKas(type, amount, description, user) {
           console.log('📝 Mencatat ke kas:', { type, amount, description });
