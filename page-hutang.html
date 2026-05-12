@@ -2357,7 +2357,7 @@ filteredItems.forEach(item => {
     const user = Auth.getCurrentUser();
     const hutangId = id || 'debt_' + Date.now();
     
-    const hutangPayload = {
+   const hutangPayload = {
   id: hutangId,
   type,
   name,
@@ -2371,9 +2371,12 @@ filteredItems.forEach(item => {
   createdAt: id ? (hutangData[id]?.createdAt || Date.now()) : Date.now(),
   updatedAt: Date.now(),
   affectKas: affectKas,
-  // ⭐ TAMBAH BARIS INI
-  kasRecorded: affectKas
+  // ⭐ EKSPLISIT boolean + source untuk debug
+  kasRecorded: affectKas === true,
+  source: 'hutang_page'
 };
+
+  console.log('📝 Save Hutang:', { name, affectKas, kasRecorded: affectKas === true });
     
         await database.ref('debts/' + hutangId).set(hutangPayload);
     
