@@ -1223,6 +1223,67 @@
     padding: 0.3rem 0.5rem;
   }
 }
+
+/* ============================================
+   MOBILE FIX — Detail Transaksi Tidak Terpotong
+   ============================================ */
+
+@media (max-width: 640px) {
+  /* Detail container: padding minimal */
+  .hutang-detail-content {
+    padding: 0.5rem !important;
+  }
+  
+  /* Setiap item detail: boleh wrap ke baris baru */
+  .hutang-detail-content > div:last-child > div {
+    padding: 0.5rem !important;
+    flex-wrap: wrap !important;
+    gap: 0.25rem !important;
+  }
+  
+  /* Bagian info (kiri): ambil 100% width, supaya tombol turun ke bawah */
+  .hutang-detail-content > div:last-child > div > div:first-child {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+  
+  /* Bagian amount (tengah): rapat */
+  .hutang-detail-content > div:last-child > div > div:nth-child(2) {
+    margin-left: 0 !important;
+    margin-right: auto !important;
+    text-align: left !important;
+  }
+  
+  /* Tombol action (kanan): 1 baris sendiri, rata kanan */
+  .hutang-detail-content > div:last-child > div > div:last-child {
+    display: flex !important;
+    gap: 0.25rem !important;
+    margin-left: auto !important;
+    margin-top: 0.25rem !important;
+    flex: 0 0 auto !important;
+  }
+  
+  /* Tombol di detail: 26px */
+  .hutang-detail-content .btn-icon-sm {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+  }
+  .hutang-detail-content .btn-icon-sm i {
+    font-size: 0.7rem !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .hutang-detail-content .btn-icon-sm {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+  }
+  .hutang-detail-content .btn-icon-sm i {
+    font-size: 0.65rem !important;
+  }
+}
     
   </style>
 </head>
@@ -2410,44 +2471,48 @@ filteredItems.forEach(item => {
                         const isItemPaid = item.status === 'paid' || item.status === 'inactive';
                         const noteText = item.note || (item.type === 'hutang' ? 'Hutang' : 'Piutang');
                         
-                        return `
-                          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid ${item.type === 'hutang' ? 'var(--danger)' : 'var(--warning)'};">
-                            <div style="flex: 1;">
-                              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                                <span style="font-weight: 500; color: var(--text-primary);">${idx + 1}. ${noteText}</span>
-                                <span class="status-badge ${isItemPaid ? 'inactive' : 'active'}" style="font-size: 0.65rem; padding: 2px 6px;">
-                                  ${isItemPaid ? 'Lunas' : 'Aktif'}
-                                </span>
-                              </div>
-                              <div style="font-size: 0.75rem; color: var(--text-muted);">
-                                <i class="far fa-calendar-alt"></i> ${createdDate}
-                                ${item.dueDate ? `• Jatuh tempo: ${new Date(item.dueDate).toLocaleDateString('id-ID')}` : ''}
-                              </div>
-                            </div>
-                            <div style="text-align: right; margin-left: 1rem;">
-                              <div style="font-weight: 600; color: ${item.type === 'hutang' ? 'var(--danger)' : 'var(--warning)'}; font-size: 0.9rem;">
-                                ${Utils.formatRupiah(item.remaining || item.amount || 0)}
-                              </div>
-                            </div>
-                            <div style="display: flex; gap: 0.25rem; margin-left: 0.75rem;">
-                              ${!isItemPaid ? `
-                                <button class="btn-icon-sm btn-pay" onclick="window.openPayment('${item.id}')" title="Bayar" style="width: 36px; height: 36px; min-width: 36px;">
-                                  <i class="fas fa-money-bill-wave" style="font-size: 0.85rem;"></i>
-                                </button>
-                              ` : `
-                                <button class="btn-icon-sm btn-restore" onclick="window.restoreHutang('${item.id}')" title="Restore" style="width: 36px; height: 36px; min-width: 36px;">
-                                  <i class="fas fa-undo" style="font-size: 0.85rem;"></i>
-                                </button>
-                              `}
-                              <button class="btn-icon-sm btn-edit" onclick="window.editHutang('${item.id}')" title="Edit" style="width: 36px; height: 36px; min-width: 36px;">
-  <i class="fas fa-edit" style="font-size: 0.85rem;"></i>
-</button>
-<button class="btn-icon-sm btn-delete" onclick="window.deleteHutang('${item.id}')" title="Hapus" style="width: 36px; height: 36px; min-width: 36px;">
-                                <i class="fas fa-trash" style="font-size: 0.85rem;"></i>
-                              </button>
-                            </div>
-                          </div>
-                        `;
+                       return `
+<div style="display: flex; flex-wrap: wrap; align-items: center; padding: 0.75rem; background: var(--bg-card); border-radius: 8px; border-left: 3px solid ${item.type === 'hutang' ? 'var(--danger)' : 'var(--warning)'}; gap: 0.5rem;">
+  <div style="flex: 1; min-width: 140px;">
+    <div style="font-weight: 600; color: var(--text-primary); font-size: 0.85rem;">
+      ${noteText} #${idx + 1}
+    </div>
+    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem;">
+      <i class="fas fa-calendar-alt" style="margin-right: 0.25rem;"></i>${createdDate}
+    </div>
+    ${item.note ? `<div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem;"><i class="fas fa-sticky-note" style="margin-right: 0.25rem;"></i>${item.note}</div>` : ''}
+    <div style="margin-top: 0.25rem;">
+      <span class="status-badge ${isItemPaid ? 'inactive' : 'active'}" style="font-size: 0.65rem; padding: 0.15rem 0.4rem;">
+        ${isItemPaid ? 'Lunas' : 'Aktif'}
+      </span>
+    </div>
+  </div>
+  <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
+    <div style="text-align: right;">
+      <div style="font-weight: 600; color: ${item.type === 'hutang' ? 'var(--danger)' : 'var(--warning)'}; font-size: 0.9rem;">
+        ${Utils.formatRupiah(item.remaining || item.amount || 0)}
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.25rem;">
+      ${!isItemPaid ? `
+        <button class="btn-icon-sm btn-pay" onclick="window.openPayment('${item.id}')" title="Bayar" style="width: 28px; height: 28px; min-width: 28px;">
+          <i class="fas fa-money-bill-wave" style="font-size: 0.75rem;"></i>
+        </button>
+      ` : `
+        <button class="btn-icon-sm btn-restore" onclick="window.restoreHutang('${item.id}')" title="Restore" style="width: 28px; height: 28px; min-width: 28px;">
+          <i class="fas fa-undo" style="font-size: 0.75rem;"></i>
+        </button>
+      `}
+      <button class="btn-icon-sm btn-edit" onclick="window.editHutang('${item.id}')" title="Edit" style="width: 28px; height: 28px; min-width: 28px;">
+        <i class="fas fa-edit" style="font-size: 0.75rem;"></i>
+      </button>
+      <button class="btn-icon-sm btn-delete" onclick="window.deleteHutang('${item.id}')" title="Hapus" style="width: 28px; height: 28px; min-width: 28px;">
+        <i class="fas fa-trash" style="font-size: 0.75rem;"></i>
+      </button>
+    </div>
+  </div>
+</div>
+`;
                       }).join('')}
                     </div>
                   </div>
