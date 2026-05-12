@@ -2358,25 +2358,27 @@ filteredItems.forEach(item => {
     const hutangId = id || 'debt_' + Date.now();
     
     const hutangPayload = {
-      id: hutangId,
-      type,
-      name,
-      amount,
-      remaining: amount,
-      dueDate: dueDate || null,
-      note,
-      status: 'active',
-      userId: user.uid,
-      userName: user.name || user.email,
-      createdAt: id ? (hutangData[id]?.createdAt || Date.now()) : Date.now(),
-      updatedAt: Date.now(),
-      affectKas: affectKas
-    };
+  id: hutangId,
+  type,
+  name,
+  amount,
+  remaining: amount,
+  dueDate: dueDate || null,
+  note,
+  status: 'active',
+  userId: user.uid,
+  userName: user.name || user.email,
+  createdAt: id ? (hutangData[id]?.createdAt || Date.now()) : Date.now(),
+  updatedAt: Date.now(),
+  affectKas: affectKas,
+  // ⭐ TAMBAH BARIS INI
+  kasRecorded: affectKas
+};
     
         await database.ref('debts/' + hutangId).set(hutangPayload);
     
     // ⭐ Otomatis catat penjualan saat piutang baru (supaya kas sistem tidak negatif)
-    if (!id && type === 'piutang') {
+    if (!id && type === 'piutang' && affectKas) {
       const today = Utils.getTodayString ? Utils.getTodayString() : new Date().toISOString().split('T')[0];
       const transId = 'hutang_' + Date.now();
       await database.ref('transactions/' + today + '/' + transId).set({
@@ -2621,11 +2623,13 @@ document.getElementById('hutangDueDate').value = dueDateVal;
             
             // Update debt
             await database.ref('debts/' + currentPaymentId).update({
-              remaining: newRemaining,
-              status: isFullyPaid ? 'paid' : 'active',
-              paidAt: isFullyPaid ? Date.now() : null,
-              updatedAt: Date.now()
-            });
+  remaining: newRemaining,
+  status: isFullyPaid ? 'paid' : 'active',
+  paidAt: isFullyPaid ? Date.now() : null,
+  updatedAt: Date.now(),
+  // ⭐ TAMBAH BARIS INI
+  kasRecorded: affectKas
+});
             
             // Add payment record
             await database.ref('debt_payments/' + currentPaymentId + '/' + Date.now()).set({
