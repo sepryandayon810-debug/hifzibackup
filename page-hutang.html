@@ -2883,6 +2883,14 @@ document.getElementById('hutangDueDate').value = dueDateVal;
       Utils.showToast(`${currentBatchItems.length} pembayaran berhasil` + (affectKas ? ' dan tercatat di kas' : ''), 'success');
       closePaymentModal();
       loadAllData();
+
+      // ⭐ KEMBALI KE KASIR kalau dipanggil dari kasir
+      if (localStorage.getItem('fromKasir') === 'true') {
+        localStorage.removeItem('fromKasir');
+        setTimeout(() => {
+          window.location.href = 'page-kasir.html';
+        }, 800);
+      }
       
     } catch (error) {
       console.error('Error batch payment:', error);
@@ -2953,6 +2961,15 @@ document.getElementById('hutangDueDate').value = dueDateVal;
     Utils.showToast('Pembayaran berhasil' + (affectKas ? ' dan tercatat di kas' : ''), 'success');
     closePaymentModal();
     loadAllData();
+
+        // ⭐ KEMBALI KE KASIR kalau dipanggil dari kasir
+    if (localStorage.getItem('fromKasir') === 'true') {
+      localStorage.removeItem('fromKasir');
+      setTimeout(() => {
+        window.location.href = 'page-kasir.html';
+      }, 800);
+    }
+    
   } catch (error) {
     console.error('Error processing payment:', error);
     Utils.showToast('Gagal memproses pembayaran', 'error');
