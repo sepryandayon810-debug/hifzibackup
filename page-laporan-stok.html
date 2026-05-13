@@ -258,6 +258,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 .badge-success{background:rgba(16,185,129,.1);color:var(--success)}
 .badge-warning{background:rgba(245,158,11,.1);color:var(--warning)}
 .badge-danger{background:rgba(239,68,68,.1);color:var(--danger)}
+.badge-primary{background:rgba(99,102,241,.1);color:var(--primary)}
 
 /* ===== BUTTONS ===== */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.625rem 1.25rem;border-radius:.75rem;font-size:.875rem;font-weight:600;cursor:pointer;transition:all .15s;border:none}
@@ -317,6 +318,39 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 .loading-overlay.active{opacity:1;visibility:visible}
 .spinner{width:48px;height:48px;border:4px solid var(--border-color);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== STOCK DETAIL MODAL ===== */
+.stock-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--border-color);
+  border-radius: 0.75rem;
+  margin-bottom: 0.625rem;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.stock-detail-item:hover {
+  transform: translateX(2px);
+  box-shadow: var(--shadow-sm);
+}
+.stock-detail-info {
+  flex: 1;
+  min-width: 0;
+}
+.stock-detail-actions {
+  flex-shrink: 0;
+}
+@media(max-width: 768px) {
+  .stock-detail-item {
+    padding: 0.75rem;
+  }
+  #stockDetailContent {
+    padding: 0.75rem !important;
+  }
+}
 
 /* ===== UTILITIES ===== */
 .hide-mobile{display:none}
@@ -799,7 +833,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             </div>
             <div class="stat-info">
               <div class="stat-label">Total Produk</div>
-              <div class="stat-value" id="totalProduk">0</div>
+              <div class="stat-value" id="totalProduk" style="cursor:pointer;" onclick="openStockDetailModal('all')" title="Klik lihat semua produk">0</div>
             </div>
           </div>
           <div class="stat-card">
@@ -808,7 +842,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             </div>
             <div class="stat-info">
               <div class="stat-label">Stok Aman</div>
-              <div class="stat-value" id="stokAman">0</div>
+              <div class="stat-value" id="stokAman" style="cursor:pointer;" onclick="openStockDetailModal('ok')" title="Klik lihat stok aman">0</div>
             </div>
           </div>
           <div class="stat-card">
@@ -817,7 +851,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             </div>
             <div class="stat-info">
               <div class="stat-label">Stok Rendah</div>
-              <div class="stat-value" id="stokRendah">0</div>
+              <div class="stat-value" id="stokRendah" style="cursor:pointer;" onclick="openStockDetailModal('low')" title="Klik lihat stok rendah">0</div>
             </div>
           </div>
           <div class="stat-card">
@@ -826,7 +860,7 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
             </div>
             <div class="stat-info">
               <div class="stat-label">Stok Habis</div>
-              <div class="stat-value" id="stokHabis">0</div>
+              <div class="stat-value" id="stokHabis" style="cursor:pointer;" onclick="openStockDetailModal('empty')" title="Klik lihat stok habis">0</div>
             </div>
           </div>
         </div>
@@ -999,6 +1033,32 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       </div>
     </div>
   </div>
+
+  <!-- Stock Detail Modal -->
+<div class="modal-overlay" id="stockDetailModal">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="stockDetailTitle">Detail Stok</h3>
+      <button class="modal-close" onclick="closeStockDetailModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body" style="padding:0;">
+      <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--border-color);background:var(--bg-secondary);">
+        <div class="search-box" style="margin:0;">
+          <i class="fas fa-search"></i>
+          <input type="text" id="stockDetailSearch" placeholder="Cari produk..." autocomplete="off" style="background:var(--bg-card);">
+        </div>
+      </div>
+      <div id="stockDetailContent" style="max-height:55vh;overflow-y:auto;padding:1rem 1.5rem;">
+        <!-- Dynamic -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeStockDetailModal()">Tutup</button>
+    </div>
+  </div>
+</div>
 
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
@@ -1223,10 +1283,16 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
         const matchSearch = !search || p.name.toLowerCase().includes(search);
         const matchCat = catFilter === 'all' || p.categoryId === catFilter;
         
-        let matchStatus = true;
-        if (statusFilter === 'low') matchStatus = p.stock > 0 && p.stock <= 5;
-        else if (statusFilter === 'empty') matchStatus = !p.stock || p.stock === 0;
-        else if (statusFilter === 'ok') matchStatus = p.stock > 5;
+       let matchStatus = true;
+if (statusFilter === 'low') {
+  const min = p.minStock || 5;
+  matchStatus = p.stock > 0 && p.stock <= min;
+}
+else if (statusFilter === 'empty') matchStatus = !p.stock || p.stock === 0;
+else if (statusFilter === 'ok') {
+  const min = p.minStock || 5;
+  matchStatus = p.stock > min;
+}
         
         return matchSearch && matchCat && matchStatus;
       });
@@ -1286,9 +1352,9 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
           statusBadge = '<span class="badge badge-danger"><i class="fas fa-times-circle" style="font-size:0.7rem;"></i> Habis</span>';
           stockClass = 'stock-low';
         } else if (p.stock <= 5) {
-          statusBadge = '<span class="badge badge-success"><i class="fas fa-check-circle" style="font-size:0.7rem;"></i> Aman</span>';
-          stockClass = 'stock-ok';
-        }
+  statusBadge = '<span class="badge badge-warning"><i class="fas fa-exclamation-triangle" style="font-size:0.7rem;"></i> Rendah</span>';
+  stockClass = 'stock-low';
+}
         
               return `
         <tr>
@@ -1574,6 +1640,129 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
       document.getElementById('historyModal').classList.remove('active');
     }
 
+    // ===== STOCK DETAIL MODAL FUNCTIONS =====
+function openStockDetailModal(type) {
+  const modal = document.getElementById('stockDetailModal');
+  const title = document.getElementById('stockDetailTitle');
+  const searchInput = document.getElementById('stockDetailSearch');
+  
+  let filtered = [];
+  
+  if (type === 'empty') {
+    title.innerHTML = '<i class="fas fa-times-circle" style="color:var(--danger);margin-right:0.5rem;"></i> Detail Stok Habis';
+    filtered = products.filter(p => p.isUnlimited !== true && (!p.stock || p.stock === 0));
+  } else if (type === 'low') {
+    title.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:var(--warning);margin-right:0.5rem;"></i> Detail Stok Rendah';
+    filtered = products.filter(p => {
+      if (p.isUnlimited === true) return false;
+      const min = p.minStock || 5;
+      return p.stock > 0 && p.stock <= min;
+    });
+  } else if (type === 'ok') {
+    title.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success);margin-right:0.5rem;"></i> Detail Stok Aman';
+    filtered = products.filter(p => {
+      if (p.isUnlimited === true) return true;
+      const min = p.minStock || 5;
+      return p.stock > min;
+    });
+  } else {
+    title.innerHTML = '<i class="fas fa-boxes" style="color:var(--primary);margin-right:0.5rem;"></i> Semua Produk';
+    filtered = [...products];
+  }
+  
+  // Sort: Habis dulu, Rendah, Aman, Unlimited
+  filtered.sort((a, b) => {
+    const getPriority = (p) => {
+      if (p.isUnlimited) return 3;
+      if (!p.stock || p.stock === 0) return 0;
+      const min = p.minStock || 5;
+      if (p.stock <= min) return 1;
+      return 2;
+    };
+    return getPriority(a) - getPriority(b);
+  });
+  
+  renderStockDetailList(filtered);
+  
+  searchInput.value = '';
+  searchInput.oninput = () => {
+    const term = searchInput.value.toLowerCase();
+    const filteredSearch = filtered.filter(p => p.name.toLowerCase().includes(term));
+    renderStockDetailList(filteredSearch);
+  };
+  
+  modal.classList.add('active');
+}
+
+function renderStockDetailList(list) {
+  const content = document.getElementById('stockDetailContent');
+  
+  if (list.length === 0) {
+    content.innerHTML = `
+      <div style="text-align:center;padding:2.5rem 1rem;color:var(--text-muted);">
+        <i class="fas fa-check-circle" style="font-size:2.5rem;display:block;margin-bottom:1rem;opacity:0.4;"></i>
+        <div style="font-weight:500;">Tidak ada produk dalam kategori ini</div>
+      </div>
+    `;
+    return;
+  }
+  
+  content.innerHTML = list.map(p => {
+    const cat = categories.find(c => c.id === p.categoryId);
+    let borderColor = 'var(--border-color)';
+    let badge = '';
+    
+    if (p.isUnlimited === true) {
+      borderColor = 'var(--primary)';
+      badge = '<span class="badge badge-primary" style="font-size:0.7rem;"><i class="fas fa-infinity"></i> Unlimited</span>';
+    } else if (!p.stock || p.stock === 0) {
+      borderColor = 'var(--danger)';
+      badge = '<span class="badge badge-danger" style="font-size:0.7rem;"><i class="fas fa-times-circle"></i> Habis</span>';
+    } else {
+      const min = p.minStock || 5;
+      if (p.stock <= min) {
+        borderColor = 'var(--warning)';
+        badge = '<span class="badge badge-warning" style="font-size:0.7rem;"><i class="fas fa-exclamation-triangle"></i> Rendah</span>';
+      } else {
+        borderColor = 'var(--success)';
+        badge = '<span class="badge badge-success" style="font-size:0.7rem;"><i class="fas fa-check-circle"></i> Aman</span>';
+      }
+    }
+    
+    const minLabel = (!p.isUnlimited && p.stock > 0) 
+      ? `<span style="font-size:0.7rem;opacity:0.7;">(min: ${p.minStock || 5})</span>` 
+      : '';
+    
+    return `
+      <div class="stock-detail-item" style="border-left-color:${borderColor};">
+        <div class="stock-detail-info">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;margin-bottom:0.25rem;">
+            <div style="font-weight:600;color:var(--text-primary);font-size:0.9rem;line-height:1.3;">${p.name}</div>
+            ${badge}
+          </div>
+          <div style="font-size:0.75rem;color:var(--text-muted);display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;">
+            <span><i class="fas fa-barcode" style="font-size:0.65rem;"></i> ${p.code || '-'}</span>
+            <span><i class="fas fa-tag" style="font-size:0.65rem;"></i> ${cat ? cat.name : '-'}</span>
+            <span style="font-weight:700;color:${borderColor};">
+              <i class="fas fa-cubes" style="font-size:0.65rem;"></i> 
+              ${formatNumber(p.stock || 0)} ${p.unit || 'pcs'} ${minLabel}
+            </span>
+          </div>
+        </div>
+        <div class="stock-detail-actions">
+          <button class="btn-action btn-edit" onclick="quickAdjust('${p.id}'); closeStockDetailModal();" title="Sesuaikan Stok">
+            <i class="fas fa-edit"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function closeStockDetailModal() {
+  document.getElementById('stockDetailModal').classList.remove('active');
+}
+
     function showLoading(show) {
       const overlay = document.getElementById('loadingOverlay');
       if (show) overlay.classList.add('active');
@@ -1595,11 +1784,11 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
     
     document.getElementById('btnExport').addEventListener('click', exportCSV);
 
-    document.querySelectorAll('.modal-overlay').forEach(modal => {
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.remove('active');
-      });
-    });
+   document.querySelectorAll('.modal-overlay').forEach(modal => {
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.remove('active');
+  });
+});
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
