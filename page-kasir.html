@@ -1364,6 +1364,18 @@ html,body{overflow-x:hidden;max-width:100vw}
   color: white;
   transform: translateY(-2px);
 }
+
+.kas-hidden-btn.kas-hutang {
+  background: rgba(245,158,11,0.08);
+  color: #d97706;
+  border: 1px solid rgba(245,158,11,0.25);
+}
+.kas-hidden-btn.kas-hutang:hover {
+  background: #f59e0b;
+  color: white;
+  transform: translateY(-2px);
+}
+    
 @media(max-width:768px){
   .kas-hidden-actions{justify-content:center}
   .kas-hidden-btn{font-size:0.7rem;padding:0.35rem 0.75rem}
@@ -1709,13 +1721,16 @@ html,body{overflow-x:hidden;max-width:100vw}
 
         <!-- Hidden Kas Actions -->
         <div class="kas-hidden-actions">
-          <a href="page-kas-masuk.html" class="kas-hidden-btn kas-masuk" onclick="localStorage.setItem('fromKasir','true')">
-            <i class="fas fa-arrow-up"></i> Kas Masuk
-          </a>
-          <a href="page-kas-keluar.html" class="kas-hidden-btn kas-keluar" onclick="localStorage.setItem('fromKasir','true')">
-            <i class="fas fa-arrow-down"></i> Kas Keluar
-          </a>
-        </div>
+  <a href="page-kas-masuk.html" class="kas-hidden-btn kas-masuk" onclick="localStorage.setItem('fromKasir','true')">
+    <i class="fas fa-arrow-up"></i> Kas Masuk
+  </a>
+  <a href="page-kas-keluar.html" class="kas-hidden-btn kas-keluar" onclick="localStorage.setItem('fromKasir','true')">
+    <i class="fas fa-arrow-down"></i> Kas Keluar
+  </a>
+  <a href="page-hutang.html" class="kas-hidden-btn kas-hutang" onclick="localStorage.setItem('fromKasir','true')">
+    <i class="fas fa-hand-holding-usd"></i> Bayar Hutang
+  </a>
+</div>
 
         <!-- Kasir Layout -->
         <div class="kasir-layout">
