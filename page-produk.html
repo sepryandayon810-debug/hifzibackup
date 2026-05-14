@@ -264,6 +264,9 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 .kategori-info{flex:1}
 .kategori-name{font-weight:600;font-size:1rem;color:var(--text-primary);margin-bottom:0.25rem}
 .kategori-count{font-size:0.75rem;color:var(--text-muted)}
+.kategori-stats{display:flex;gap:0.75rem;margin-top:0.4rem;flex-wrap:wrap}
+.kategori-stats span{font-size:0.7rem;color:var(--text-muted);display:flex;align-items:center;gap:0.25rem}
+.kategori-stats span i{font-size:0.65rem;color:var(--primary)}
 .kategori-actions{display:flex;gap:0.5rem}
 .kategori-actions .btn-icon{width:32px;height:32px}
 .add-kategori-card{border-style:dashed;background:var(--bg-secondary);justify-content:center;flex-direction:column;min-height:100px}
@@ -1487,12 +1490,26 @@ html += stockBadge;
         function renderCategories(){
       var grid = document.getElementById("kategoriGrid");
       var html = '<div class="kategori-card add-kategori-card" id="btnAddKategoriCard"><i class="fas fa-plus-circle"></i><span>Tambah Kategori Baru</span></div>';
-      categories.forEach(function(cat){
-        var productCount = products.filter(function(p){ return p.categoryId === cat.id; }).length;
+            categories.forEach(function(cat){
+        var katProducts = products.filter(function(p){ return p.categoryId === cat.id; });
+        var productCount = katProducts.length;
+        var totalModal = 0;
+        var totalStok = 0;
+        katProducts.forEach(function(p){
+          if(p.isUnlimited !== true){
+            totalModal += (p.costPrice || 0) * (p.stock || 0);
+            totalStok += (p.stock || 0);
+          }
+        });
         html += '<div class="kategori-card" data-id="' + cat.id + '" data-action="detail">';
         html += '<div class="kategori-icon" style="background:' + (cat.color || "#6366f1") + '"><i class="fas fa-tag"></i></div>';
-        html += '<div class="kategori-info"><div class="kategori-name">' + escapeHtml(cat.name) + '</div>';
-        html += '<div class="kategori-count">' + productCount + ' produk</div></div>';
+        html += '<div class="kategori-info">';
+        html += '<div class="kategori-name">' + escapeHtml(cat.name) + '</div>';
+        html += '<div class="kategori-count">' + productCount + ' produk</div>';
+        html += '<div class="kategori-stats">';
+        html += '<span><i class="fas fa-coins"></i> ' + formatRupiah(totalModal) + '</span>';
+        html += '<span><i class="fas fa-boxes"></i> ' + totalStok.toLocaleString('id-ID') + '</span>';
+        html += '</div></div>';
         html += '<div class="kategori-actions">';
         html += '<button class="btn-icon btn-sm btn-edit-kategori" data-id="' + cat.id + '" title="Edit"><i class="fas fa-edit"></i></button>';
         html += '<button class="btn-icon btn-sm btn-hapus-kategori" data-id="' + cat.id + '" title="Hapus"><i class="fas fa-trash"></i></button>';
