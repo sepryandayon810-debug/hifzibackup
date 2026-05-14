@@ -322,6 +322,19 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
   white-space: nowrap;
 }
 
+/* ===== MODAL DETAIL KATEGORI (Long Press) ===== */
+#kategoriDetailModal .modal-summary-card {
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0;
+}
+#kategoriDetailModal .modal-summary-item {
+  padding: 0.875rem 1rem;
+}
+#kategoriDetailModal .modal-summary-value {
+  font-size: 1.05rem;
+}
+
 /* Mobile: tetap 1 baris tapi font mengecil */
 @media(max-width: 1023px) {
   .modal-summary-card {
@@ -1150,6 +1163,41 @@ body {
     </div>
   </div>
 
+    <!-- ⭐ Modal Detail Kategori (Long Press) -->
+  <div class="modal-overlay" id="kategoriDetailModal">
+    <div class="modal" style="max-width:360px">
+      <div class="modal-header">
+        <h3 class="modal-title" id="kategoriDetailTitle">Detail Kategori</h3>
+        <button class="modal-close" id="closeKategoriDetailModal"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-summary-card">
+          <div class="modal-summary-item">
+            <i class="fas fa-coins"></i>
+            <div>
+              <div class="modal-summary-label">Total Modal</div>
+              <div class="modal-summary-value" id="katDetailModalValue">Rp 0</div>
+            </div>
+          </div>
+          <div class="modal-summary-item">
+            <i class="fas fa-boxes"></i>
+            <div>
+              <div class="modal-summary-label">Total Stok</div>
+              <div class="modal-summary-value" id="katDetailStokValue">0 item</div>
+            </div>
+          </div>
+          <div class="modal-summary-item">
+            <i class="fas fa-tags"></i>
+            <div>
+              <div class="modal-summary-label">Jumlah Produk</div>
+              <div class="modal-summary-value" id="katDetailProdukValue">0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="loading-overlay" id="loadingOverlay">
     <div class="spinner"></div>
     <p style="margin-top:1rem;color:var(--text-secondary)">Loading...</p>
@@ -1452,9 +1500,23 @@ html += stockBadge;
       });
       grid.innerHTML = html;
       document.getElementById("btnAddKategoriCard").addEventListener("click", openAddKategoriModal);
-      // Klik card buka detail
+           // Klik card buka detail + LONG PRESS modal ringkasan
       grid.querySelectorAll(".kategori-card[data-action='detail']").forEach(function(card){
+        var pressTimer;
+        var isLongPress = false;
+
+        function startPress(e){ isLongPress = false; pressTimer = setTimeout(function(){ isLongPress = true; showKategoriDetailModal(card.dataset.id); }, 600); }
+        function cancelPress(){ clearTimeout(pressTimer); }
+
+        card.addEventListener("mousedown", startPress);
+        card.addEventListener("touchstart", startPress, {passive:true});
+        card.addEventListener("mouseup", cancelPress);
+        card.addEventListener("mouseleave", cancelPress);
+        card.addEventListener("touchend", cancelPress);
+        card.addEventListener("touchmove", cancelPress);
+
         card.addEventListener("click", function(e){
+          if(isLongPress){ e.preventDefault(); e.stopPropagation(); return; }
           if(e.target.closest(".btn-edit-kategori") || e.target.closest(".btn-hapus-kategori")) return;
           openKategoriDetail(card.dataset.id);
         });
@@ -1478,6 +1540,25 @@ html += stockBadge;
       document.getElementById("totalStokValue").textContent = totalStok.toLocaleString('id-ID') + " item";
       document.getElementById("totalProdukValue").textContent = totalProduk.toLocaleString('id-ID');
       document.getElementById("modalSummaryCard").style.display = "grid";
+    }
+
+        function showKategoriDetailModal(catId){
+      var cat = categories.find(function(c){ return c.id === catId; });
+      if(!cat) return;
+      var katProducts = products.filter(function(p){ return p.categoryId === catId; });
+      var totalModal = 0;
+      var totalStok = 0;
+      katProducts.forEach(function(p){
+        if(p.isUnlimited !== true){
+          totalModal += (p.costPrice || 0) * (p.stock || 0);
+          totalStok += (p.stock || 0);
+        }
+      });
+      document.getElementById("kategoriDetailTitle").textContent = cat.name;
+      document.getElementById("katDetailModalValue").textContent = formatRupiah(totalModal);
+      document.getElementById("katDetailStokValue").textContent = totalStok.toLocaleString('id-ID') + " item";
+      document.getElementById("katDetailProdukValue").textContent = katProducts.length.toLocaleString('id-ID');
+      document.getElementById("kategoriDetailModal").classList.add("active");
     }
     
     function openKategoriDetail(catId){
@@ -1622,30 +1703,23 @@ html += stockBadge;
     }
   });
 
-  // Kategori grid — event delegation
+    // ⭐ Kategori grid — event delegation (HANYA untuk tombol edit/hapus)
+  // Klik card sudah ditangani langsung di renderCategories() dengan long-press support
   document.getElementById("kategoriGrid").addEventListener("click", function(e){
-    // Handle tombol edit
     var btnEdit = e.target.closest(".btn-edit-kategori");
     if(btnEdit){ 
       e.stopPropagation(); 
       editCategory(btnEdit.dataset.id); 
       return; 
     }
-    
-    // Handle tombol hapus
     var btnHapus = e.target.closest(".btn-hapus-kategori");
     if(btnHapus){ 
       e.stopPropagation(); 
       deleteCategory(btnHapus.dataset.id); 
       return; 
     }
-    
-    // Handle klik card (buka detail)
-    var card = e.target.closest(".kategori-card[data-id]");
-    if(card && !card.classList.contains("add-kategori-card")){
-      openKategoriDetail(card.dataset.id);
-    }
   });
+      
       // Search & filter
       var searchInput = document.getElementById("searchProduk");
       if(searchInput) searchInput.addEventListener("input", debounce(applyFilters, 300));
@@ -1678,6 +1752,11 @@ html += stockBadge;
       // Modal import
       document.getElementById("closeImportModal").addEventListener("click", closeImportModal);
       setupImportEvents();
+
+      // Modal detail kategori (long press)
+      document.getElementById("closeKategoriDetailModal").addEventListener("click", function(){
+        document.getElementById("kategoriDetailModal").classList.remove("active");
+      });
 
       // Image upload
       var imageUpload = document.getElementById("imageUpload");
