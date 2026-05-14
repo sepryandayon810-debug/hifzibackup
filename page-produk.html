@@ -276,6 +276,78 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 .color-option:hover{transform:scale(1.1)}
 .color-option.selected{border-color:var(--text-primary)}
 
+/* ===== MODAL SUMMARY CARD ===== */
+.modal-summary-card {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.modal-summary-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.25s;
+}
+.modal-summary-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary);
+}
+.modal-summary-item i {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: rgba(5,150,105,0.1);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.modal-summary-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.15rem;
+}
+.modal-summary-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* Mobile: tetap 1 baris tapi font mengecil */
+@media(max-width: 1023px) {
+  .modal-summary-card {
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(0.4rem, 1.5vw, 0.75rem);
+    margin-bottom: clamp(0.75rem, 3vw, 1.5rem);
+  }
+  .modal-summary-item {
+    padding: clamp(0.5rem, 2vw, 1rem);
+    flex-direction: column;
+    text-align: center;
+    gap: 0.4rem;
+  }
+  .modal-summary-item i {
+    width: clamp(28px, 8vw, 36px);
+    height: clamp(28px, 8vw, 36px);
+    font-size: clamp(0.8rem, 2.5vw, 1rem);
+  }
+  .modal-summary-value {
+    font-size: clamp(0.75rem, 2.5vw, 1rem);
+  }
+  .modal-summary-label {
+    font-size: clamp(0.6rem, 1.8vw, 0.75rem);
+  }
+}
+
 /* List view */
 .produk-list{display:flex;flex-direction:column;gap:0.75rem}
 .produk-list-item{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:1rem;display:flex;align-items:center;gap:1rem;transition:all 0.15s}
@@ -803,6 +875,30 @@ body {
         </div>
 
         <div id="tab-produk" class="tab-content">
+                    <!-- ⭐ SUMMARY MODAL -->
+          <div class="modal-summary-card" id="modalSummaryCard" style="display:none;">
+            <div class="modal-summary-item">
+              <i class="fas fa-coins"></i>
+              <div>
+                <div class="modal-summary-label">Total Modal</div>
+                <div class="modal-summary-value" id="totalModalValue">Rp 0</div>
+              </div>
+            </div>
+            <div class="modal-summary-item">
+              <i class="fas fa-boxes"></i>
+              <div>
+                <div class="modal-summary-label">Total Stok</div>
+                <div class="modal-summary-value" id="totalStokValue">0 item</div>
+              </div>
+            </div>
+            <div class="modal-summary-item">
+              <i class="fas fa-tags"></i>
+              <div>
+                <div class="modal-summary-label">Jumlah Produk</div>
+                <div class="modal-summary-value" id="totalProdukValue">0</div>
+              </div>
+            </div>
+          </div>
           <div class="produk-toolbar">
             <div class="produk-search">
               <i class="fas fa-search"></i>
@@ -1256,6 +1352,7 @@ document.querySelectorAll('.nav-link').forEach(function(link){
         renderProducts();
         renderPagination();
         renderCategories();
+        updateModalSummary();
         Utils.hideLoading();
       }).catch(function(err){
         console.error("Error load products:", err);
@@ -1363,6 +1460,26 @@ html += stockBadge;
         });
       });
     }
+
+        function updateModalSummary(){
+      var totalModal = 0;
+      var totalStok = 0;
+      var totalProduk = products.length;
+
+      products.forEach(function(p){
+        // ⭐ Skip produk unlimited (digital/pulsa) karena stoknya tak terbatas
+        if(p.isUnlimited !== true){
+          totalModal += (p.costPrice || 0) * (p.stock || 0);
+          totalStok += (p.stock || 0);
+        }
+      });
+
+      document.getElementById("totalModalValue").textContent = formatRupiah(totalModal);
+      document.getElementById("totalStokValue").textContent = totalStok.toLocaleString('id-ID') + " item";
+      document.getElementById("totalProdukValue").textContent = totalProduk.toLocaleString('id-ID');
+      document.getElementById("modalSummaryCard").style.display = "grid";
+    }
+    
     function openKategoriDetail(catId){
       currentKatId = catId;
       var cat = categories.find(function(c){ return c.id === catId; });
