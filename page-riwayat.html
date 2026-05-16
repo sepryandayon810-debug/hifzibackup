@@ -1317,9 +1317,9 @@ if (searchInput) {
       el('btnFilter').addEventListener('click', loadTransactions);
       el('btnExport').addEventListener('click', exportData);
 
-      document.getElementById('strukModal').addEventListener('click', (e) => {
-        if (e.target === document.getElementById('strukModal')) closeStrukModal();
-      });
+      document.getElementById('editStrukModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('editStrukModal')) closeEditStrukModal();
+});
 
       setDateRange('today');
       loadTransactions();
@@ -1987,69 +1987,143 @@ async function deleteTransaction(id) {
       }
     }
 
-    function generateEscPosKasir(tx) {
-      const hdr = loadReceiptHeader();
-      const storeName = hdr.storeName || 'NAMA TOKO';
-      const address = hdr.address || '';
-      const phone = hdr.phone || '';
-      const note = hdr.note || 'Terima kasih';
-      const date = new Date(tx.timestamp).toLocaleDateString('id-ID');
-      const time = new Date(tx.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+    // ===== ESC/POS TOP UP =====
+function generateEscPosTopUp(tx) {
+  const hdr = loadReceiptHeader();
+  const storeName = hdr.storeName || 'NAMA TOKO';
+  
+  const date = new Date(tx.timestamp).toLocaleDateString('id-ID');
+  const time = new Date(tx.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+  
+  const senderName = tx.senderName || tx.customerName || '-';
+  const senderPhone = tx.senderPhone || tx.senderAccount || '-';
+  const senderBank = tx.senderBank || tx.sourceBank || 'Tunai/Cash';
+  
+  const receiverName = tx.receiverName || tx.targetName || '-';
+  const receiverPhone = tx.receiverPhone || tx.receiverAccount || tx.targetAccount || '-';
+  const receiverBank = tx.receiverBank || tx.targetBank || tx.provider || '-';
+  
+  const nominal = tx.nominal || tx.amount || tx.total || 0;
+  const adminFee = tx.adminFee || 0;
+  const total = nominal + adminFee;
 
-      const ESC = '\x1B';
-      const GS = '\x1D';
-      const INIT = ESC + '\x40';
-      const CENTER = ESC + '\x61\x01';
-      const LEFT = ESC + '\x61\x00';
-      const BOLD_ON = ESC + '\x45\x01';
-      const BOLD_OFF = ESC + '\x45\x00';
-      const SIZE2 = ESC + '\x21\x10';
-      const SIZE1 = ESC + '\x21\x00';
-      const CUT = GS + '\x56\x41\x03';
-      const FEED = '\x0A';
+  const ESC = '\x1B';
+  const GS = '\x1D';
+  const INIT = ESC + '\x40';
+  const CENTER = ESC + '\x61\x01';
+  const LEFT = ESC + '\x61\x00';
+  const BOLD_ON = ESC + '\x45\x01';
+  const BOLD_OFF = ESC + '\x45\x00';
+  const SIZE2 = ESC + '\x21\x10';
+  const SIZE1 = ESC + '\x21\x00';
+  const CUT = GS + '\x56\x41\x03';
+  const FEED = '\x0A';
 
-      let c = INIT;
-      c += CENTER + BOLD_ON + SIZE2 + storeName.toUpperCase() + SIZE1 + BOLD_OFF + FEED;
-      if (address) c += CENTER + address + FEED;
-      if (phone) c += CENTER + 'HP: ' + phone + FEED;
-      c += CENTER + '------------------------------' + FEED;
-      c += LEFT;
-      c += 'No   : ' + tx.id + FEED;
-      c += 'Tgl  : ' + date + ' ' + time + FEED;
-      c += 'Kasir: ' + (tx.cashierName || '-') + FEED;
-      c += '------------------------------' + FEED;
+  let c = INIT;
+  c += CENTER + BOLD_ON + SIZE2 + storeName.toUpperCase() + SIZE1 + BOLD_OFF + FEED;
+  c += CENTER + 'BUKTI TOP UP SALDO' + FEED;
+  c += CENTER + '------------------------------' + FEED;
+  c += LEFT;
+  c += 'No  : ' + (tx.id || '-') + FEED;
+  c += 'Tgl : ' + date + ' ' + time + FEED;
+  c += 'Ksr : ' + (tx.cashierName || '-') + FEED;
+  c += '------------------------------' + FEED;
+  c += FEED;
+  c += BOLD_ON + 'PENGIRIM' + BOLD_OFF + FEED;
+  c += 'Nama : ' + senderName + FEED;
+  c += 'No   : ' + senderPhone + FEED;
+  c += 'Bank : ' + senderBank + FEED;
+  c += FEED;
+  c += BOLD_ON + 'PENERIMA' + BOLD_OFF + FEED;
+  c += 'Nama : ' + receiverName + FEED;
+  c += 'No   : ' + receiverPhone + FEED;
+  c += 'Bank : ' + receiverBank + FEED;
+  c += FEED;
+  c += '------------------------------' + FEED;
+  c += 'Nominal: ' + formatRupiah(nominal) + FEED;
+  c += 'Admin  : ' + formatRupiah(adminFee) + FEED;
+  c += '------------------------------' + FEED;
+  c += BOLD_ON + 'TOTAL  : ' + formatRupiah(total) + BOLD_OFF + FEED;
+  c += '------------------------------' + FEED;
+  c += 'Metode : ' + (tx.paymentMethod || 'TUNAI').toUpperCase() + FEED;
+  c += 'Status : BERHASIL' + FEED;
+  c += '==============================';
+  c += FEED + CENTER + 'Simpan struk ini sebagai' + FEED;
+  c += CENTER + 'bukti transaksi yang sah.' + FEED;
+  c += FEED + CENTER + 'Terima kasih.' + FEED;
+  c += FEED + FEED + FEED + CUT;
 
-      // Ambil items dengan aman (bisa dari tx.items atau tx.items array)
-      const items = tx.items || [];
-      if (items.length > 0) {
-        items.forEach(item => {
-          const name = item.name || item.nama || item.productName || 'Produk';
-          const qty = item.qty || item.quantity || 0;
-          const price = item.price || item.harga || item.buyPrice || 0;
-          const subtotal = item.subtotal || (qty * price) || 0;
-          c += name + FEED;
-          c += '  ' + qty + ' x ' + formatRupiah(price) + ' = ' + formatRupiah(subtotal) + FEED;
-        });
-      } else {
-        c += (TYPE_LABELS[tx.type] || tx.type || 'Transaksi') + FEED;
-      }
+  return c;
+}
 
-      c += '------------------------------' + FEED;
-      c += 'Subtotal : ' + formatRupiah(tx.subtotal || tx.total || tx.amount || 0) + FEED;
-      if (tx.discount > 0) c += 'Diskon   : -' + formatRupiah(tx.discount) + FEED;
-      if (tx.tax > 0) c += 'PPN 11%  : ' + formatRupiah(tx.tax) + FEED;
-      c += BOLD_ON + 'TOTAL    : ' + formatRupiah(tx.total || tx.amount || 0) + BOLD_OFF + FEED;
-      c += '------------------------------' + FEED;
-      c += 'Bayar    : ' + formatRupiah(tx.paymentAmount || tx.total || tx.amount || 0) + FEED;
-      c += 'Kembali  : ' + formatRupiah(tx.change || 0) + FEED;
-      c += 'Metode   : ' + (tx.paymentMethod || tx.type || 'Tunai').toUpperCase() + FEED;
-      c += '==============================';
-      c += FEED + CENTER + note + FEED;
-      c += FEED + FEED + FEED + CUT;
+// ===== ESC/POS TARIK TUNAI =====
+function generateEscPosTarik(tx) {
+  const hdr = loadReceiptHeader();
+  const storeName = hdr.storeName || 'NAMA TOKO';
+  
+  const date = new Date(tx.timestamp).toLocaleDateString('id-ID');
+  const time = new Date(tx.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+  
+  const senderName = tx.senderName || tx.targetName || tx.customerName || '-';
+  const senderPhone = tx.senderPhone || tx.senderAccount || tx.targetAccount || '-';
+  const senderBank = tx.senderBank || tx.sourceBank || tx.provider || 'DANA/OVO';
+  
+  const receiverName = tx.receiverName || tx.withdrawName || tx.customerName || '-';
+  const receiverPhone = tx.receiverPhone || tx.receiverAccount || tx.withdrawAccount || '-';
+  const receiverBank = tx.receiverBank || tx.withdrawBank || 'Tunai/Cash';
+  
+  const nominal = tx.nominal || tx.amount || tx.total || 0;
+  const adminFee = tx.adminFee || 0;
+  const received = nominal - adminFee;
 
-      return c;
-    }
+  const ESC = '\x1B';
+  const GS = '\x1D';
+  const INIT = ESC + '\x40';
+  const CENTER = ESC + '\x61\x01';
+  const LEFT = ESC + '\x61\x00';
+  const BOLD_ON = ESC + '\x45\x01';
+  const BOLD_OFF = ESC + '\x45\x00';
+  const SIZE2 = ESC + '\x21\x10';
+  const SIZE1 = ESC + '\x21\x00';
+  const CUT = GS + '\x56\x41\x03';
+  const FEED = '\x0A';
 
+  let c = INIT;
+  c += CENTER + BOLD_ON + SIZE2 + storeName.toUpperCase() + SIZE1 + BOLD_OFF + FEED;
+  c += CENTER + 'BUKTI TARIK TUNAI' + FEED;
+  c += CENTER + '------------------------------' + FEED;
+  c += LEFT;
+  c += 'No  : ' + (tx.id || '-') + FEED;
+  c += 'Tgl : ' + date + ' ' + time + FEED;
+  c += 'Ksr : ' + (tx.cashierName || '-') + FEED;
+  c += '------------------------------' + FEED;
+  c += FEED;
+  c += BOLD_ON + 'PENGIRIM (Dari App)' + BOLD_OFF + FEED;
+  c += 'Nama : ' + senderName + FEED;
+  c += 'No   : ' + senderPhone + FEED;
+  c += 'Bank : ' + senderBank + FEED;
+  c += FEED;
+  c += BOLD_ON + 'PENERIMA (Tarik ke)' + BOLD_OFF + FEED;
+  c += 'Nama : ' + receiverName + FEED;
+  c += 'No   : ' + receiverPhone + FEED;
+  c += 'Bank : ' + receiverBank + FEED;
+  c += FEED;
+  c += '------------------------------' + FEED;
+  c += 'Nominal : ' + formatRupiah(nominal) + FEED;
+  c += 'Admin   : ' + formatRupiah(adminFee) + FEED;
+  c += '------------------------------' + FEED;
+  c += BOLD_ON + 'DITERIMA: ' + formatRupiah(received) + BOLD_OFF + FEED;
+  c += '------------------------------' + FEED;
+  c += 'Metode  : ' + (tx.paymentMethod || 'TUNAI').toUpperCase() + FEED;
+  c += 'Status  : BERHASIL' + FEED;
+  c += '==============================';
+  c += FEED + CENTER + 'Simpan struk ini sebagai' + FEED;
+  c += CENTER + 'bukti transaksi yang sah.' + FEED;
+  c += FEED + CENTER + 'Terima kasih.' + FEED;
+  c += FEED + FEED + FEED + CUT;
+
+  return c;
+}
     function generateStrukPlain(tx) {
       const hdr = loadReceiptHeader();
       const storeName = hdr.storeName || 'NAMA TOKO';
@@ -2100,23 +2174,189 @@ async function deleteTransaction(id) {
       return lines.join('\n');
     }
 
-    function showStrukModal(tx) {
-      lastTransactionData = tx;
-      const paper = document.getElementById('strukPaper');
-      paper.textContent = generateStrukPlain(tx);
+    // ===== STRUK KHUSUS TOP UP =====
+function generateStrukTopUp(tx) {
+  const hdr = loadReceiptHeader();
+  const storeName = hdr.storeName || 'NAMA TOKO';
+  const address = hdr.address || '';
+  const phone = hdr.phone || '';
+  
+  const date = new Date(tx.timestamp).toLocaleDateString('id-ID', {
+    day: '2-digit', month: 'long', year: 'numeric'
+  });
+  const time = new Date(tx.timestamp).toLocaleTimeString('id-ID', {
+    hour: '2-digit', minute: '2-digit'
+  });
+  
+  const senderName = tx.senderName || tx.customerName || '-';
+  const senderPhone = tx.senderPhone || tx.senderAccount || '-';
+  const senderBank = tx.senderBank || tx.sourceBank || 'Tunai/Cash';
+  
+  const receiverName = tx.receiverName || tx.targetName || '-';
+  const receiverPhone = tx.receiverPhone || tx.receiverAccount || tx.targetAccount || '-';
+  const receiverBank = tx.receiverBank || tx.targetBank || tx.provider || '-';
+  
+  const nominal = tx.nominal || tx.amount || tx.total || 0;
+  const adminFee = tx.adminFee || 0;
+  const total = nominal + adminFee;
 
-      // Disable tombol print kalau plugin bluetooth tidak ada
-      const btnPrint = document.getElementById('btnPrintStruk');
-      if (!window.bluetoothSerial) {
-        btnPrint.disabled = true;
-        btnPrint.innerHTML = '<i class="fas fa-print"></i> Bluetooth (APK Only)';
-      } else {
-        btnPrint.disabled = false;
-        btnPrint.innerHTML = '<i class="fas fa-print"></i> Cetak Thermal';
-      }
+  let lines = [];
+  lines.push('================================');
+  lines.push(centerText(storeName.toUpperCase(), 32));
+  if (address) lines.push(centerText(address, 32));
+  if (phone) lines.push(centerText('HP: ' + phone, 32));
+  lines.push('================================');
+  lines.push(centerText('BUKTI TOP UP SALDO', 32));
+  lines.push('================================');
+  lines.push('No Transaksi : ' + (tx.id || '-'));
+  lines.push('Waktu        : ' + date + ' ' + time);
+  lines.push('Kasir        : ' + (tx.cashierName || tx.kasir || '-'));
+  lines.push('--------------------------------');
+  lines.push('');
+  lines.push('📤 PENGIRIM');
+  lines.push('Nama    : ' + senderName);
+  lines.push('No/Rek  : ' + senderPhone);
+  lines.push('Bank    : ' + senderBank);
+  lines.push('');
+  lines.push('📥 PENERIMA');
+  lines.push('Nama    : ' + receiverName);
+  lines.push('No/Rek  : ' + receiverPhone);
+  lines.push('Bank    : ' + receiverBank);
+  lines.push('');
+  lines.push('--------------------------------');
+  lines.push('Nominal : ' + formatRupiah(nominal));
+  lines.push('Admin   : ' + formatRupiah(adminFee));
+  lines.push('--------------------------------');
+  lines.push('TOTAL   : ' + formatRupiah(total));
+  lines.push('--------------------------------');
+  lines.push('Metode  : ' + (tx.paymentMethod || 'TUNAI').toUpperCase());
+  lines.push('Status  : BERHASIL');
+  lines.push('================================');
+  lines.push(centerText('Simpan struk ini sebagai', 32));
+  lines.push(centerText('bukti transaksi yang sah.', 32));
+  lines.push('');
+  lines.push(centerText('Terima kasih telah menggunakan', 32));
+  lines.push(centerText('layanan kami.', 32));
+  lines.push('================================');
+  
+  return lines.join('\n');
+}
 
-      document.getElementById('strukModal').classList.add('active');
-    }
+// ===== STRUK KHUSUS TARIK TUNAI =====
+function generateStrukTarik(tx) {
+  const hdr = loadReceiptHeader();
+  const storeName = hdr.storeName || 'NAMA TOKO';
+  const address = hdr.address || '';
+  const phone = hdr.phone || '';
+  
+  const date = new Date(tx.timestamp).toLocaleDateString('id-ID', {
+    day: '2-digit', month: 'long', year: 'numeric'
+  });
+  const time = new Date(tx.timestamp).toLocaleTimeString('id-ID', {
+    hour: '2-digit', minute: '2-digit'
+  });
+  
+  const senderName = tx.senderName || tx.targetName || tx.customerName || '-';
+  const senderPhone = tx.senderPhone || tx.senderAccount || tx.targetAccount || '-';
+  const senderBank = tx.senderBank || tx.sourceBank || tx.provider || 'DANA/OVO/GoPay';
+  
+  const receiverName = tx.receiverName || tx.withdrawName || tx.customerName || '-';
+  const receiverPhone = tx.receiverPhone || tx.receiverAccount || tx.withdrawAccount || '-';
+  const receiverBank = tx.receiverBank || tx.withdrawBank || 'Tunai/Cash';
+  
+  const nominal = tx.nominal || tx.amount || tx.total || 0;
+  const adminFee = tx.adminFee || 0;
+  const received = nominal - adminFee;
+
+    let lines = [];
+  lines.push('================================');
+  lines.push(centerText(storeName.toUpperCase(), 32));
+  if (address) lines.push(centerText(address, 32));
+  if (phone) lines.push(centerText('HP: ' + phone, 32));
+  lines.push('================================');
+  lines.push(centerText('BUKTI TARIK TUNAI', 32));
+  lines.push('================================');
+  lines.push('No Transaksi : ' + (tx.id || '-'));
+  lines.push('Waktu        : ' + date + ' ' + time);
+  lines.push('Kasir        : ' + (tx.cashierName || tx.kasir || '-'));
+  lines.push('--------------------------------');
+  lines.push('');
+  lines.push('📤 PENGIRIM (Dari Aplikasi)');
+  lines.push('Nama    : ' + senderName);
+  lines.push('No/Rek  : ' + senderPhone);
+  lines.push('Bank    : ' + senderBank);
+  lines.push('');
+  lines.push('📥 PENERIMA (Tarik ke)');
+  lines.push('Nama    : ' + receiverName);
+  lines.push('No/Rek  : ' + receiverPhone);
+  lines.push('Bank    : ' + receiverBank);
+  lines.push('');
+  lines.push('--------------------------------');
+  lines.push('Nominal : ' + formatRupiah(nominal));
+  lines.push('Admin   : ' + formatRupiah(adminFee));
+  lines.push('--------------------------------');
+  lines.push('DITERIMA: ' + formatRupiah(received));
+  lines.push('--------------------------------');
+  lines.push('Metode  : ' + (tx.paymentMethod || 'TUNAI').toUpperCase());
+  lines.push('Status  : BERHASIL');
+  lines.push('================================');
+  lines.push(centerText('Simpan struk ini sebagai', 32));
+  lines.push(centerText('bukti transaksi yang sah.', 32));
+  lines.push('');
+  lines.push(centerText('Terima kasih telah menggunakan', 32));
+  lines.push(centerText('layanan kami.', 32));
+  lines.push('================================');
+  
+  return lines.join('\n');
+}
+
+// Helper: center text untuk struk thermal (32 karakter lebar)
+function centerText(text, width) {
+  if (!text) return '';
+  const padding = Math.max(0, width - text.length);
+  const left = Math.floor(padding / 2);
+  const right = padding - left;
+  return ' '.repeat(left) + text + ' '.repeat(right);
+}
+
+   function showStrukModal(tx) {
+  lastTransactionData = tx;
+  
+  // ⭐ Jika transaksi topup/tarik dan data pengirim/penerima kosong, tampilkan edit dulu
+  if ((tx.type === 'topup' || tx.type === 'tarik') && 
+      !tx.senderName && !tx.receiverName && !tx.targetName && !tx.customerName) {
+    openEditStrukModal(tx);
+    return;
+  }
+  
+  renderStrukPreview(tx);
+}
+
+function renderStrukPreview(tx) {
+  const paper = document.getElementById('strukPaper');
+  
+  let strukContent = '';
+  if (tx.type === 'topup') {
+    strukContent = generateStrukTopUp(tx);
+  } else if (tx.type === 'tarik') {
+    strukContent = generateStrukTarik(tx);
+  } else {
+    strukContent = generateStrukPlain(tx);
+  }
+  
+  paper.textContent = strukContent;
+
+  const btnPrint = document.getElementById('btnPrintStruk');
+  if (!window.bluetoothSerial) {
+    btnPrint.disabled = true;
+    btnPrint.innerHTML = '<i class="fas fa-print"></i> Bluetooth (APK Only)';
+  } else {
+    btnPrint.disabled = false;
+    btnPrint.innerHTML = '<i class="fas fa-print"></i> Cetak Thermal';
+  }
+
+  document.getElementById('strukModal').classList.add('active');
+}
 
     function closeStrukModal() {
       document.getElementById('strukModal').classList.remove('active');
@@ -2146,7 +2386,14 @@ async function deleteTransaction(id) {
           bluetoothSerial.connect(mac, resolve, reject);
         });
 
-        const data = generateEscPosKasir(lastTransactionData);
+        let data = '';
+        if (lastTransactionData.type === 'topup') {
+          data = generateEscPosTopUp(lastTransactionData);
+        } else if (lastTransactionData.type === 'tarik') {
+          data = generateEscPosTarik(lastTransactionData);
+        } else {
+          data = generateEscPosKasir(lastTransactionData);
+        }
         await new Promise((resolve, reject) => {
           bluetoothSerial.write(data, resolve, reject);
         });
@@ -2160,6 +2407,38 @@ async function deleteTransaction(id) {
         showToast('Gagal print: ' + error, 'error');
       }
     }
+
+    // ===== MODAL EDIT STRUK =====
+function openEditStrukModal(tx) {
+  // Isi default value kalau ada
+  document.getElementById('editSenderName').value = tx.senderName || tx.customerName || tx.targetName || '';
+  document.getElementById('editSenderPhone').value = tx.senderPhone || tx.senderAccount || tx.phoneNumber || tx.phone || '';
+  document.getElementById('editSenderBank').value = tx.senderBank || tx.sourceBank || tx.provider || '';
+  
+  document.getElementById('editReceiverName').value = tx.receiverName || tx.withdrawName || tx.targetName || tx.customerName || '';
+  document.getElementById('editReceiverPhone').value = tx.receiverPhone || tx.receiverAccount || tx.withdrawAccount || tx.phoneNumber || tx.phone || '';
+  document.getElementById('editReceiverBank').value = tx.receiverBank || tx.withdrawBank || tx.targetBank || '';
+  
+  document.getElementById('editStrukModal').classList.add('active');
+}
+
+function closeEditStrukModal() {
+  document.getElementById('editStrukModal').classList.remove('active');
+}
+
+function saveEditStruk() {
+  // Update lastTransactionData dengan input user
+  lastTransactionData.senderName = document.getElementById('editSenderName').value || '-';
+  lastTransactionData.senderPhone = document.getElementById('editSenderPhone').value || '-';
+  lastTransactionData.senderBank = document.getElementById('editSenderBank').value || '-';
+  
+  lastTransactionData.receiverName = document.getElementById('editReceiverName').value || '-';
+  lastTransactionData.receiverPhone = document.getElementById('editReceiverPhone').value || '-';
+  lastTransactionData.receiverBank = document.getElementById('editReceiverBank').value || '-';
+  
+  closeEditStrukModal();
+  renderStrukPreview(lastTransactionData);
+}
 
     function printTransaction(id) {
       const t = allTransactions.find(tr => tr.id === id);
@@ -2211,5 +2490,60 @@ async function deleteTransaction(id) {
       }, duration);
     }
   </script>
+<!-- Modal Edit Struk -->
+<div class="struk-modal-overlay" id="editStrukModal" style="z-index: 10001;">
+  <div class="struk-modal" style="max-width: 400px;">
+    <div class="struk-modal-header">
+      <span class="struk-modal-title"><i class="fas fa-edit" style="color: var(--primary)"></i> Edit Info Struk</span>
+      <button class="struk-modal-close" onclick="closeEditStrukModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="struk-modal-body" style="padding: 1.25rem;">
+      
+      <div style="font-weight: 600; font-size: 0.85rem; color: var(--primary); margin-bottom: 0.75rem;">
+        <i class="fas fa-user"></i> PENGIRIM
+      </div>
+      <div class="form-group" style="margin-bottom: 0.75rem;">
+        <label class="form-label" style="font-size: 0.8rem;">Nama</label>
+        <input type="text" class="form-input" id="editSenderName" placeholder="Nama pengirim">
+      </div>
+      <div class="form-group" style="margin-bottom: 0.75rem;">
+        <label class="form-label" style="font-size: 0.8rem;">No / Rekening</label>
+        <input type="text" class="form-input" id="editSenderPhone" placeholder="Nomor HP / Rekening">
+      </div>
+      <div class="form-group" style="margin-bottom: 1rem;">
+        <label class="form-label" style="font-size: 0.8rem;">Bank / Aplikasi</label>
+        <input type="text" class="form-input" id="editSenderBank" placeholder="BCA / DANA / OVO">
+      </div>
+
+      <div style="border-top: 1px solid var(--border-color); margin: 1rem 0;"></div>
+
+      <div style="font-weight: 600; font-size: 0.85rem; color: var(--primary); margin-bottom: 0.75rem;">
+        <i class="fas fa-user"></i> PENERIMA
+      </div>
+      <div class="form-group" style="margin-bottom: 0.75rem;">
+        <label class="form-label" style="font-size: 0.8rem;">Nama</label>
+        <input type="text" class="form-input" id="editReceiverName" placeholder="Nama penerima">
+      </div>
+      <div class="form-group" style="margin-bottom: 0.75rem;">
+        <label class="form-label" style="font-size: 0.8rem;">No / Rekening</label>
+        <input type="text" class="form-input" id="editReceiverPhone" placeholder="Nomor HP / Rekening">
+      </div>
+      <div class="form-group" style="margin-bottom: 1rem;">
+        <label class="form-label" style="font-size: 0.8rem;">Bank / Aplikasi</label>
+        <input type="text" class="form-input" id="editReceiverBank" placeholder="BCA / DANA / Tunai">
+      </div>
+
+    </div>
+    <div class="struk-actions">
+      <button class="btn btn-secondary" onclick="closeEditStrukModal()">
+        <i class="fas fa-times"></i> Batal
+      </button>
+      <button class="btn btn-primary" onclick="saveEditStruk()">
+        <i class="fas fa-save"></i> Simpan & Lanjut
+      </button>
+    </div>
+  </div>
+</div>
+  
 </body>
 </html>
