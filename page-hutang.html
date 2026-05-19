@@ -2870,21 +2870,15 @@ document.getElementById('hutangDueDate').value = dueDateVal;
         });
         
         // Record ke kas (sama logic dengan single)
-       const affectKas = document.getElementById('modalKasMasuk').checked;
-
-if (affectKas) {
-
-    await recordToKas({
-        type: item.type === 'piutang' ? 'masuk' : 'keluar',
-        kategori: item.type === 'piutang'
-            ? 'Pembayaran Piutang'
-            : 'Pembayaran Hutang',
-        jumlah: paymentAmount,
-        keterangan: `Pembayaran ${item.type} - ${item.name}`,
-        sumberId: item.id
-    });
-
-}
+        const wasKasRecorded = item.kasRecorded !== false;
+        if (affectKas && !wasKasRecorded) {
+          if (type === 'hutang') {
+            await recordToKas('keluar', remaining, `Pembayaran hutang - ${item.name}`, user);
+          } else {
+            await recordToKas('masuk', remaining, `Pembayaran piutang - ${item.name}`, user);
+          }
+        }
+      }
       
       Utils.showToast(`${currentBatchItems.length} pembayaran berhasil` + (affectKas ? ' dan tercatat di kas' : ''), 'success');
       closePaymentModal();
@@ -2954,6 +2948,7 @@ if (affectKas) {
       timestamp: Date.now()
     });
 
+    const wasKasRecorded = item.kasRecorded !== false;
     
     if (affectKas && !wasKasRecorded) {
       if (item.type === 'hutang') {
