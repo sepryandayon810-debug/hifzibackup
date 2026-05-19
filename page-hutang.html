@@ -2870,8 +2870,7 @@ document.getElementById('hutangDueDate').value = dueDateVal;
         });
         
         // Record ke kas (sama logic dengan single)
-        const wasKasRecorded = item.kasRecorded !== false;
-        if (affectKas && !wasKasRecorded) {
+       if (affectKas) {
           if (type === 'hutang') {
             await recordToKas('keluar', remaining, `Pembayaran hutang - ${item.name}`, user);
           } else {
@@ -2948,9 +2947,7 @@ document.getElementById('hutangDueDate').value = dueDateVal;
       timestamp: Date.now()
     });
 
-    const wasKasRecorded = item.kasRecorded !== false;
-    
-    if (affectKas && !wasKasRecorded) {
+    if (affectKas) {
       if (item.type === 'hutang') {
         await recordToKas('keluar', paymentAmount, `Pembayaran hutang - ${item.name}`, user);
       } else {
