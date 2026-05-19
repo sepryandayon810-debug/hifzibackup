@@ -2074,23 +2074,16 @@ if (namaDisplay) {
             Object.values(debtsData).forEach(d => {
   if (d.status === 'active' && d.type === 'piutang') {
     const createdAt = d.createdAt || 0;
-   if (d.status === 'active' && d.type === 'piutang') {
-
-    console.log(
-      '🔍 Piutang:',
-      d.name,
-      '| kasRecorded:',
-      d.kasRecorded,
-      '| source:',
-      d.source,
-      '| include:',
-      d.kasRecorded !== false
-    );
-
-    if (d.kasRecorded !== false) {
+    if (createdAt >= todayStart && createdAt < todayEnd) {
+      console.log('🔍 Piutang:', d.name, '| kasRecorded:', d.kasRecorded, '| source:', d.source, '| include:', d.kasRecorded !== false);
+      // ⭐ HANYA hitung yang kasRecorded !== false
+      // undefined (dari kasir) = dianggap true, jadi dihitung
+      // true (dicentang) = dihitung
+      // false (tidak dicentang) = di-skip, tidak masuk dashboard
+      if (d.kasRecorded !== false) {
         totalPiutang += d.remaining || 0;
+      }
     }
-}
   }
 });
           } catch (e) {
