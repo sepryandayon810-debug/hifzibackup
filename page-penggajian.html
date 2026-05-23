@@ -789,40 +789,31 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
           </div>
         </div>
 
-        <!-- Filter Bar Modern -->
-        <div class="filter-bar-modern" id="filterBarModern">
-          <div class="filter-row-main">
-            <div class="filter-month-year">
-              <div class="filter-myy-group">
-                <label class="filter-myy-label"><i class="fas fa-calendar-alt"></i></label>
-                <select class="filter-myy-select" id="filterBulan">
-                  <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
-                  <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
-                  <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
-                  <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
-                </select>
-                <select class="filter-myy-select year" id="filterTahun"></select>
-              </div>
-            </div>
-            <div class="filter-status-chips">
-              <button class="status-chip active" data-status="all" onclick="setFilterStatus('all')">
-                <i class="fas fa-layer-group"></i> Semua
-              </button>
-              <button class="status-chip" data-status="paid" onclick="setFilterStatus('paid')">
-                <i class="fas fa-check-circle"></i> Sudah Dibayar
-              </button>
-              <button class="status-chip" data-status="unpaid" onclick="setFilterStatus('unpaid')">
-                <i class="fas fa-clock"></i> Belum Dibayar
-              </button>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="openModalInputGaji()">
-              <i class="fas fa-plus"></i> Input Gaji
-            </button>
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <label class="filter-label"><i class="fas fa-calendar-alt"></i> Bulan</label>
+            <select class="filter-select" id="filterBulan">
+              <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
+              <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
+              <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
+              <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+            </select>
           </div>
-          <!-- Hidden select for JS compatibility -->
-          <select id="filterStatus" style="display:none;">
-            <option value="all">Semua</option><option value="paid">Sudah Dibayar</option><option value="unpaid">Belum Dibayar</option>
-          </select>
+          <div class="filter-group">
+            <label class="filter-label"><i class="fas fa-calendar"></i> Tahun</label>
+            <select class="filter-select" id="filterTahun"></select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label"><i class="fas fa-filter"></i> Status</label>
+            <select class="filter-select" id="filterStatus">
+              <option value="all">Semua</option><option value="paid">Sudah Dibayar</option><option value="unpaid">Belum Dibayar</option>
+            </select>
+          </div>
+          <div class="filter-spacer"></div>
+          <button class="btn btn-primary btn-sm" onclick="openModalInputGaji()">
+            <i class="fas fa-plus"></i> Input Gaji
+          </button>
         </div>
 
         <!-- Table Card -->
@@ -1137,16 +1128,7 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
     /* ===== FILTER CHANGE ===== */
     filterBulan.addEventListener('change', () => { currentBulan = filterBulan.value; currentTahun = filterTahun.value; loadGajiData(); });
     filterTahun.addEventListener('change', () => { currentBulan = filterBulan.value; currentTahun = filterTahun.value; loadGajiData(); });
-
-    window.setFilterStatus = function(status) {
-      document.getElementById('filterStatus').value = status;
-      // Update chip UI
-      document.querySelectorAll('.status-chip').forEach(chip => {
-        if (chip.dataset.status === status) chip.classList.add('active');
-        else chip.classList.remove('active');
-      });
-      renderTable();
-    };
+    filterStatus.addEventListener('change', () => { renderTable(); });
     document.getElementById('gajiNama').addEventListener('blur', loadHutangKaryawan);
 
 
@@ -1161,40 +1143,31 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
 
         const snapshot = await db.ref('penggajian').once('value');
         const allData = snapshot.val() || {};
-
-        // 1. Load data bulan yang dipilih (asli)
         const targetPrefix = currentTahun + '-' + currentBulan;
+
+        // Load SEMUA data, filter berdasarkan PERIODE gaji (periodeAkhir), bukan tanggal input
         Object.entries(allData).forEach(([dateStr, dayData]) => {
-          if (!dateStr.startsWith(targetPrefix)) return;
           Object.entries(dayData).forEach(([gajiId, gaji]) => {
-            allGajiData.push({ id: gajiId, ...gaji, dateStr: dateStr, carryOver: false });
+            const periodeAkhir = gaji.periodeAkhir || '';
+            const periodeMonth = periodeAkhir.substring(0, 7); // format: YYYY-MM
+
+            // Cek apakah periode akhir cocok dengan filter bulan
+            if (periodeMonth === targetPrefix) {
+              // Data asli untuk bulan ini
+              allGajiData.push({ id: gajiId, ...gaji, dateStr: dateStr, carryOver: false });
+            } else if (periodeMonth < targetPrefix) {
+              // Data bulan lalu — tampilkan sebagai carry-over
+              const status = gaji.paymentStatus || gaji.status || 'unpaid';
+              // Tampilkan SEMUA gaji lalu (paid maupun unpaid) supaya user bisa lihat history
+              allGajiData.push({ 
+                id: gajiId, ...gaji, dateStr: dateStr, 
+                carryOver: true,
+                displayPeriode: (gaji.periodeAwal || '-') + ' s/d ' + (gaji.periodeAkhir || '-')
+              });
+            }
+            // Kalau periodeMonth > targetPrefix, skip (gaji future)
           });
         });
-
-        // 2. Cari gaji BELUM DIBAYAR dari SEMUA BULAN SEBELUMNYA
-        // TAPI hanya tampilkan carry-over di BULAN SAAT INI (real-time)
-        // Kalau user filter bulan lama (Maret, Feb, dll), jangan tampilkan carry-over
-        const now = new Date();
-        const currentRealMonth = String(now.getFullYear()) + '-' + String(now.getMonth() + 1).padStart(2, '0');
-        const isCurrentMonth = (targetPrefix === currentRealMonth);
-
-        if (isCurrentMonth) {
-          Object.entries(allData).forEach(([dateStr, dayData]) => {
-            if (dateStr.startsWith(targetPrefix)) return;
-
-            Object.entries(dayData).forEach(([gajiId, gaji]) => {
-              const status = gaji.paymentStatus || gaji.status || 'unpaid';
-              // Hanya tampilkan yang belum dibayar (unpaid) sebagai carry-over
-              if (status === 'unpaid') {
-                allGajiData.push({ 
-                  id: gajiId, ...gaji, dateStr: dateStr, 
-                  carryOver: true,
-                  displayPeriode: (gaji.periodeAwal || '-') + ' s/d ' + (gaji.periodeAkhir || '-')
-                });
-              }
-            });
-          });
-        }
 
         allGajiData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         updateStats();
@@ -1208,31 +1181,35 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
 
     /* ===== UPDATE STATS ===== */
     function updateStats() {
-      let sudah = 0, belum = 0, total = 0, totalLaluUnpaid = 0;
+      let sudah = 0, belum = 0, totalBulanIni = 0;
       const uniqueKaryawan = new Set();
+
       allGajiData.forEach(g => {
         const amount = g.totalDiterima || 0;
-        total += amount;
         uniqueKaryawan.add(g.namaKaryawan);
-        if ((g.paymentStatus || g.status) === 'paid') sudah += amount;
-        else {
-          belum += amount;
-          if (g.carryOver) totalLaluUnpaid += amount;
+
+        if (g.carryOver) {
+          // Gaji lalu: hanya hitung yang belum dibayar sebagai tunggakan
+          if ((g.paymentStatus || g.status) !== 'paid') {
+            belum += amount;
+          }
+        } else {
+          // Gaji bulan ini: hitung normal
+          totalBulanIni += amount;
+          if ((g.paymentStatus || g.status) === 'paid') sudah += amount;
+          else belum += amount;
         }
       });
 
       document.getElementById('statSudahBayar').textContent = formatRupiah(sudah);
       document.getElementById('statBelumBayar').textContent = formatRupiah(belum);
       document.getElementById('statJumlahKaryawan').textContent = uniqueKaryawan.size;
-      document.getElementById('statTotalGaji').textContent = formatRupiah(total);
+      document.getElementById('statTotalGaji').textContent = formatRupiah(totalBulanIni);
 
-      const pct = total > 0 ? Math.round((sudah / total) * 100) : 0;
-      let progressText = pct + '% terbayar (' + formatRupiah(sudah) + ' dari ' + formatRupiah(total) + ')';
-      if (totalLaluUnpaid > 0) {
-        progressText += ' • ' + formatRupiah(totalLaluUnpaid) + ' tunggakan bln lalu';
-      }
+      const totalAll = sudah + belum;
+      const pct = totalAll > 0 ? Math.round((sudah / totalAll) * 100) : 0;
       document.getElementById('progressBar').style.width = pct + '%';
-      document.getElementById('progressText').textContent = progressText;
+      document.getElementById('progressText').textContent = pct + '% terbayar (' + formatRupiah(sudah) + ' dari ' + formatRupiah(totalAll) + ')';
     }
 
     /* ===== RENDER TABLE ===== */
@@ -1396,9 +1373,13 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
             const hutang = hutangKaryawanList.find(h => h.id === hid);
             if (!hutang) continue;
             const sisa = hutang.remaining || hutang.amount || 0;
+
+            // 1. Update hutang jadi lunas
             await db.ref('debts/' + hid).update({
               remaining: 0, status: 'paid', paidAt: timestamp, updatedAt: timestamp
             });
+
+            // 2. Catat pembayaran hutang (untuk page hutang / dashboard)
             await db.ref('debt_payments/' + hid + '/' + timestamp).set({
               amount: sisa,
               note: 'Potongan gaji ' + nama + ' (' + periodeAwal + ' s/d ' + periodeAkhir + ')',
@@ -1408,6 +1389,25 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
               userId: user ? user.uid : 'unknown',
               userName: document.getElementById('userName').textContent,
               timestamp: timestamp
+            });
+
+            // 3. ⭐ TAMBAH: Catat juga di transactions supaya muncul di dashboard/laporan
+            // sebagai "Pembayaran Hutang via Potongan Gaji" (tidak affect kas karena sudah dipotong)
+            const transId = 'HUTANG_PAY_' + timestamp + '_' + hid;
+            await db.ref('transactions/' + todayStr + '/' + transId).set({
+              type: 'hutang_payment',
+              status: 'completed',
+              amount: sisa,
+              description: 'Pembayaran hutang ' + hutang.name + ' via potongan gaji ' + nama,
+              category: 'hutang',
+              relatedDebtId: hid,
+              relatedGajiId: gajiId,
+              affectKas: false,  // Tidak masuk kas karena sudah dipotong dari gaji
+              viaPotonganGaji: true,
+              timestamp: timestamp,
+              date: todayStr,
+              userId: user ? user.uid : 'unknown',
+              userName: document.getElementById('userName').textContent
             });
           }
         }
