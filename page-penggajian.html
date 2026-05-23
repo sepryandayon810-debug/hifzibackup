@@ -222,6 +222,15 @@ body{background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-
 .hutang-item-info div:last-child{font-size:.72rem;color:var(--text-muted)}
 .hutang-item-amount{font-weight:700;font-size:.85rem;color:var(--danger);white-space:nowrap;flex-shrink:0}
 
+/* Gaji bulan lalu row */
+.gaji-lalu-row{display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;border-radius:8px;margin-bottom:.25rem;background:var(--bg-card);border:1px solid var(--border-color);cursor:pointer;transition:all .2s}
+.gaji-lalu-row:hover{border-color:var(--warning);background:rgba(245,158,11,.06)}
+.gaji-lalu-row input[type="checkbox"]{width:18px;height:18px;accent-color:var(--warning);cursor:pointer;flex-shrink:0}
+.gaji-lalu-info{flex:1;min-width:0}
+.gaji-lalu-info div:first-child{font-weight:600;font-size:.82rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gaji-lalu-info div:last-child{font-size:.72rem;color:var(--text-muted)}
+.gaji-lalu-amount{font-weight:700;font-size:.85rem;color:var(--warning);white-space:nowrap;flex-shrink:0}
+
 /* Empty State */
 .empty-state{text-align:center;padding:3rem 1.5rem;color:var(--text-muted)}
 .empty-state i{font-size:3rem;margin-bottom:1rem;opacity:.5}
@@ -880,7 +889,16 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label">Nama Karyawan <span style="color:var(--danger)">*</span></label>
-          <input type="text" class="form-input" id="gajiNama" placeholder="Ketik nama karyawan..." autocomplete="off">
+          <div style="display:flex;gap:.5rem;">
+            <input type="text" class="form-input" id="gajiNama" placeholder="Ketik atau pilih nama..." autocomplete="off" list="listKaryawan" onchange="loadHutangKaryawan()" style="flex:1;">
+            <datalist id="listKaryawan"></datalist>
+            <button type="button" class="btn-icon" onclick="loadHutangKaryawan()" title="Refresh Hutang" style="width:42px;height:42px;flex-shrink:0;">
+              <i class="fas fa-sync-alt" id="iconRefreshHutang"></i>
+            </button>
+          </div>
+          <small style="color:var(--text-muted);font-size:.75rem;display:block;margin-top:.35rem;">
+            <i class="fas fa-info-circle"></i> Pilih nama dari list atau ketik manual. Klik <i class="fas fa-sync-alt"></i> untuk cek hutang.
+          </small>
         </div>
         <div class="form-row">
           <div class="form-group" style="margin-bottom:0">
@@ -928,6 +946,20 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
     <i class="fas fa-info-circle"></i> Centang hutang yang ingin dipotong dari gaji. Total otomatis masuk ke Potongan.
   </small>
 </div>
+        <!-- GAJI BULAN LALU BELUM DIBAYAR -->
+        <div class="form-group" id="gajiBulanLaluSection" style="display:none;">
+          <label class="form-label">
+            <i class="fas fa-history" style="color:var(--warning)"></i> 
+            Gaji Bulan Lalu Belum Dibayar
+          </label>
+          <div id="gajiBulanLaluContainer" style="max-height:120px;overflow-y:auto;border:1.5px solid var(--border-color);border-radius:var(--radius-lg);background:#fffbeb;padding:.5rem;">
+            <!-- diisi JS -->
+          </div>
+          <small style="color:var(--text-muted);font-size:.75rem;display:block;margin-top:.35rem;">
+            <i class="fas fa-info-circle"></i> Centang untuk memasukkan ke perhitungan bulan ini (carry-over).
+          </small>
+        </div>
+
         <div class="modal-summary">
           <div class="modal-summary-row"><span>Gaji Pokok</span><span id="previewPokok">Rp 0</span></div>
           <div class="modal-summary-row"><span>Bonus</span><span id="previewBonus">Rp 0</span></div>
@@ -986,7 +1018,9 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
     let currentTahun = '';
     let allGajiData = [];
     let hutangKaryawanList = [];
-let selectedHutangIds = [];
+    let selectedHutangIds = [];
+    let gajiBulanLaluList = [];
+    let selectedGajiLaluIds = [];
 
     /* ===== DOM ===== */
     const sidebar = document.getElementById('sidebar');
@@ -1092,7 +1126,7 @@ let selectedHutangIds = [];
         const snapshot = await db.ref('penggajian').once('value');
         const allData = snapshot.val() || {};
 
-        // 1. Load data bulan yang dipilih
+        // 1. Load data bulan yang dipilih (asli)
         const targetPrefix = currentTahun + '-' + currentBulan;
         Object.entries(allData).forEach(([dateStr, dayData]) => {
           if (!dateStr.startsWith(targetPrefix)) return;
@@ -1101,35 +1135,27 @@ let selectedHutangIds = [];
           });
         });
 
-        // 2. Cari gaji BELUM DIBAYAR dari bulan SEBELUMNYA
-        // yang periode-nya masih aktif sampai bulan ini
-        const prevMonth = parseInt(currentBulan) - 1;
-        const prevYear = parseInt(currentTahun);
-        let prevMonthStr = String(prevMonth).padStart(2, '0');
-        let prevYearStr = String(prevYear);
-        if (prevMonth === 0) {
-          prevMonthStr = '12';
-          prevYearStr = String(prevYear - 1);
-        }
-        const prevPrefix = prevYearStr + '-' + prevMonthStr;
-
+        // 2. Cari gaji BELUM DIBAYAR dari SEMUA BULAN SEBELUMNYA
+        // yang dicentang untuk carry-over ke bulan ini
         Object.entries(allData).forEach(([dateStr, dayData]) => {
-          if (!dateStr.startsWith(prevPrefix)) return;
+          // Lewati bulan ini
+          if (dateStr.startsWith(targetPrefix)) return;
+
           Object.entries(dayData).forEach(([gajiId, gaji]) => {
             const status = gaji.paymentStatus || gaji.status || 'unpaid';
-            // Kalau belum dibayar DAN periode akhir masih di bulan ini atau setelahnya
-            if (status === 'unpaid') {
+            // Tampilkan kalau belum dibayar ATAU sudah dibayar via carry-over
+            if (status === 'unpaid' || gaji.carryOverPaid) {
+              // Cek apakah periode akhir masih relevan dengan bulan yang dipilih
               const periodeAkhir = gaji.periodeAkhir || '';
-              const periodeYear = periodeAkhir.split('-')[0];
-              const periodeMonth = periodeAkhir.split('-')[1];
-              // Tampilkan kalau periode masih berlaku di bulan yang dipilih
-              if (periodeYear === currentTahun && periodeMonth === currentBulan) {
-                allGajiData.push({ 
-                  id: gajiId, ...gaji, dateStr: dateStr, 
-                  carryOver: true,
-                  displayPeriode: gaji.periodeAwal + ' s/d ' + gaji.periodeAkhir
-                });
-              }
+              const periodeYear = periodeAkhir.split('-')[0] || currentTahun;
+              const periodeMonth = periodeAkhir.split('-')[1] || currentBulan;
+
+              // Selalu tampilkan gaji unpaid bulan lalu (bisa dibayar kapan saja)
+              allGajiData.push({ 
+                id: gajiId, ...gaji, dateStr: dateStr, 
+                carryOver: true,
+                displayPeriode: (gaji.periodeAwal || '-') + ' s/d ' + (gaji.periodeAkhir || '-')
+              });
             }
           });
         });
@@ -1216,6 +1242,7 @@ let selectedHutangIds = [];
       const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
       document.getElementById('gajiPeriodeAwal').value = formatDateInput(firstDay);
       document.getElementById('gajiPeriodeAkhir').value = formatDateInput(lastDay);
+      populateDatalistKaryawan(); // ⭐ Isi dropdown nama
       setTimeout(() => document.getElementById('gajiNama').focus(), 100);
     };
     window.closeModalInputGaji = function() {
@@ -1257,9 +1284,7 @@ let selectedHutangIds = [];
           timestamp: timestamp, date: todayStr,
           userId: user ? user.uid : 'unknown',
           userName: document.getElementById('userName').textContent,
-          paymentStatus: status, status: status,
-          hutangDipotong: selectedHutangIds.length > 0 ? selectedHutangIds : null,
-          jumlahHutangDipotong: selectedHutangIds.length > 0 ? potongan : 0
+          paymentStatus: status, status: status
         };
         if (status === 'paid') {
           data.paidAt = timestamp;
@@ -1274,31 +1299,6 @@ let selectedHutangIds = [];
           });
         }
         await db.ref('penggajian/' + todayStr + '/' + gajiId).set(data);
-
-        // ⭐ BAYAR HUTANG VIA POTONGAN GAJI
-        if (selectedHutangIds.length > 0) {
-          for (const hid of selectedHutangIds) {
-            const hutang = hutangKaryawanList.find(h => h.id === hid);
-            if (!hutang) continue;
-            const sisa = hutang.remaining || hutang.amount || 0;
-            // Update hutang jadi lunas
-            await db.ref('debts/' + hid).update({
-              remaining: 0, status: 'paid', paidAt: timestamp, updatedAt: timestamp
-            });
-            // Catat pembayaran (tidak affect kas karena sudah dipotong dari gaji)
-            await db.ref('debt_payments/' + hid + '/' + timestamp).set({
-              amount: sisa,
-              note: 'Potongan gaji ' + nama + ' (' + periodeAwal + ' s/d ' + periodeAkhir + ')',
-              affectKas: false,
-              viaPotonganGaji: true,
-              gajiId: gajiId,
-              userId: user ? user.uid : 'unknown',
-              userName: document.getElementById('userName').textContent,
-              timestamp: timestamp
-            });
-          }
-        }
-
         closeModalInputGaji();
         showToast('Data gaji berhasil disimpan', 'success');
         loadGajiData();
@@ -1360,59 +1360,174 @@ let selectedHutangIds = [];
       Utils.hideLoading();
     };
 
-    /* ===== LOAD HUTANG KARYAWAN (dari page-hutang / debts) ===== */
-async function loadHutangKaryawan() {
-  const nama = document.getElementById('gajiNama').value.trim();
-  const section = document.getElementById('hutangPotonganSection');
-  if (!nama) { section.style.display = 'none'; return; }
+    /* ===== POPULATE DATALIST NAMA KARYAWAN ===== */
+    async function populateDatalistKaryawan() {
+      try {
+        const snapshot = await firebase.database().ref('penggajian').once('value');
+        const allData = snapshot.val() || {};
+        const namaSet = new Set();
 
-  try {
-    const snapshot = await firebase.database().ref('debts').once('value');
-    const all = snapshot.val() || {};
-    // Filter: nama sama, status active, type = piutang (karyawan hutang ke perusahaan)
-    hutangKaryawanList = Object.entries(all)
-      .filter(([id, d]) => d.name && d.name.toLowerCase().trim() === nama.toLowerCase().trim() && d.status === 'active' && d.type === 'piutang')
-      .map(([id, d]) => ({ id, ...d }));
-    if (hutangKaryawanList.length === 0) { section.style.display = 'none'; return; }
+        // Kumpulkan semua nama dari data gaji yang pernah ada
+        Object.values(allData).forEach(dayData => {
+          Object.values(dayData).forEach(gaji => {
+            if (gaji.namaKaryawan) namaSet.add(gaji.namaKaryawan);
+          });
+        });
 
-    section.style.display = 'block';
-    let html = '';
-    hutangKaryawanList.forEach((h, idx) => {
-      const sisa = h.remaining || h.amount || 0;
-      html += `<div class="hutang-item-row" onclick="toggleHutangCheck(${idx})">
-        <input type="checkbox" id="hutangChk_${idx}" onchange="hitungPotonganDariHutang()" onclick="event.stopPropagation()">
-        <div class="hutang-item-info">
-          <div>${escapeHtml(h.note || 'Hutang #' + (idx+1))}</div>
-          <div>Sisa ${formatRupiah(sisa)} • Jatuh tempo ${h.dueDate || '-'}</div>
-        </div>
-        <div class="hutang-item-amount">${formatRupiah(sisa)}</div>
-      </div>`;
-    });
-    document.getElementById('hutangListContainer').innerHTML = html;
-  } catch (e) { console.error('Load hutang error:', e); }
-}
+        // Juga tambahkan nama dari debts yang type=piutang (karyawan hutang)
+        const debtSnap = await firebase.database().ref('debts').once('value');
+        const debts = debtSnap.val() || {};
+        Object.values(debts).forEach(d => {
+          if (d.name && d.type === 'piutang') namaSet.add(d.name);
+        });
 
-window.toggleHutangCheck = function(idx) {
-  const cb = document.getElementById('hutangChk_' + idx);
-  if (cb) { cb.checked = !cb.checked; hitungPotonganDariHutang(); }
-};
+        // Render datalist
+        const datalist = document.getElementById('listKaryawan');
+        datalist.innerHTML = Array.from(namaSet).sort().map(n => 
+          `<option value="${escapeHtml(n)}">`
+        ).join('');
+      } catch (e) { console.error('Populate datalist error:', e); }
+    }
 
-window.hitungPotonganDariHutang = function() {
-  let total = 0; selectedHutangIds = [];
-  hutangKaryawanList.forEach((h, idx) => {
-    const cb = document.getElementById('hutangChk_' + idx);
-    if (cb && cb.checked) { total += (h.remaining || h.amount || 0); selectedHutangIds.push(h.id); }
-  });
-  document.getElementById('gajiPotongan').value = total;
-  updateGajiPreview();
-};
+    /* ===== LOAD HUTANG KARYAWAN + GAJI BULAN LALU ===== */
+    async function loadHutangKaryawan() {
+      const nama = document.getElementById('gajiNama').value.trim();
+      const hutangSection = document.getElementById('hutangPotonganSection');
+      const gajiLaluSection = document.getElementById('gajiBulanLaluSection');
+      const iconRefresh = document.getElementById('iconRefreshHutang');
+
+      if (!nama) { 
+        hutangSection.style.display = 'none'; 
+        gajiLaluSection.style.display = 'none';
+        return; 
+      }
+
+      if (iconRefresh) iconRefresh.classList.add('fa-spin');
+
+      try {
+        const db = firebase.database();
+
+        // ===== 1. LOAD HUTANG (dari debts) =====
+        const debtSnapshot = await db.ref('debts').once('value');
+        const allDebts = debtSnapshot.val() || {};
+        hutangKaryawanList = Object.entries(allDebts)
+          .filter(([id, d]) => d.name && d.name.toLowerCase().trim() === nama.toLowerCase().trim() && d.status === 'active' && d.type === 'piutang')
+          .map(([id, d]) => ({ id, ...d }));
+
+        if (hutangKaryawanList.length > 0) {
+          hutangSection.style.display = 'block';
+          let html = '';
+          hutangKaryawanList.forEach((h, idx) => {
+            const sisa = h.remaining || h.amount || 0;
+            html += `<div class="hutang-item-row" onclick="toggleHutangCheck(${idx})">
+              <input type="checkbox" id="hutangChk_${idx}" onchange="hitungPotonganDariHutang()" onclick="event.stopPropagation()">
+              <div class="hutang-item-info">
+                <div>${escapeHtml(h.note || 'Hutang #' + (idx+1))}</div>
+                <div>Sisa ${formatRupiah(sisa)} • Jatuh tempo ${h.dueDate || '-'}</div>
+              </div>
+              <div class="hutang-item-amount">${formatRupiah(sisa)}</div>
+            </div>`;
+          });
+          document.getElementById('hutangListContainer').innerHTML = html;
+        } else {
+          hutangSection.style.display = 'none';
+        }
+
+        // ===== 2. LOAD GAJI BULAN LALU BELUM DIBAYAR =====
+        const gajiSnapshot = await db.ref('penggajian').once('value');
+        const allGaji = gajiSnapshot.val() || {};
+        gajiBulanLaluList = [];
+
+        const now = new Date();
+        const currentYM = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
+        Object.entries(allGaji).forEach(([dateStr, dayData]) => {
+          // Lewati bulan ini — kita cari bulan-bulan SEBELUMNYA
+          if (dateStr.startsWith(currentYM)) return;
+
+          Object.entries(dayData).forEach(([gid, gaji]) => {
+            const status = gaji.paymentStatus || gaji.status || 'unpaid';
+            // Cari yang belum dibayar DAN nama sama
+            if (status === 'unpaid' && gaji.namaKaryawan && 
+                gaji.namaKaryawan.toLowerCase().trim() === nama.toLowerCase().trim()) {
+              gajiBulanLaluList.push({ id: gid, dateStr: dateStr, ...gaji });
+            }
+          });
+        });
+
+        if (gajiBulanLaluList.length > 0) {
+          gajiLaluSection.style.display = 'block';
+          let html = '';
+          gajiBulanLaluList.forEach((g, idx) => {
+            const bulan = g.dateStr ? g.dateStr.substring(0, 7) : '-';
+            html += `<div class="gaji-lalu-row" onclick="toggleGajiLaluCheck(${idx})">
+              <input type="checkbox" id="gajiLaluChk_${idx}" onchange="hitungGajiLalu()" onclick="event.stopPropagation()">
+              <div class="gaji-lalu-info">
+                <div>${escapeHtml(g.namaKaryawan)} • ${getBulanLabel(bulan.split('-')[1])} ${bulan.split('-')[0]}</div>
+                <div>Periode: ${g.periodeAwal || '-'} s/d ${g.periodeAkhir || '-'}</div>
+              </div>
+              <div class="gaji-lalu-amount">${formatRupiah(g.totalDiterima || 0)}</div>
+            </div>`;
+          });
+          document.getElementById('gajiBulanLaluContainer').innerHTML = html;
+        } else {
+          gajiLaluSection.style.display = 'none';
+        }
+
+      } catch (e) { console.error('Load hutang/gaji lalu error:', e); }
+
+      if (iconRefresh) iconRefresh.classList.remove('fa-spin');
+    }
+
+    window.toggleHutangCheck = function(idx) {
+      const cb = document.getElementById('hutangChk_' + idx);
+      if (cb) { cb.checked = !cb.checked; hitungPotonganDariHutang(); }
+    };
+
+    window.hitungPotonganDariHutang = function() {
+      let total = 0; selectedHutangIds = [];
+      hutangKaryawanList.forEach((h, idx) => {
+        const cb = document.getElementById('hutangChk_' + idx);
+        if (cb && cb.checked) { total += (h.remaining || h.amount || 0); selectedHutangIds.push(h.id); }
+      });
+      document.getElementById('gajiPotongan').value = total;
+      updateGajiPreview();
+    };
+
+    // ===== GAJI BULAN LALU FUNCTIONS =====
+    window.toggleGajiLaluCheck = function(idx) {
+      const cb = document.getElementById('gajiLaluChk_' + idx);
+      if (cb) { cb.checked = !cb.checked; hitungGajiLalu(); }
+    };
+
+    window.hitungGajiLalu = function() {
+      selectedGajiLaluIds = [];
+      let totalLalu = 0;
+      gajiBulanLaluList.forEach((g, idx) => {
+        const cb = document.getElementById('gajiLaluChk_' + idx);
+        if (cb && cb.checked) { 
+          selectedGajiLaluIds.push({ id: g.id, dateStr: g.dateStr, amount: g.totalDiterima || 0 });
+          totalLalu += (g.totalDiterima || 0);
+        }
+      });
+      // Gaji bulan lalu yang dicentang = otomatis tambah ke gaji pokok (carry-over)
+      // Atau bisa juga masuk ke bonus — tergantung kebutuhan
+      // Di sini kita anggap sebagai tambahan yang harus dibayar bulan ini
+      const pokokSaatIni = parseInt(document.getElementById('gajiPokok').value) || 0;
+      // Tidak otomatis ubah gaji pokok, tapi tampilkan info saja
+      // User bisa atur sendiri
+    };
 
     /* ===== HELPERS ===== */
     function resetForm() {
-  hutangKaryawanList = [];
-  selectedHutangIds = [];
-  document.getElementById('hutangPotonganSection').style.display = 'none';
-  document.getElementById('hutangListContainer').innerHTML = '';
+      hutangKaryawanList = [];
+      selectedHutangIds = [];
+      gajiBulanLaluList = [];
+      selectedGajiLaluIds = [];
+      document.getElementById('hutangPotonganSection').style.display = 'none';
+      document.getElementById('hutangListContainer').innerHTML = '';
+      document.getElementById('gajiBulanLaluSection').style.display = 'none';
+      document.getElementById('gajiBulanLaluContainer').innerHTML = '';
       document.getElementById('gajiNama').value = '';
       document.getElementById('gajiPokok').value = '';
       document.getElementById('gajiBonus').value = '';
