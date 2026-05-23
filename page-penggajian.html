@@ -1415,7 +1415,7 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
               timestamp: timestamp
             });
 
-            // 3. ⭐ Tidak menulis ke transactions/kas — perhitungan hutang via potongan gaji
+                        // 3. ⭐ Tidak menulis ke transactions/kas — perhitungan hutang via potongan gaji
             // hanya tercatat di modul Penggajian & Hutang, tidak mempengaruhi Kas
           }
         }
@@ -1450,26 +1450,39 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
       Utils.hideLoading();
     };
     window.bayarGaji = async function(gajiId, dateStr) {
-      if (!confirm('Tandai gaji ini sebagai SUDAH DIBAYAR?\nAkan otomatis tercatat di Kas Keluar.')) return;
+      const g = allGajiData.find(x => x.id === gajiId && x.dateStr === dateStr);
+      const nama = g ? g.namaKaryawan : 'Karyawan';
+      const total = g ? formatRupiah(g.totalDiterima || 0) : 'Rp 0';
+
+      const result = await Swal.fire({
+        title: 'Konfirmasi Pembayaran',
+        html: `<div style="text-align:center">
+          <div style="width:64px;height:64px;background:linear-gradient(135deg,var(--success),#34d399);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;color:white;font-size:1.75rem;">
+            <i class="fas fa-check"></i>
+          </div>
+          <p style="font-size:1rem;color:var(--text-primary);margin-bottom:.5rem;font-weight:600;">Tandai gaji <strong>${escapeHtml(nama)}</strong> sebagai</p>
+          <p style="font-size:1.1rem;color:var(--success);font-weight:700;margin-bottom:.25rem;">SUDAH DIBAYAR</p>
+          <p style="font-size:.9rem;color:var(--text-muted);">Total: <strong>${total}</strong></p>
+          <p style="font-size:.8rem;color:var(--text-muted);margin-top:.75rem;padding:.5rem;background:var(--bg-secondary);border-radius:8px;">
+            <i class="fas fa-info-circle"></i> Pembayaran hanya tercatat di modul Penggajian, tidak mempengaruhi Kas.
+          </p>
+        </div>`,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-check"></i> Ya, Tandai Dibayar',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#059669',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+        customClass: { popup: 'swal-gaji-popup', confirmButton: 'swal-gaji-btn-confirm', cancelButton: 'swal-gaji-btn-cancel' }
+      });
+
+      if (!result.isConfirmed) return;
+
       Utils.showLoading();
       try {
         const db = firebase.database();
-        const user = firebase.auth().currentUser;
         const timestamp = Date.now();
-        const todayStr = new Date().toISOString().split('T')[0];
-        const snap = await db.ref('penggajian/' + dateStr + '/' + gajiId).once('value');
-        const gaji = snap.val();
-        if (!gaji) { showToast('Data tidak ditemukan', 'error'); return; }
         await db.ref('penggajian/' + dateStr + '/' + gajiId).update({ paymentStatus: 'paid', status: 'paid', paidAt: timestamp });
-        const kasId = 'KASOUT' + timestamp;
-        await db.ref('transactions/' + todayStr + '/' + kasId).set({
-          type: 'kas_keluar', status: 'completed', amount: gaji.totalDiterima || 0,
-          description: 'Gaji ' + gaji.namaKaryawan + ' (' + (gaji.periodeAwal || '-') + ' s/d ' + (gaji.periodeAkhir || '-') + ')',
-          category: 'penggajian', relatedGajiId: gajiId,
-          timestamp: timestamp, date: todayStr,
-          userId: user ? user.uid : 'unknown',
-          userName: document.getElementById('userName').textContent
-        });
         showToast('Gaji berhasil ditandai dibayar', 'success');
         loadGajiData();
       } catch (err) {
@@ -1479,7 +1492,30 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
       Utils.hideLoading();
     };
     window.batalkanGaji = async function(gajiId, dateStr) {
-      if (!confirm('Batalkan status pembayaran gaji ini?\nData Kas Keluar terkait TIDAK akan dihapus otomatis.')) return;
+      const g = allGajiData.find(x => x.id === gajiId && x.dateStr === dateStr);
+      const nama = g ? g.namaKaryawan : 'Karyawan';
+
+      const result = await Swal.fire({
+        title: 'Batalkan Pembayaran?',
+        html: `<div style="text-align:center">
+          <div style="width:64px;height:64px;background:linear-gradient(135deg,var(--warning),#fbbf24);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;color:white;font-size:1.75rem;">
+            <i class="fas fa-undo"></i>
+          </div>
+          <p style="font-size:1rem;color:var(--text-primary);margin-bottom:.5rem;">Batalkan status <strong>SUDAH DIBAYAR</strong> untuk</p>
+          <p style="font-size:1.1rem;color:var(--warning);font-weight:700;">${escapeHtml(nama)}</p>
+          <p style="font-size:.85rem;color:var(--text-muted);margin-top:.75rem;">Status akan kembali menjadi <strong>Belum Dibayar</strong>.</p>
+        </div>`,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-undo"></i> Ya, Batalkan',
+        cancelButtonText: 'Tutup',
+        confirmButtonColor: '#f59e0b',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+        customClass: { popup: 'swal-gaji-popup' }
+      });
+
+      if (!result.isConfirmed) return;
+
       Utils.showLoading();
       try {
         const db = firebase.database();
@@ -1526,8 +1562,6 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
       } catch (err) { showToast('Gagal menghapus', 'error'); }
       Utils.hideLoading();
     };
-
-    /* ===== DETAIL GAJI MODAL ===== */
     window.showDetailGaji = function(gajiId, dateStr) {
       const g = allGajiData.find(x => x.id === gajiId && x.dateStr === dateStr);
       if (!g) { showToast('Data tidak ditemukan', 'error'); return; }
