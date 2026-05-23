@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light" data-theme-color="green">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#059669">
+  <title>WebPOS - Penggajian Karyawan</title>
+
+  <link rel="manifest" href="./manifest.json">
+  <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js')</script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <style>
+/* ============================================
+   WEBPOS - TEMA MINT FRESH (Penggajian)
+   ============================================ */
+
+:root{
+  --primary:#059669;
+  --primary-dark:#047857;
+  --secondary:#84cc16;
+  --success:#10b981;
+  --warning:#f59e0b;
+  --danger:#ef4444;
+  --info:#06b6d4;
+
+  --bg-primary:#f0fdf4;
+  --bg-secondary:#ecfdf5;
+  --bg-card:#ffffff;
+  --text-primary:#064e3b;
+  --text-secondary:#065f46;
+  --text-muted:#10b981;
+  --border-color:#d1fae5;
+
+  --shadow-sm:0 1px 2px rgba(5,150,105,0.05);
+  --shadow-md:0 4px 12px rgba(5,150,105,0.08);
+  --shadow-lg:0 10px 30px rgba(5,150,105,0.12);
+  --shadow-xl:0 20px 40px rgba(5,150,105,0.15);
+
+  --radius-sm:0.5rem;
+  --radius-md:0.75rem;
+  --radius-lg:1rem;
+  --radius-xl:1.5rem;
+  --radius-2xl:2rem;
+
+  --sidebar-width:260px;
+  --sidebar-collapsed:76px;
+  --header-height:65px;
+  --bottom-nav-height:60px;
+}
+
+[data-theme="dark"]{
+  --bg-primary:#022c22;
+  --bg-secondary:#064e3b;
+  --bg-card:#065f46;
+  --text-primary:#ecfdf5;
+  --text-secondary:#6ee7b7;
+  --text-muted:#34d399;
+  --border-color:#047857;
+  --shadow-lg:0 10px 30px rgba(0,0,0,0.3);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:15px;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif}
+body{
+  background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
+  background-attachment: fixed;
+  color:var(--text-primary);
+  line-height:1.5;min-height:100vh;
+}
+
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--primary);border-radius:9999px;opacity:.3}
+
+.app-container{display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{
+  position:fixed;top:0;left:0;
+  width:var(--sidebar-width);height:100vh;
+  background:rgba(255,255,255,0.9);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-right:1px solid rgba(255,255,255,0.6);
+  z-index:1000;display:flex;flex-direction:column;
+  transition:all .3s ease;
+  box-shadow:var(--shadow-lg);
+}
+[data-theme="dark"] .sidebar{
+  background:rgba(6,78,59,0.9);
+  border-right:1px solid rgba(255,255,255,0.05);
+}
+
+.sidebar.collapsed{width:var(--sidebar-collapsed)}
+@media(max-width:1024px){
+  .sidebar{transform:translateX(-110%);box-shadow:var(--shadow-xl)}
+  .sidebar.mobile-open{transform:translateX(0)}
+}
+
+.sidebar-header{
+  padding:1.5rem 1.25rem 1rem;
+  border-bottom:none;
+  display:flex;align-items:center;gap:.75rem;
+  min-height:var(--header-height);
+}
+
+.logo-icon{
+  width:44px;height:44px;
+  background:linear-gradient(135deg,#059669,#84cc16);
+  border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  color:white;font-weight:800;font-size:1.1rem;
+  box-shadow:0 4px 12px rgba(5,150,105,0.3);
+}
+
+.logo-text{
+  font-size:1.35rem;font-weight:800;
+  background:linear-gradient(135deg,#059669,#84cc16);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.sidebar.collapsed .logo-text{opacity:0;width:0}
+
+.menu-toggle{
+  position:absolute;right:-12px;top:22px;
+  width:26px;height:26px;
+  background:var(--primary);border:none;
+  border-radius:50%;color:white;
+  cursor:pointer;display:flex;
+  align-items:center;justify-content:center;
+  z-index:1001;font-size:.7rem;
+  box-shadow:0 2px 8px rgba(5,150,105,0.4);
+}
+.sidebar.collapsed .menu-toggle{transform:rotate(180deg)}
+
+.sidebar-search{padding:0 1.25rem 1rem;border-bottom:none}
+.search-input-wrapper{position:relative;display:flex;align-items:center}
+.search-input-wrapper i{position:absolute;left:1rem;color:var(--text-muted);font-size:.875rem}
+.search-input{
+  width:100%;padding:.65rem 1rem .65rem 2.5rem;
+  border:1.5px solid #d1fae5;border-radius:12px;
+  background:#f0fdf4;color:var(--text-primary);
+  font-size:.85rem;transition:all .2s;
+}
+.search-input:focus{
+  outline:none;border-color:var(--primary);
+  background:#fff;box-shadow:0 0 0 4px rgba(5,150,105,0.1);
+}
+
+.sidebar-nav{flex:1;overflow-y:auto;padding:1rem .75rem}
+.nav-section{margin-bottom:1.25rem}
+.nav-section-title{
+  font-size:.65rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;
+  color:#10b981;padding:.5rem 1rem;margin-bottom:.25rem;
+}
+.sidebar.collapsed .nav-section-title{display:none}
+
+.nav-menu{list-style:none}
+.nav-item{margin-bottom:3px}
+.nav-link{
+  display:flex;align-items:center;gap:.875rem;
+  padding:.65rem 1rem;border-radius:12px;
+  color:#065f46;text-decoration:none;
+  font-size:.88rem;font-weight:500;
+  transition:all .2s ease;position:relative;
+  margin:0 .25rem;
+}
+.nav-link:hover{
+  background:rgba(5,150,105,0.06);
+  color:var(--primary);
+  transform:translateX(4px);
+}
+.nav-link.active{
+  background:linear-gradient(135deg,#059669,#10b981);
+  color:#fff !important;
+  font-weight:600;
+  box-shadow:0 4px 15px rgba(5,150,105,0.35);
+}
+.nav-link.active i{color:#fff !important}
+.nav-link.active span{color:#fff !important}
+
+.nav-link i{width:22px;text-align:center;font-size:1.05rem}
+.nav-link span{white-space:nowrap}
+.sidebar.collapsed .nav-link span{display:none}
+
+.nav-dropdown{position:relative}
+.nav-dropdown-toggle{justify-content:space-between}
+.nav-dropdown-toggle .dropdown-arrow{transition:transform .2s;font-size:.7rem;margin-left:auto}
+.nav-dropdown.open .nav-dropdown-toggle .dropdown-arrow{transform:rotate(180deg)}
+.nav-submenu{list-style:none;padding-left:2.5rem;max-height:0;overflow:hidden;transition:max-height .3s ease}
+.sidebar.collapsed .nav-submenu{display:none}
+.nav-dropdown.open .nav-submenu{max-height:500px}
+.nav-submenu .nav-link{padding:.5rem 1rem;font-size:.82rem;border-radius:10px}
+
+.sidebar-footer{
+  padding:1rem;border-top:1px solid var(--border-color);
+  background:rgba(255,255,255,0.5);
+}
+[data-theme="dark"] .sidebar-footer{background:rgba(0,0,0,0.2)}
+.user-profile{display:flex;align-items:center;gap:.875rem;cursor:pointer}
+.user-profile:hover{opacity:.85}
+.user-avatar{
+  width:38px;height:38px;
+  background:linear-gradient(135deg,var(--primary),var(--secondary));
+  border-radius:50%;display:flex;
+  align-items:center;justify-content:center;
+  color:white;font-weight:700;font-size:.8rem;
+  box-shadow:0 2px 8px rgba(5,150,105,0.25);
+}
+.user-info{flex:1;overflow:hidden}
+.sidebar.collapsed .user-info{display:none}
+.user-name{font-weight:600;font-size:.85rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:.7rem;color:var(--text-muted);text-transform:capitalize}
+
+.main-content{flex:1;margin-left:var(--sidebar-width);min-height:100vh;display:flex;flex-direction:column;transition:margin-left .3s}
+.sidebar.collapsed~.main-content{margin-left:var(--sidebar-collapsed)}
+@media(max-width:1024px){.main-content{margin-left:0}.sidebar.collapsed~.main-content{margin-left:0}}
+
+.main-header{
+  height:var(--header-height);
+  background:rgba(255,255,255,0.7);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(255,255,255,0.5);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 1.5rem;position:sticky;top:0;z-index:100;
+}
+[data-theme="dark"] .main-header{background:rgba(2,44,34,0.8);border-bottom:1px solid rgba(255,255,255,0.05)}
+
+.header-left{display:flex;align-items:center;gap:1rem}
+.header-title{font-size:1.25rem;font-weight:700;color:var(--text-primary)}
+.header-actions{display:flex;align-items:center;gap:.5rem}
+
+.page-content{flex:1;padding:1.5rem;overflow-y:auto}
+@media(max-width:768px){.page-content{padding:1rem;padding-bottom:calc(var(--bottom-nav-height) + 1rem)}}
+
+/* ===== STATS GRID ===== */
+.stats-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:1.25rem;
+  margin-bottom:1.5rem;
+}
+
+.stat-card{
+  background:var(--bg-card);
+  border-radius:var(--radius-2xl);
+  border:none;
+  padding:1.5rem;
+  display:flex;align-items:center;gap:1.25rem;
+  transition:all .3s ease;
+  position:relative;overflow:hidden;
+  box-shadow:0 4px 20px rgba(5,150,105,0.06);
+}
+.stat-card:hover{
+  transform:translateY(-6px) scale(1.01);
+  box-shadow:var(--shadow-xl);
+}
+.stat-card::before{
+  content:'';position:absolute;
+  top:-20px;right:-20px;
+  width:80px;height:80px;
+  border-radius:50%;
+  opacity:.08;z-index:0;
+}
+.stat-card:nth-child(1)::before{background:#059669}
+.stat-card:nth-child(2)::before{background:#ef4444}
+.stat-card:nth-child(3)::before{background:#3b82f6}
+.stat-card:nth-child(4)::before{background:#f59e0b}
+
+.stat-icon{
+  width:54px;height:54px;
+  border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;color:white;flex-shrink:0;
+  position:relative;z-index:1;
+  box-shadow:0 6px 16px rgba(0,0,0,0.1);
+}
+.stat-icon.green{background:linear-gradient(135deg,#059669,#10b981);box-shadow:0 6px 16px rgba(5,150,105,0.25)}
+.stat-icon.red{background:linear-gradient(135deg,#ef4444,#f87171);box-shadow:0 6px 16px rgba(239,68,68,0.25)}
+.stat-icon.blue{background:linear-gradient(135deg,#3b82f6,#60a5fa);box-shadow:0 6px 16px rgba(59,130,246,0.25)}
+.stat-icon.orange{background:linear-gradient(135deg,#f59e0b,#fbbf24);box-shadow:0 6px 16px rgba(245,158,11,0.25)}
+
+.stat-content{flex:1;position:relative;z-index:1}
+.stat-label{
+  font-size:.72rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;
+  color:var(--text-muted);margin-bottom:.35rem;
+}
+.stat-value{
+  font-size:1.5rem;font-weight:800;
+  color:var(--text-primary);line-height:1.2;
+}
+.stat-value.success{color:var(--success)}
+.stat-value.danger{color:var(--danger)}
+.stat-value.warning{color:var(--warning)}
+
+/* ===== FILTER BAR ===== */
+.filter-bar{
+  background:var(--bg-card);
+  border-radius:var(--radius-xl);
+  border:none;
+  padding:1rem 1.25rem;
+  margin-bottom:1.25rem;
+  display:flex;
+  align-items:center;
+  gap:1rem;
+  flex-wrap:wrap;
+  box-shadow:0 4px 20px rgba(5,150,105,0.06);
+}
+.filter-group{
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+}
+.filter-label{
+  font-size:.8rem;
+  font-weight:600;
+  color:var(--text-secondary);
+}
+.filter-select{
+  padding:.5rem .875rem;
+  border:1.5px solid var(--border-color);
+  border-radius:var(--radius-lg);
+  background:#f0fdf4;
+  color:var(--text-primary);
+  font-size:.85rem;
+  font-family:inherit;
+  cursor:pointer;
+  transition:all .2s;
+}
+.filter-select:focus{
+  outline:none;
+  border-color:var(--primary);
+  box-shadow:0 0 0 4px rgba(5,150,105,0.1);
+}
+.filter-spacer{flex:1}
+
+/* ===== TABLE ===== */
+.card{
+  background:var(--bg-card);
+  border-radius:var(--radius-2xl);
+  border:none;
+  overflow:hidden;
+  transition:all .3s ease;
+  box-shadow:0 4px 20px rgba(5,150,105,0.06);
+}
+.card:hover{box-shadow:var(--shadow-xl)}
+.card-header{
+  padding:1.25rem 1.5rem;
+  border-bottom:1px solid var(--border-color);
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  flex-wrap:wrap;
+}
+.card-title{font-size:1.05rem;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:.5rem}
+.card-body{padding:0}
+
+.table-container{overflow-x:auto}
+.table{width:100%;border-collapse:collapse;font-size:.9rem}
+.table th,.table td{padding:.875rem 1rem;text-align:left;border-bottom:1px solid var(--border-color)}
+.table th{
+  font-weight:600;color:var(--text-secondary);
+  background:var(--bg-secondary);
+  font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;
+  white-space:nowrap;
+}
+.table tbody tr:hover{background:rgba(5,150,105,.04)}
+.table tbody tr:last-child td{border-bottom:none}
+
+.td-nama{font-weight:600;color:var(--text-primary)}
+.td-periode{font-size:.8rem;color:var(--text-muted);white-space:nowrap}
+.td-amount{font-weight:700;color:var(--text-primary);white-space:nowrap}
+.td-amount.paid{color:var(--success)}
+.td-amount.unpaid{color:var(--danger)}
+
+/* ===== BADGE STATUS ===== */
+.badge{display:inline-flex;align-items:center;gap:.25rem;padding:.35rem .75rem;border-radius:9999px;font-size:.75rem;font-weight:600;white-space:nowrap}
+.badge-paid{background:rgba(16,185,129,.1);color:var(--success)}
+.badge-unpaid{background:rgba(239,68,68,.1);color:var(--danger)}
+.badge-pending{background:rgba(245,158,11,.1);color:var(--warning)}
+
+/* ===== ACTION BUTTONS ===== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  gap:.5rem;padding:.625rem 1.25rem;
+  border-radius:var(--radius-lg);
+  font-size:.875rem;font-weight:600;
+  cursor:pointer;transition:all .2s ease;
+  border:none;outline:none;white-space:nowrap;
+}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn-primary{
+  background:linear-gradient(135deg,#059669,#10b981);
+  color:white;box-shadow:0 4px 14px rgba(5,150,105,0.3);
+}
+.btn-primary:hover:not(:disabled){
+  transform:translateY(-2px);
+  box-shadow:0 6px 20px rgba(5,150,105,0.4);
+}
+.btn-success{background:var(--success);color:white}
+.btn-danger{background:var(--danger);color:white}
+.btn-warning{background:var(--warning);color:white}
+.btn-outline{background:transparent;border:1.5px solid var(--border-color);color:var(--text-secondary)}
+.btn-outline:hover:not(:disabled){border-color:var(--primary);color:var(--primary)}
+.btn-sm{padding:.4rem .875rem;font-size:.8rem}
+.btn-icon{
+  width:34px;height:34px;padding:0;
+  border-radius:10px;background:var(--bg-secondary);
+  border:1px solid var(--border-color);
+  color:var(--text-secondary);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;
+}
+.btn-icon:hover{
+  background:rgba(5,150,105,0.1);color:var(--primary);
+  border-color:rgba(5,150,105,0.3);
+  transform:scale(1.05);
+}
+
+/* ===== MODAL ===== */
+.modal-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(6,78,59,0.4);
+  backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;
+  z-index:2000;opacity:0;visibility:hidden;
+  transition:all .3s ease;padding:1rem;
+}
+.modal-overlay.active{opacity:1;visibility:visible}
+.modal-content{
+  background:var(--bg-card);
+  border-radius:var(--radius-2xl);
+  width:100%;max-width:520px;max-height:90vh;
+  overflow-y:auto;box-shadow:var(--shadow-xl);
+  transform:scale(.9) translateY(20px);
+  transition:all .3s ease;
+  border:1px solid rgba(255,255,255,0.5);
+}
+[data-theme="dark"] .modal-content{border:1px solid rgba(255,255,255,0.05)}
+.modal-overlay.active .modal-content{transform:scale(1) translateY(0)}
+.modal-header{
+  padding:1.25rem 1.5rem;
+  border-bottom:1px solid var(--border-color);
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(135deg,#059669,#10b981);
+  border-radius:var(--radius-2xl) var(--radius-2xl) 0 0;
+}
+.modal-title{font-size:1.15rem;font-weight:700;color:#fff}
+.modal-close{
+  width:34px;height:34px;border:none;
+  border-radius:10px;background:rgba(255,255,255,0.2);
+  color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;
+}
+.modal-close:hover{background:rgba(255,255,255,0.35)}
+.modal-body{padding:1.5rem}
+.modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border-color);display:flex;gap:.75rem;justify-content:flex-end}
+
+.form-group{margin-bottom:1.25rem}
+.form-label{display:block;font-size:.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:.5rem}
+.form-input,.form-select{
+  width:100%;padding:.75rem 1rem;
+  border:1.5px solid var(--border-color);
+  border-radius:var(--radius-lg);
+  background:#f0fdf4;color:var(--text-primary);
+  font-size:.95rem;transition:all .2s;font-family:inherit;
+}
+.form-input:focus,.form-select:focus{
+  outline:none;border-color:var(--primary);
+  box-shadow:0 0 0 4px rgba(5,150,105,0.1);
+}
+.form-input::placeholder{color:var(--text-muted)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.875rem}
+
+/* ===== RINGKASAN MODAL ===== */
+.modal-summary{
+  background:linear-gradient(135deg,#f0fdf4,#ecfdf5);
+  border-radius:var(--radius-lg);
+  padding:1rem 1.25rem;
+  margin-bottom:1.25rem;
+  border:1.5px dashed var(--border-color);
+}
+.modal-summary-row{
+  display:flex;justify-content:space-between;
+  align-items:center;
+  padding:.35rem 0;
+  font-size:.9rem;
+}
+.modal-summary-row.total{
+  border-top:2px dashed var(--border-color);
+  margin-top:.5rem;
+  padding-top:.75rem;
+  font-weight:700;
+  font-size:1.1rem;
+  color:var(--primary);
+}
+
+/* ===== TOAST ===== */
+.toast-container{position:fixed;top:1rem;right:1rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;max-width:400px}
+.toast{
+  display:flex;align-items:center;gap:1rem;
+  padding:1rem 1.5rem;background:var(--bg-card);
+  border-radius:var(--radius-xl);box-shadow:var(--shadow-xl);
+  border-left:4px solid;animation:slideIn .4s ease;
+}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.success{border-left-color:var(--success)}
+.toast.error{border-left-color:var(--danger)}
+.toast.warning{border-left-color:var(--warning)}
+
+/* ===== LOADING ===== */
+.loading-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:var(--bg-primary);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  z-index:9998;opacity:0;visibility:hidden;
+  transition:all .3s;
+}
+.loading-overlay.active{opacity:1;visibility:visible}
+.spinner{
+  width:48px;height:48px;
+  border:4px solid var(--border-color);
+  border-top-color:var(--primary);
+  border-radius:50%;animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== MOBILE NAV ===== */
+.mobile-nav{
+  display:none;position:fixed;bottom:0;left:0;right:0;
+  height:var(--bottom-nav-height);
+  background:rgba(255,255,255,0.9);
+  backdrop-filter:blur(12px);
+  border-top:1px solid rgba(255,255,255,0.6);
+  z-index:999;padding:0 1rem;
+}
+[data-theme="dark"] .mobile-nav{background:rgba(2,44,34,0.9);border-top:1px solid rgba(255,255,255,0.05)}
+.mobile-nav-item{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:.2rem;color:var(--text-muted);
+  text-decoration:none;font-size:.65rem;font-weight:600;
+  transition:all .2s;padding:.5rem;
+}
+.mobile-nav-item i{font-size:1.15rem}
+.mobile-nav-item.active,.mobile-nav-item:hover{color:var(--primary)}
+.mobile-nav-item.active i{transform:scale(1.1)}
+@media(max-width:768px){
+  .mobile-nav{display:flex}
+  .page-content{padding-bottom:calc(var(--bottom-nav-height) + 1rem)}
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state{text-align:center;padding:3rem 1.5rem;color:var(--text-muted)}
+.empty-state i{font-size:3rem;margin-bottom:1rem;opacity:.5}
+.empty-state-title{font-size:1.1rem;font-weight:600;color:var(--text-primary);margin-bottom:.5rem}
+
+/* ===== PROGRESS BAR ===== */
+.progress-wrap{
+  margin-top:1.5rem;
+  background:var(--bg-secondary);
+  border-radius:var(--radius-lg);
+  padding:1.25rem;
+}
+.progress-header{
+  display:flex;justify-content:space-between;
+  align-items:center;
+  margin-bottom:.75rem;
+}
+.progress-label{font-size:.85rem;font-weight:600;color:var(--text-secondary)}
+.progress-value{font-size:.85rem;font-weight:700;color:var(--primary)}
+.progress-bar-bg{
+  width:100%;height:10px;
+  background:var(--border-color);
+  border-radius:999px;
+  overflow:hidden;
+}
+.progress-bar-fill{
+  height:100%;
+  background:linear-gradient(90deg,#059669,#10b981);
+  border-radius:999px;
+  transition:width .5s ease;
+}
+
+/* ===== DARK MODE FIXES ===== */
+[data-theme="dark"] .nav-link{color:var(--text-primary)}
+[data-theme="dark"] .nav-link:hover{background:rgba(255,255,255,.08);color:var(--primary)}
+[data-theme="dark"] .nav-section-title{color:var(--text-muted)}
+[data-theme="dark"] .search-input{background:var(--bg-secondary);border-color:var(--border-color);color:var(--text-primary)}
+[data-theme="dark"] .search-input:focus{background:var(--bg-card);box-shadow:0 0 0 4px rgba(5,150,105,.2)}
+[data-theme="dark"] .logo-text{-webkit-text-fill-color:var(--text-primary)}
+[data-theme="dark"] .filter-select{background:var(--bg-secondary);color:var(--text-primary)}
+[data-theme="dark"] .form-input,[data-theme="dark"] .form-select{background:var(--bg-secondary);color:var(--text-primary)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  html{font-size:14px}
+  :root{--header-height:55px;--bottom-nav-height:55px;--sidebar-width:260px}
+  .main-header{padding:0 1rem}
+  .header-title{font-size:1.1rem}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:.75rem;margin-bottom:1rem}
+  .stat-card{padding:1.125rem;gap:.875rem;border-radius:1.25rem}
+  .stat-icon{width:44px;height:44px;font-size:1.1rem;border-radius:12px}
+  .stat-value{font-size:1.15rem}
+  .filter-bar{padding:.875rem 1rem;gap:.625rem}
+  .card{border-radius:1.25rem}
+  .card-header{padding:1rem 1.25rem}
+  .table th,.table td{padding:.625rem .75rem;font-size:.8rem}
+  .modal-content{max-width:95%;border-radius:1.25rem}
+  .form-row{grid-template-columns:1fr}
+}
+
+@media(max-width:380px){
+  html{font-size:13px}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:.5rem}
+  .stat-card{padding:1rem}
+  .stat-icon{width:36px;height:36px;font-size:1rem}
+}
+  </style>
+<base target="_blank">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-container">
+          <div class="logo-icon"><i class="fas fa-cash-register"></i></div>
+          <span class="logo-text">WebPOS</span>
+        </div>
+      </div>
+      <button class="menu-toggle" id="menuToggle"><i class="fas fa-chevron-left"></i></button>
+
+      <div class="sidebar-search">
+        <div class="search-input-wrapper">
+          <i class="fas fa-search"></i>
+          <input type="text" class="search-input" id="menuSearch" placeholder="Cari menu...">
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <!-- Utama -->
+        <div class="nav-section">
+          <div class="nav-section-title">Utama</div>
+          <ul class="nav-menu">
+            <li class="nav-item"><a href="index.html" class="nav-link" data-menu="dashboard"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
+            <li class="nav-item"><a href="page-kasir.html" class="nav-link" data-menu="kasir"><i class="fas fa-cash-register"></i><span>Kasir</span></a></li>
+            <li class="nav-item"><a href="page-produk.html" class="nav-link" data-menu="produk"><i class="fas fa-box"></i><span>Produk</span></a></li>
+          </ul>
+        </div>
+        <!-- Transaksi -->
+        <div class="nav-section">
+          <div class="nav-section-title">Transaksi</div>
+          <ul class="nav-menu">
+            <li class="nav-item"><a href="page-riwayat.html" class="nav-link" data-menu="riwayat"><i class="fas fa-history"></i><span>Riwayat Transaksi</span></a></li>
+            <li class="nav-item nav-dropdown" data-dropdown>
+              <div class="nav-link nav-dropdown-toggle" data-menu="kas">
+                <div style="display:flex;align-items:center;gap:.75rem;"><i class="fas fa-wallet"></i><span>Kas Management</span></div>
+                <i class="fas fa-chevron-down dropdown-arrow"></i>
+              </div>
+              <ul class="nav-submenu">
+                <li><a href="page-kas.html" class="nav-link"><span>Ringkasan Kas</span></a></li>
+                <li><a href="page-modal-harian.html" class="nav-link"><span>Modal Harian</span></a></li>
+                <li><a href="page-kas-masuk.html" class="nav-link"><span>Kas Masuk</span></a></li>
+                <li><a href="page-kas-keluar.html" class="nav-link"><span>Kas Keluar</span></a></li>
+                <li><a href="page-closing.html" class="nav-link"><span>Closing Shift</span></a></li>
+              </ul>
+            </li>
+            <li class="nav-item"><a href="page-pembelian.html" class="nav-link" data-menu="pembelian"><i class="fas fa-shopping-cart"></i><span>Pembelian / Restock</span></a></li>
+            <li class="nav-item"><a href="page-hutang.html" class="nav-link" data-menu="hutang"><i class="fas fa-hand-holding-usd"></i><span>Hutang & Piutang</span></a></li>
+          </ul>
+        </div>
+        <!-- Penggajian -->
+        <div class="nav-section">
+          <div class="nav-section-title">Penggajian</div>
+          <ul class="nav-menu">
+            <li class="nav-item"><a href="page-penggajian.html" class="nav-link active" data-menu="penggajian"><i class="fas fa-money-check-alt"></i><span>Data Penggajian</span></a></li>
+            <li class="nav-item"><a href="page-karyawan.html" class="nav-link" data-menu="karyawan"><i class="fas fa-users"></i><span>Data Karyawan</span></a></li>
+          </ul>
+        </div>
+        <!-- Laporan -->
+        <div class="nav-section">
+          <div class="nav-section-title">Laporan</div>
+          <ul class="nav-menu">
+            <li class="nav-item"><a href="page-laporan.html" class="nav-link" data-menu="laporan"><i class="fas fa-chart-bar"></i><span>Laporan Penjualan</span></a></li>
+            <li class="nav-item"><a href="page-laporan-stok.html" class="nav-link" data-menu="laporan-stok"><i class="fas fa-boxes"></i><span>Laporan Stok</span></a></li>
+          </ul>
+        </div>
+        <!-- Sistem -->
+        <div class="nav-section">
+          <div class="nav-section-title">Sistem</div>
+          <ul class="nav-menu">
+            <li class="nav-item"><a href="page-pengguna.html" class="nav-link" data-menu="pengguna"><i class="fas fa-user-cog"></i><span>Pengguna</span></a></li>
+            <li class="nav-item"><a href="page-setting.html" class="nav-link" data-menu="setting"><i class="fas fa-cog"></i><span>Pengaturan</span></a></li>
+            <li class="nav-item"><a href="page-backup.html" class="nav-link" data-menu="backup"><i class="fas fa-cloud-upload-alt"></i><span>Backup & Sync</span></a></li>
+          </ul>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile" id="userProfile">
+          <div class="user-avatar" id="userAvatar"><i class="fas fa-user"></i></div>
+          <div class="user-info">
+            <div class="user-name" id="userName">Loading...</div>
+            <div class="user-role" id="userRole">-</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="main-header">
+        <div class="header-left">
+          <button class="btn-icon" id="mobileMenuToggle" style="display:flex;"><i class="fas fa-bars"></i></button>
+          <h1 class="header-title">Penggajian Karyawan</h1>
+        </div>
+        <div class="header-actions">
+          <button class="btn-icon" id="btnTheme" title="Toggle Dark Mode"><i class="fas fa-moon"></i></button>
+          <button class="btn-icon" id="btnLogout" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="page-content">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-content">
+              <div class="stat-label">Sudah Dibayar</div>
+              <div class="stat-value success" id="statSudahBayar">Rp 0</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red"><i class="fas fa-clock"></i></div>
+            <div class="stat-content">
+              <div class="stat-label">Belum Dibayar</div>
+              <div class="stat-value danger" id="statBelumBayar">Rp 0</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+            <div class="stat-content">
+              <div class="stat-label">Jumlah Karyawan</div>
+              <div class="stat-value" id="statJumlahKaryawan">0</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon orange"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="stat-content">
+              <div class="stat-label">Total Gaji Bulan Ini</div>
+              <div class="stat-value warning" id="statTotalGaji">Rp 0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress-wrap" id="progressWrap">
+          <div class="progress-header">
+            <span class="progress-label">Progress Pembayaran Gaji</span>
+            <span class="progress-value" id="progressText">0% terbayar</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <label class="filter-label"><i class="fas fa-calendar-alt"></i> Bulan</label>
+            <select class="filter-select" id="filterBulan">
+              <option value="01">Januari</option>
+              <option value="02">Februari</option>
+              <option value="03">Maret</option>
+              <option value="04">April</option>
+              <option value="05">Mei</option>
+              <option value="06">Juni</option>
+              <option value="07">Juli</option>
+              <option value="08">Agustus</option>
+              <option value="09">September</option>
+              <option value="10">Oktober</option>
+              <option value="11">November</option>
+              <option value="12">Desember</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label"><i class="fas fa-calendar"></i> Tahun</label>
+            <select class="filter-select" id="filterTahun"></select>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label"><i class="fas fa-filter"></i> Status</label>
+            <select class="filter-select" id="filterStatus">
+              <option value="all">Semua</option>
+              <option value="paid">Sudah Dibayar</option>
+              <option value="unpaid">Belum Dibayar</option>
+            </select>
+          </div>
+          <div class="filter-spacer"></div>
+          <button class="btn btn-primary btn-sm" onclick="openModalInputGaji()">
+            <i class="fas fa-plus"></i> Input Gaji
+          </button>
+        </div>
+
+        <!-- Table Card -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-list" style="color:var(--primary)"></i> Daftar Penggajian</h3>
+            <span class="badge badge-primary" id="badgePeriode">Mei 2026</span>
+          </div>
+          <div class="card-body">
+            <div class="table-container">
+              <table class="table" id="tableGaji">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Nama Karyawan</th>
+                    <th>Periode</th>
+                    <th>Gaji Pokok</th>
+                    <th>Bonus</th>
+                    <th>Potongan</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Tanggal Bayar</th>
+                    <th style="text-align:center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyGaji">
+                  <tr><td colspan="10">
+                    <div class="empty-state">
+                      <i class="fas fa-money-check-alt"></i>
+                      <div class="empty-state-title">Belum ada data penggajian</div>
+                      <p>Pilih periode atau tambah data gaji karyawan</p>
+                    </div>
+                  </td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-nav">
+      <a href="index.html" class="mobile-nav-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
+      <a href="page-kasir.html" class="mobile-nav-item"><i class="fas fa-cash-register"></i><span>Kasir</span></a>
+      <a href="page-produk.html" class="mobile-nav-item"><i class="fas fa-box"></i><span>Produk</span></a>
+      <a href="page-riwayat.html" class="mobile-nav-item"><i class="fas fa-history"></i><span>Riwayat</span></a>
+      <a href="page-setting.html" class="mobile-nav-item"><i class="fas fa-cog"></i><span>Setting</span></a>
+    </nav>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <p style="margin-top:1rem;color:var(--text-secondary)">Loading...</p>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ===== MODAL INPUT GAJI ===== -->
+  <div class="modal-overlay" id="modalInputGaji" onclick="if(event.target===this)closeModalInputGaji()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-money-check-alt"></i> Input Penggajian</h3>
+        <button class="modal-close" onclick="closeModalInputGaji()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <!-- Pilih Karyawan -->
+        <div class="form-group">
+          <label class="form-label">Nama Karyawan <span style="color:var(--danger)">*</span></label>
+          <input type="text" class="form-input" id="gajiNama" placeholder="Ketik nama karyawan..." autocomplete="off">
+        </div>
+        <!-- Periode -->
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Periode Awal</label>
+            <input type="date" class="form-input" id="gajiPeriodeAwal">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Periode Akhir</label>
+            <input type="date" class="form-input" id="gajiPeriodeAkhir">
+          </div>
+        </div>
+        <!-- Gaji Pokok & Bonus -->
+        <div class="form-row" style="margin-top:1.25rem">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Gaji Pokok <span style="color:var(--danger)">*</span></label>
+            <div style="display:flex">
+              <span style="padding:.75rem .875rem;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-right:none;border-radius:.75rem 0 0 .75rem;color:var(--text-muted);font-size:.875rem">Rp</span>
+              <input type="number" class="form-input" id="gajiPokok" placeholder="0" oninput="updateGajiPreview()" style="border-radius:0 .75rem .75rem 0">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Bonus / Lembur</label>
+            <div style="display:flex">
+              <span style="padding:.75rem .875rem;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-right:none;border-radius:.75rem 0 0 .75rem;color:var(--text-muted);font-size:.875rem">Rp</span>
+              <input type="number" class="form-input" id="gajiBonus" placeholder="0" oninput="updateGajiPreview()" style="border-radius:0 .75rem .75rem 0">
+            </div>
+          </div>
+        </div>
+        <!-- Potongan -->
+        <div class="form-group" style="margin-top:1.25rem">
+          <label class="form-label">Potongan (Alpa, Kasbon, dll)</label>
+          <div style="display:flex">
+            <span style="padding:.75rem .875rem;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-right:none;border-radius:.75rem 0 0 .75rem;color:var(--text-muted);font-size:.875rem">Rp</span>
+            <input type="number" class="form-input" id="gajiPotongan" placeholder="0" oninput="updateGajiPreview()" style="border-radius:0 .75rem .75rem 0">
+          </div>
+        </div>
+        <!-- Ringkasan -->
+        <div class="modal-summary">
+          <div class="modal-summary-row"><span>Gaji Pokok</span><span id="previewPokok">Rp 0</span></div>
+          <div class="modal-summary-row"><span>Bonus</span><span id="previewBonus">Rp 0</span></div>
+          <div class="modal-summary-row"><span>Potongan</span><span id="previewPotongan">- Rp 0</span></div>
+          <div class="modal-summary-row total"><span>Total Diterima</span><span id="previewTotal">Rp 0</span></div>
+        </div>
+        <!-- Status -->
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Status Pembayaran</label>
+          <select class="form-select" id="gajiStatus">
+            <option value="unpaid">Belum Dibayar</option>
+            <option value="paid">Sudah Dibayar</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModalInputGaji()">Batal</button>
+        <button class="btn btn-primary" onclick="saveGaji()"><i class="fas fa-save"></i> Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/firebase-config.js?v=2"></script>
+  <script src="js/utils.js?v=3"></script>
+  <script src="js/auth.js"></script>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Wait for Firebase auth
+    auth.onAuthStateChanged((user) => {
+      if (!user && !Utils.getStorage('webpos_session')) {
+        window.location.href = 'login.html';
+        return;
+      }
+      if (user) {
+        Auth.loadUserData(user.uid).then(() => {
+          initPenggajian();
+        });
+      }
+    });
+  });
+
+  function initPenggajian() {
+    // ===== STATE =====
+    let currentBulan = '';
+    let currentTahun = '';
+    let allGajiData = [];
+
+    // ===== DOM ELEMENTS =====
+    const sidebar = document.getElementById('sidebar');
+    const menuToggle = document.getElementById('menuToggle');
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const btnTheme = document.getElementById('btnTheme');
+    const btnLogout = document.getElementById('btnLogout');
+    const filterBulan = document.getElementById('filterBulan');
+    const filterTahun = document.getElementById('filterTahun');
+    const filterStatus = document.getElementById('filterStatus');
+
+    // ===== SETUP FILTER BULAN/TAHUN =====
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
+
+    // Populate tahun
+    const tahunSelect = document.getElementById('filterTahun');
+    for (let y = currentYear; y >= currentYear - 3; y--) {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y;
+      tahunSelect.appendChild(opt);
+    }
+    filterBulan.value = currentMonth;
+    tahunSelect.value = currentYear;
+    currentBulan = currentMonth;
+    currentTahun = String(currentYear);
+
+    // ===== SIDEBAR TOGGLE =====
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      const icon = menuToggle.querySelector('i');
+      icon.style.transform = sidebar.classList.contains('collapsed') ? 'rotate(180deg)' : 'rotate(0deg)';
+    });
+    mobileMenuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('mobile-open');
+    });
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth <= 1024) {
+        if (!sidebar.contains(e.target) && !mobileMenuToggle.contains(e.target)) {
+          sidebar.classList.remove('mobile-open');
+        }
+      }
+    });
+
+    // ===== DROPDOWN =====
+    document.querySelectorAll('[data-dropdown]').forEach(dropdown => {
+      const toggle = dropdown.querySelector('.nav-dropdown-toggle');
+      if (toggle) {
+        toggle.addEventListener('click', (e) => {
+          e.preventDefault();
+          dropdown.classList.toggle('open');
+        });
+      }
+    });
+
+    // ===== THEME =====
+    btnTheme.addEventListener('click', () => {
+      const isDark = Utils.Theme.toggleDarkMode();
+      btnTheme.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    });
+    if (Utils.Theme.isDarkMode()) {
+      btnTheme.innerHTML = '<i class="fas fa-sun"></i>';
+    }
+
+    // ===== LOGOUT =====
+    btnLogout.addEventListener('click', () => {
+      Utils.confirm('Apakah Anda yakin ingin logout?', () => {
+        Auth.logout();
+      });
+    });
+
+    // ===== LOAD USER DATA =====
+    function loadUserData() {
+      const user = Auth.getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.name || user.email;
+        document.getElementById('userRole').textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+        const avatar = document.getElementById('userAvatar');
+        if (avatar && user.name) {
+          const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+          avatar.textContent = initials;
+        }
+      }
+    }
+    loadUserData();
+
+    // ===== FILTER CHANGE =====
+    filterBulan.addEventListener('change', () => {
+      currentBulan = filterBulan.value;
+      currentTahun = filterTahun.value;
+      loadGajiData();
+    });
+    filterTahun.addEventListener('change', () => {
+      currentBulan = filterBulan.value;
+      currentTahun = filterTahun.value;
+      loadGajiData();
+    });
+    filterStatus.addEventListener('change', () => {
+      renderTable();
+    });
+
+    // ===== LOAD DATA GAJI =====
+    async function loadGajiData() {
+      Utils.showLoading();
+      allGajiData = [];
+
+      try {
+        const db = firebase.database();
+        const user = Auth.getCurrentUser();
+        const periodeLabel = getBulanLabel(currentBulan) + ' ' + currentTahun;
+        document.getElementById('badgePeriode').textContent = periodeLabel;
+
+        // Ambil semua data penggajian dari semua tanggal di bulan ini
+        const snapshot = await db.ref('penggajian').once('value');
+        const allData = snapshot.val() || {};
+
+        const targetPrefix = currentTahun + '-' + currentBulan;
+
+        Object.entries(allData).forEach(([dateStr, dayData]) => {
+          if (!dateStr.startsWith(targetPrefix)) return;
+          Object.entries(dayData).forEach(([gajiId, gaji]) => {
+            allGajiData.push({
+              id: gajiId,
+              ...gaji,
+              dateStr: dateStr
+            });
+          });
+        });
+
+        // Sort by timestamp desc
+        allGajiData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        updateStats();
+        renderTable();
+
+      } catch (err) {
+        console.error('Error load gaji:', err);
+        showToast('Gagal memuat data penggajian', 'error');
+      }
+
+      Utils.hideLoading();
+    }
+
+    // ===== UPDATE STATS =====
+    function updateStats() {
+      let sudah = 0, belum = 0, total = 0;
+      const uniqueKaryawan = new Set();
+
+      allGajiData.forEach(g => {
+        const amount = g.totalDiterima || 0;
+        total += amount;
+        uniqueKaryawan.add(g.namaKaryawan);
+        if (g.paymentStatus === 'paid' || g.status === 'paid') {
+          sudah += amount;
+        } else {
+          belum += amount;
+        }
+      });
+
+      document.getElementById('statSudahBayar').textContent = formatRupiah(sudah);
+      document.getElementById('statBelumBayar').textContent = formatRupiah(belum);
+      document.getElementById('statJumlahKaryawan').textContent = uniqueKaryawan.size;
+      document.getElementById('statTotalGaji').textContent = formatRupiah(total);
+
+      // Progress bar
+      const pct = total > 0 ? Math.round((sudah / total) * 100) : 0;
+      document.getElementById('progressBar').style.width = pct + '%';
+      document.getElementById('progressText').textContent = pct + '% terbayar (' + formatRupiah(sudah) + ' dari ' + formatRupiah(total) + ')';
+    }
+
+    // ===== RENDER TABLE =====
+    function renderTable() {
+      const tbody = document.getElementById('tbodyGaji');
+      const statusFilter = document.getElementById('filterStatus').value;
+
+      let filtered = allGajiData;
+      if (statusFilter !== 'all') {
+        filtered = allGajiData.filter(g => {
+          const s = g.paymentStatus || g.status || 'unpaid';
+          return s === statusFilter;
+        });
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10">
+          <div class="empty-state">
+            <i class="fas fa-money-check-alt"></i>
+            <div class="empty-state-title">Tidak ada data</div>
+            <p>Belum ada penggajian untuk periode ini atau status yang dipilih</p>
+          </div>
+        </td></tr>`;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach((g, idx) => {
+        const status = g.paymentStatus || g.status || 'unpaid';
+        const isPaid = status === 'paid';
+        const badgeClass = isPaid ? 'badge-paid' : 'badge-unpaid';
+        const badgeText = isPaid ? 'Sudah Dibayar' : 'Belum Dibayar';
+        const tanggalBayar = g.paidAt ? formatDate(g.paidAt) : '-';
+        const periode = (g.periodeAwal || '-') + ' s/d ' + (g.periodeAkhir || '-');
+
+        html += `<tr>
+          <td>${idx + 1}</td>
+          <td class="td-nama">${escapeHtml(g.namaKaryawan || '-')}</td>
+          <td class="td-periode">${periode}</td>
+          <td class="td-amount">${formatRupiah(g.gajiPokok || 0)}</td>
+          <td class="td-amount">+ ${formatRupiah(g.bonus || 0)}</td>
+          <td class="td-amount unpaid">- ${formatRupiah(g.potongan || 0)}</td>
+          <td class="td-amount ${isPaid ? 'paid' : 'unpaid'}">${formatRupiah(g.totalDiterima || 0)}</td>
+          <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+          <td class="td-periode">${tanggalBayar}</td>
+          <td style="text-align:center">
+            ${isPaid 
+              ? `<button class="btn-icon" onclick="batalkanGaji('${g.id}', '${g.dateStr}')" title="Batalkan" style="color:var(--danger)"><i class="fas fa-undo"></i></button>`
+              : `<button class="btn-icon" onclick="bayarGaji('${g.id}', '${g.dateStr}')" title="Bayar" style="color:var(--success)"><i class="fas fa-check"></i></button>`
+            }
+            <button class="btn-icon" onclick="hapusGaji('${g.id}', '${g.dateStr}')" title="Hapus" style="color:var(--danger);margin-left:4px"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>`;
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    // ===== GLOBAL FUNCTIONS =====
+    window.openModalInputGaji = function() {
+      document.getElementById('modalInputGaji').classList.add('active');
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      document.getElementById('gajiPeriodeAwal').value = formatDateInput(firstDay);
+      document.getElementById('gajiPeriodeAkhir').value = formatDateInput(lastDay);
+      setTimeout(() => document.getElementById('gajiNama').focus(), 100);
+    };
+
+    window.closeModalInputGaji = function() {
+      document.getElementById('modalInputGaji').classList.remove('active');
+      resetForm();
+    };
+
+    window.updateGajiPreview = function() {
+      const pokok = parseInt(document.getElementById('gajiPokok').value) || 0;
+      const bonus = parseInt(document.getElementById('gajiBonus').value) || 0;
+      const potongan = parseInt(document.getElementById('gajiPotongan').value) || 0;
+      const total = pokok + bonus - potongan;
+
+      document.getElementById('previewPokok').textContent = formatRupiah(pokok);
+      document.getElementById('previewBonus').textContent = formatRupiah(bonus);
+      document.getElementById('previewPotongan').textContent = '- ' + formatRupiah(potongan);
+      document.getElementById('previewTotal').textContent = formatRupiah(total);
+    };
+
+    window.saveGaji = async function() {
+      const nama = document.getElementById('gajiNama').value.trim();
+      const periodeAwal = document.getElementById('gajiPeriodeAwal').value;
+      const periodeAkhir = document.getElementById('gajiPeriodeAkhir').value;
+      const pokok = parseInt(document.getElementById('gajiPokok').value) || 0;
+      const bonus = parseInt(document.getElementById('gajiBonus').value) || 0;
+      const potongan = parseInt(document.getElementById('gajiPotongan').value) || 0;
+      const status = document.getElementById('gajiStatus').value;
+      const total = pokok + bonus - potongan;
+
+      if (!nama) { showToast('Nama karyawan wajib diisi', 'error'); return; }
+      if (pokok < 1) { showToast('Gaji pokok harus lebih dari 0', 'error'); return; }
+
+      Utils.showLoading();
+      try {
+        const db = firebase.database();
+        const user = firebase.auth().currentUser;
+        const timestamp = Date.now();
+        const todayStr = new Date().toISOString().split('T')[0];
+        const gajiId = 'GAJI' + timestamp;
+
+        const data = {
+          id: gajiId,
+          namaKaryawan: nama,
+          periodeAwal: periodeAwal,
+          periodeAkhir: periodeAkhir,
+          gajiPokok: pokok,
+          bonus: bonus,
+          potongan: potongan,
+          totalDiterima: total,
+          timestamp: timestamp,
+          date: todayStr,
+          userId: user ? user.uid : 'unknown',
+          userName: document.getElementById('userName').textContent,
+          paymentStatus: status,
+          status: status
+        };
+
+        if (status === 'paid') {
+          data.paidAt = timestamp;
+          // Simpan juga ke Kas Keluar
+          const kasId = 'KASOUT' + timestamp;
+          await db.ref('transactions/' + todayStr + '/' + kasId).set({
+            type: 'kas_keluar',
+            status: 'completed',
+            amount: total,
+            description: 'Gaji ' + nama + ' (' + periodeAwal + ' s/d ' + periodeAkhir + ')',
+            category: 'penggajian',
+            relatedGajiId: gajiId,
+            timestamp: timestamp,
+            date: todayStr,
+            userId: user ? user.uid : 'unknown',
+            userName: document.getElementById('userName').textContent
+          });
+        }
+
+        await db.ref('penggajian/' + todayStr + '/' + gajiId).set(data);
+
+        closeModalInputGaji();
+        showToast('Data gaji berhasil disimpan', 'success');
+        loadGajiData();
+
+      } catch (err) {
+        console.error(err);
+        showToast('Gagal menyimpan: ' + err.message, 'error');
+      }
+      Utils.hideLoading();
+    };
+
+    window.bayarGaji = async function(gajiId, dateStr) {
+      if (!confirm('Tandai gaji ini sebagai SUDAH DIBAYAR?\n\nAkan otomatis tercatat di Kas Keluar.')) return;
+
+      Utils.showLoading();
+      try {
+        const db = firebase.database();
+        const user = firebase.auth().currentUser;
+        const timestamp = Date.now();
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        const snap = await db.ref('penggajian/' + dateStr + '/' + gajiId).once('value');
+        const gaji = snap.val();
+        if (!gaji) { showToast('Data tidak ditemukan', 'error'); return; }
+
+        // Update status
+        await db.ref('penggajian/' + dateStr + '/' + gajiId).update({
+          paymentStatus: 'paid',
+          status: 'paid',
+          paidAt: timestamp
+        });
+
+        // Catat di Kas Keluar
+        const kasId = 'KASOUT' + timestamp;
+        await db.ref('transactions/' + todayStr + '/' + kasId).set({
+          type: 'kas_keluar',
+          status: 'completed',
+          amount: gaji.totalDiterima || 0,
+          description: 'Gaji ' + gaji.namaKaryawan + ' (' + (gaji.periodeAwal || '-') + ' s/d ' + (gaji.periodeAkhir || '-') + ')',
+          category: 'penggajian',
+          relatedGajiId: gajiId,
+          timestamp: timestamp,
+          date: todayStr,
+          userId: user ? user.uid : 'unknown',
+          userName: document.getElementById('userName').textContent
+        });
+
+        showToast('Gaji berhasil ditandai dibayar', 'success');
+        loadGajiData();
+
+      } catch (err) {
+        console.error(err);
+        showToast('Gagal memproses pembayaran', 'error');
+      }
+      Utils.hideLoading();
+    };
+
+    window.batalkanGaji = async function(gajiId, dateStr) {
+      if (!confirm('Batalkan status pembayaran gaji ini?\n\nData Kas Keluar terkait TIDAK akan dihapus otomatis.')) return;
+
+      Utils.showLoading();
+      try {
+        const db = firebase.database();
+        await db.ref('penggajian/' + dateStr + '/' + gajiId).update({
+          paymentStatus: 'unpaid',
+          status: 'unpaid',
+          paidAt: null
+        });
+        showToast('Status pembayaran dibatalkan', 'warning');
+        loadGajiData();
+      } catch (err) {
+        showToast('Gagal membatalkan', 'error');
+      }
+      Utils.hideLoading();
+    };
+
+    window.hapusGaji = async function(gajiId, dateStr) {
+      if (!confirm('HAPUS data gaji ini secara permanen?')) return;
+
+      Utils.showLoading();
+      try {
+        const db = firebase.database();
+        await db.ref('penggajian/' + dateStr + '/' + gajiId).remove();
+        showToast('Data gaji dihapus', 'success');
+        loadGajiData();
+      } catch (err) {
+        showToast('Gagal menghapus', 'error');
+      }
+      Utils.hideLoading();
+    };
+
+    // ===== HELPERS =====
+    function resetForm() {
+      document.getElementById('gajiNama').value = '';
+      document.getElementById('gajiPokok').value = '';
+      document.getElementById('gajiBonus').value = '';
+      document.getElementById('gajiPotongan').value = '';
+      document.getElementById('gajiStatus').value = 'unpaid';
+      updateGajiPreview();
+    }
+
+    function getBulanLabel(bulan) {
+      const labels = {
+        '01':'Januari','02':'Februari','03':'Maret','04':'April','05':'Mei','06':'Juni',
+        '07':'Juli','08':'Agustus','09':'September','10':'Oktober','11':'November','12':'Desember'
+      };
+      return labels[bulan] || bulan;
+    }
+
+    function formatRupiah(num) {
+      if (typeof num !== 'number') num = parseInt(num) || 0;
+      return 'Rp ' + num.toLocaleString('id-ID');
+    }
+
+    function formatDateInput(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + d;
+    }
+
+    function formatDate(ts) {
+      if (!ts) return '-';
+      const d = new Date(ts);
+      return d.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function showToast(message, type) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + (type || 'info');
+      let icon = 'info-circle';
+      if (type === 'success') icon = 'check-circle';
+      if (type === 'error') icon = 'exclamation-circle';
+      if (type === 'warning') icon = 'exclamation-triangle';
+      toast.innerHTML = '<i class="fas fa-' + icon + '"></i><span>' + message + '</span>';
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ===== INIT =====
+    loadGajiData();
+
+    // Fix links
+    document.querySelectorAll('a').forEach(link => {
+      link.removeAttribute('target');
+      link.removeAttribute('rel');
+    });
+  }
+  </script>
+</body>
+</html>
