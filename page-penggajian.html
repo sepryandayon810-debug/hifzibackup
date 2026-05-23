@@ -795,31 +795,36 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
           </div>
         </div>
 
-        <!-- Filter Bar -->
-        <div class="filter-bar">
-          <div class="filter-group">
-            <label class="filter-label"><i class="fas fa-calendar-alt"></i> Bulan</label>
-            <select class="filter-select" id="filterBulan">
-              <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
-              <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
-              <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
-              <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
-            </select>
+        <!-- Filter Bar Modern -->
+        <div class="filter-bar-modern" id="filterBarModern">
+          <div class="filter-row-main">
+            <div class="filter-month-year">
+              <div class="filter-myy-group">
+                <label class="filter-myy-label"><i class="fas fa-calendar-alt"></i></label>
+                <select class="filter-myy-select" id="filterBulan">
+                  <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
+                  <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
+                  <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
+                  <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+                </select>
+                <select class="filter-myy-select year" id="filterTahun"></select>
+              </div>
+            </div>
+            <div class="filter-status-chips">
+              <button class="status-chip active" data-status="all" onclick="setFilterStatus('all')">
+                <i class="fas fa-layer-group"></i> Semua
+              </button>
+              <button class="status-chip" data-status="paid" onclick="setFilterStatus('paid')">
+                <i class="fas fa-check-circle"></i> Sudah Dibayar
+              </button>
+              <button class="status-chip" data-status="unpaid" onclick="setFilterStatus('unpaid')">
+                <i class="fas fa-clock"></i> Belum Dibayar
+              </button>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openModalInputGaji()">
+              <i class="fas fa-plus"></i> Input Gaji
+            </button>
           </div>
-          <div class="filter-group">
-            <label class="filter-label"><i class="fas fa-calendar"></i> Tahun</label>
-            <select class="filter-select" id="filterTahun"></select>
-          </div>
-          <div class="filter-group">
-            <label class="filter-label"><i class="fas fa-filter"></i> Status</label>
-            <select class="filter-select" id="filterStatus">
-              <option value="all">Semua</option><option value="paid">Sudah Dibayar</option><option value="unpaid">Belum Dibayar</option>
-            </select>
-          </div>
-          <div class="filter-spacer"></div>
-          <button class="btn btn-primary btn-sm" onclick="openModalInputGaji()">
-            <i class="fas fa-plus"></i> Input Gaji
-          </button>
         </div>
 
         <!-- Table Card -->
@@ -834,14 +839,12 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
                 <thead>
                   <tr>
                     <th>No</th>
-                    <th>Nama Karyawan</th>
+                    <th>Nama</th>
                     <th>Periode</th>
+                    <th>Tgl Input</th>
                     <th>Gaji Pokok</th>
-                    <th>Bonus</th>
-                    <th>Potongan</th>
                     <th>Total</th>
                     <th>Status</th>
-                    <th>Tanggal Bayar</th>
                     <th style="text-align:center">Aksi</th>
                   </tr>
                 </thead>
@@ -1136,7 +1139,16 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
     /* ===== FILTER CHANGE ===== */
     filterBulan.addEventListener('change', () => { currentBulan = filterBulan.value; currentTahun = filterTahun.value; loadGajiData(); });
     filterTahun.addEventListener('change', () => { currentBulan = filterBulan.value; currentTahun = filterTahun.value; loadGajiData(); });
-    filterStatus.addEventListener('change', () => { renderTable(); });
+
+    window.setFilterStatus = function(status) {
+      document.getElementById('filterStatus').value = status;
+      // Update chip UI
+      document.querySelectorAll('.status-chip').forEach(chip => {
+        if (chip.dataset.status === status) chip.classList.add('active');
+        else chip.classList.remove('active');
+      });
+      renderTable();
+    };
     document.getElementById('gajiNama').addEventListener('blur', loadHutangKaryawan);
 
 
@@ -1243,31 +1255,40 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
         const isPaid = status === 'paid';
         let badgeClass = isPaid ? 'badge-paid' : 'badge-unpaid';
         let badgeText = isPaid ? 'Sudah Dibayar' : 'Belum Dibayar';
+        let rowStyle = '';
         if (g.carryOver && g.carryOverPaid) {
           badgeClass = 'badge-paid';
-          badgeText = 'Sudah Dibayar (via Carry-Over)';
+          badgeText = 'Lunas (Carry-Over)';
+          rowStyle = 'background:rgba(16,185,129,.04)!important;';
         } else if (g.carryOver && !isPaid) {
-          badgeText = 'Belum Dibayar (Bln Lalu)';
+          badgeText = 'Tunggakan Bln Lalu';
+          badgeClass = 'badge-pending';
+          rowStyle = 'background:rgba(245,158,11,.04)!important;';
         }
-        const tanggalBayar = g.paidAt ? formatDate(g.paidAt) : '-';
+        const tanggalInput = g.timestamp ? formatDate(g.timestamp) : '-';
         const periode = g.displayPeriode || ((g.periodeAwal || '-') + ' s/d ' + (g.periodeAkhir || '-'));
-        html += `<tr onclick="showDetailGaji('${g.id}', '${g.dateStr}')" style="cursor:pointer;" title="Klik untuk lihat detail">
+
+        // Cek apakah ini backdate (periode beda dengan tanggal input)
+        const inputMonth = g.dateStr ? g.dateStr.substring(0, 7) : '';
+        const periodeMonth = (g.periodeAkhir || '').substring(0, 7);
+        const isBackdate = inputMonth && periodeMonth && inputMonth !== periodeMonth;
+        const backdateBadge = isBackdate ? `<span style="font-size:.65rem;color:var(--warning);margin-left:.35rem;"><i class="fas fa-history"></i></span>` : '';
+
+        html += `<tr onclick="showDetailGaji('${g.id}', '${g.dateStr}')" style="cursor:pointer;${rowStyle}" title="Klik untuk lihat detail">
           <td>${idx + 1}</td>
-          <td class="td-nama">${escapeHtml(g.namaKaryawan || '-')}</td>
+          <td class="td-nama">${escapeHtml(g.namaKaryawan || '-')}${backdateBadge}</td>
           <td class="td-periode">${periode}</td>
+          <td class="td-periode">${tanggalInput}</td>
           <td class="td-amount">${formatRupiah(g.gajiPokok || 0)}</td>
-          <td class="td-amount">+ ${formatRupiah(g.bonus || 0)}</td>
-          <td class="td-amount unpaid">- ${formatRupiah(g.potongan || 0)}</td>
           <td class="td-amount ${isPaid ? 'paid' : 'unpaid'}">${formatRupiah(g.totalDiterima || 0)}</td>
-          <td><span class="badge ${badgeClass}">${badgeText}${g.carryOver ? ' (Bln Lalu)' : ''}</span></td>
-          <td class="td-periode">${tanggalBayar}</td>
-          <td style="text-align:center" onclick="event.stopPropagation()">
-            <button class="btn-icon" onclick="showDetailGaji('${g.id}', '${g.dateStr}')" title="Detail" style="color:var(--primary)"><i class="fas fa-eye"></i></button>
+          <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+          <td style="text-align:center;white-space:nowrap;" onclick="event.stopPropagation()">
+            <button class="btn-icon" onclick="showDetailGaji('${g.id}', '${g.dateStr}')" title="Detail" style="color:var(--primary);width:28px;height:28px;"><i class="fas fa-eye" style="font-size:.8rem;"></i></button>
             ${isPaid
-              ? `<button class="btn-icon" onclick="batalkanGaji('${g.id}', '${g.dateStr}')" title="Batalkan" style="color:var(--danger)"><i class="fas fa-undo"></i></button>`
-              : `<button class="btn-icon" onclick="bayarGaji('${g.id}', '${g.dateStr}')" title="Bayar" style="color:var(--success)"><i class="fas fa-check"></i></button>`
+              ? `<button class="btn-icon" onclick="batalkanGaji('${g.id}', '${g.dateStr}')" title="Batalkan" style="color:var(--danger);width:28px;height:28px;"><i class="fas fa-undo" style="font-size:.8rem;"></i></button>`
+              : `<button class="btn-icon" onclick="bayarGaji('${g.id}', '${g.dateStr}')" title="Bayar" style="color:var(--success);width:28px;height:28px;"><i class="fas fa-check" style="font-size:.8rem;"></i></button>`
             }
-            <button class="btn-icon" onclick="hapusGaji('${g.id}', '${g.dateStr}')" title="Hapus" style="color:var(--danger);margin-left:4px"><i class="fas fa-trash"></i></button>
+            <button class="btn-icon" onclick="hapusGaji('${g.id}', '${g.dateStr}')" title="Hapus" style="color:var(--danger);width:28px;height:28px;"><i class="fas fa-trash" style="font-size:.8rem;"></i></button>
           </td>
         </tr>`;
       });
