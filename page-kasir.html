@@ -1322,121 +1322,6 @@ html,body{overflow-x:hidden;max-width:100vw}
   }
 }
 
-    /* ===== HIDDEN KAS ACTIONS ===== */
-.kas-hidden-actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: nowrap;        /* ⭐ Jangan wrap, tetap 1 baris */
-  justify-content: center;  /* ⭐ Rata tengah */
-  padding: 0.5rem 0;
-  overflow-x: auto;         /* ⭐ Kalau kecil, bisa scroll horizontal */
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;    /* ⭐ Sembunyikan scrollbar */
-}
-.kas-hidden-actions::-webkit-scrollbar { display: none; }
-
-.kas-hidden-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;       /* ⭐ Teks tidak turun ke bawah */
-  flex: 1 1 auto;            /* ⭐ Bagi ruang sama rata */
-  min-width: 0;              /* ⭐ Boleh mengecil */
-  transition: all 0.2s;
-}
-
-.kas-hidden-btn.kas-masuk {
-  background: rgba(16,185,129,0.08);
-  color: #059669;
-  border: 1px solid rgba(16,185,129,0.25);
-}
-.kas-hidden-btn.kas-masuk:hover {
-  background: #10b981;
-  color: white;
-  transform: translateY(-2px);
-}
-
-.kas-hidden-btn.kas-keluar {
-  background: rgba(239,68,68,0.08);
-  color: #dc2626;
-  border: 1px solid rgba(239,68,68,0.25);
-}
-.kas-hidden-btn.kas-keluar:hover {
-  background: #ef4444;
-  color: white;
-  transform: translateY(-2px);
-}
-
-.kas-hidden-btn.kas-hutang {
-  background: rgba(245,158,11,0.08);
-  color: #d97706;
-  border: 1px solid rgba(245,158,11,0.25);
-}
-.kas-hidden-btn.kas-hutang:hover {
-  background: #f59e0b;
-  color: white;
-  transform: translateY(-2px);
-}
-    
-@media(max-width:768px){
-  .kas-hidden-actions{justify-content:center}
-  .kas-hidden-btn{font-size:0.7rem;padding:0.35rem 0.75rem}
-}
-
-    /* ===== HIDDEN KAS ACTIONS ===== */
-.kas-hidden-actions {
-  display: flex !important;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  width: 100%;
-}
-.kas-hidden-btn {
-  padding: 0.4rem 0.875rem;
-  border-radius: 50px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-decoration: none;
-  display: inline-flex !important;
-  align-items: center;
-  gap: 0.4rem;
-  transition: all 0.2s;
-  cursor: pointer;
-  border: none;
-  font-family: inherit;
-}
-.kas-hidden-btn.kas-masuk {
-  background: rgba(16,185,129,0.08);
-  color: #059669;
-  border: 1px solid rgba(16,185,129,0.25);
-}
-.kas-hidden-btn.kas-masuk:hover {
-  background: #059669;
-  color: white;
-  transform: translateY(-2px);
-}
-.kas-hidden-btn.kas-keluar {
-  background: rgba(239,68,68,0.08);
-  color: #dc2626;
-  border: 1px solid rgba(239,68,68,0.25);
-}
-.kas-hidden-btn.kas-keluar:hover {
-  background: #dc2626;
-  color: white;
-  transform: translateY(-2px);
-}
-@media(max-width:768px){
-  .kas-hidden-actions{justify-content:center}
-  .kas-hidden-btn{font-size:0.7rem;padding:0.35rem 0.75rem}
-}
-
 /* ===== HEADER STATS MOBILE FIX ===== */
 @media(max-width:768px){
   .main-header{
@@ -1466,6 +1351,178 @@ html,body{overflow-x:hidden;max-width:100vw}
   .header-stats .stat-value{
     font-size:0.85rem !important;
   }
+}
+
+/* ===== TOMBOL KAS ACTION BAR (4 TOMBOL SEJAJAR) ===== */
+.kas-action-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scrollbar-width: none;
+}
+.kas-action-bar::-webkit-scrollbar { display: none; }
+
+.kas-btn {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.5rem;
+  border-radius: 2rem;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.kas-btn:active { transform: scale(0.96); }
+
+.kas-btn i { font-size: 0.85rem; }
+
+.kas-masuk  { background: #d1fae5; color: #059669; }
+.kas-masuk:hover { background: #a7f3d0; }
+
+.kas-keluar { background: #fee2e2; color: #dc2626; }
+.kas-keluar:hover { background: #fecaca; }
+
+.kas-hutang { background: #fef3c7; color: #d97706; }
+.kas-hutang:hover { background: #fde68a; }
+
+.kas-beli   { background: #dbeafe; color: #2563eb; }
+.kas-beli:hover   { background: #bfdbfe; }
+
+/* ===== MODAL BELI BARANG ===== */
+#modalBeliBarang .modal-header {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: white;
+  border-radius: 1.25rem 1.25rem 0 0;
+}
+#modalBeliBarang .modal-title { color: white; }
+#modalBeliBarang .modal-close { color: white; }
+
+/* ===== TOGGLE SWITCH KURANGI SALDO ===== */
+.toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 0.75rem;
+}
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #cbd5e1;
+  border-radius: 24px;
+  transition: .3s;
+}
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: .3s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle-switch input:checked + .toggle-slider { background-color: #10b981; }
+.toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
+.toggle-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Mode toggle di dalam modal */
+.mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.mode-btn {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.mode-btn.active {
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(16,185,129,0.25);
+}
+
+/* Search dropdown di modal */
+.beli-search-wrap { position: relative; }
+.beli-search-list {
+  position: absolute;
+  top: 100%;
+  left: 0; right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 0 0 0.75rem 0.75rem;
+  box-shadow: var(--shadow-lg);
+  max-height: 160px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+}
+.beli-search-item {
+  padding: 0.625rem 0.875rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.85rem;
+}
+.beli-search-item:hover { background: var(--bg-secondary); }
+.beli-search-item:last-child { border-bottom: none; }
+.beli-search-item .bs-name { font-weight: 600; }
+.beli-search-item .bs-info { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Total preview */
+.beli-total-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-secondary);
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
+}
+.beli-total-box span:first-child { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
+.beli-total-box span:last-child { font-size: 1.1rem; font-weight: 700; color: var(--primary); }
+
+@media(max-width:380px){
+  .kas-btn { font-size: 0.72rem; padding: 0.5rem 0.4rem; }
+  .kas-btn i { font-size: 0.75rem; }
 }
     
 </style>
@@ -1727,105 +1784,113 @@ html,body{overflow-x:hidden;max-width:100vw}
           </button>
         </div>
 
-        <!-- Hidden Kas Actions -->
-        <div class="kas-hidden-actions">
-  <a href="page-kas-masuk.html" class="kas-hidden-btn kas-masuk" onclick="localStorage.setItem('fromKasir','true')">
-  <i class="fas fa-arrow-down"></i> Kas Masuk
-</a>
-<a href="page-kas-keluar.html" class="kas-hidden-btn kas-keluar" onclick="localStorage.setItem('fromKasir','true')">
-  <i class="fas fa-arrow-up"></i> Kas Keluar
-</a>
-<a href="page-hutang.html" class="kas-hidden-btn kas-hutang" onclick="localStorage.setItem('fromKasir','true')">
-  <i class="fas fa-hand-holding-usd"></i> Bayar Hutang
-</a>
+        
+                <!-- ===== KAS ACTION BAR (4 TOMBOL) ===== -->
+        <div class="kas-action-bar">
+          <button class="kas-btn kas-masuk" onclick="openKasMasuk()">
+            <i class="fas fa-arrow-down"></i> Kas Masuk
+          </button>
+          <button class="kas-btn kas-keluar" onclick="openKasKeluar()">
+            <i class="fas fa-arrow-up"></i> Kas Keluar
+          </button>
+          <button class="kas-btn kas-hutang" onclick="openBayarHutang()">
+            <i class="fas fa-hand-holding-usd"></i> Bayar Hutang
+          </button>
+          <button class="kas-btn kas-beli" onclick="openModalBeli()">
+    <i class="fas fa-cart-plus"></i> Beli Barang
+  </button>
 </div>
-
-                <!-- ===== QUICK BUY CARD (PEMBELIAN CEPAT) ===== -->
-        <div class="card" id="quickBuyCard" style="margin-bottom:1.25rem;">
-          <div class="card-header" style="padding:1rem 1.25rem;background:linear-gradient(135deg,#f59e0b,#f97316);color:white;border-radius:1.25rem 1.25rem 0 0;border:none;cursor:pointer;" onclick="toggleQuickBuy()">
-            <h3 class="card-title" style="color:white;font-size:1rem;margin:0;">
-              <i class="fas fa-cart-plus"></i> Input Pembelian Cepat
-            </h3>
-            <div style="display:flex;align-items:center;gap:0.75rem;">
-              <span style="font-size:0.75rem;opacity:0.9;">Klik untuk buka/tutup</span>
-              <i class="fas fa-chevron-up" id="quickBuyToggleIcon" style="transition:transform 0.3s;"></i>
+        
+        <!-- ===== MODAL BELI BARANG ===== -->
+        <div class="modal-overlay" id="modalBeliBarang" onclick="if(event.target===this)closeModalBeli()">
+          <div class="modal" style="max-width:420px;width:92%;">
+            <div class="modal-header">
+              <h3 class="modal-title"><i class="fas fa-cart-plus"></i> Input Pembelian</h3>
+              <button class="modal-close" onclick="closeModalBeli()"><i class="fas fa-times"></i></button>
             </div>
-          </div>
-          
-          <div class="card-body" id="quickBuyBody" style="padding:1.25rem;">
-            <!-- Mode Toggle: Produk Baru vs Existing -->
-            <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
-              <button type="button" class="btn btn-sm" id="btnModeExisting" onclick="toggleBuyMode('existing')" style="flex:1;background:linear-gradient(135deg,#059669,#10b981);color:white;border:none;">
-                <i class="fas fa-box"></i> Produk Ada
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnModeNew" onclick="toggleBuyMode('new')" style="flex:1;">
-                <i class="fas fa-plus-circle"></i> Produk Baru
-              </button>
-            </div>
+            <div class="modal-body" style="padding:1.25rem;">
 
-            <!-- Mode: Produk Existing (dengan search) -->
-            <div id="buyModeExisting">
-              <div class="form-group" style="margin-bottom:0.75rem;position:relative;">
-                <label class="form-label" style="font-size:0.8rem;">Cari Produk <span style="color:var(--danger)">*</span></label>
-                <input type="text" class="form-input" id="quickBuySearch" placeholder="Ketik nama produk..." autocomplete="off" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
-                <div id="quickBuySearchList" style="position:absolute;top:100%;left:0;right:0;background:var(--bg-card);border:1px solid var(--border-color);border-radius:0 0 0.75rem 0.75rem;box-shadow:var(--shadow-lg);max-height:180px;overflow-y:auto;z-index:100;display:none;"></div>
-                <input type="hidden" id="quickBuySelectedId">
+              <!-- Toggle Mode -->
+              <div class="mode-toggle">
+                <button type="button" class="mode-btn active" id="btnModeExisting" onclick="setBeliMode('existing')">
+                  <i class="fas fa-box"></i> Produk Ada
+                </button>
+                <button type="button" class="mode-btn" id="btnModeNew" onclick="setBeliMode('new')">
+                  <i class="fas fa-plus-circle"></i> Produk Baru
+                </button>
               </div>
-            </div>
 
-            <!-- Mode: Produk Baru -->
-            <div id="buyModeNew" style="display:none;">
-              <div class="form-group" style="margin-bottom:0.75rem;">
-                <label class="form-label" style="font-size:0.8rem;">Nama Produk Baru <span style="color:var(--danger)">*</span></label>
-                <input type="text" class="form-input" id="quickBuyNewName" placeholder="Masukkan nama produk baru" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
+              <!-- Toggle Kurangi Saldo Kasir -->
+              <div class="toggle-group">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="toggleKurangiSaldo" checked onchange="updateBeliTotalPreview()">
+                  <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">Kurangi Saldo Kasir (Kas Keluar)</span>
               </div>
-              <div class="form-group" style="margin-bottom:0.75rem;">
-                <label class="form-label" style="font-size:0.8rem;">Harga Jual <span style="color:var(--danger)">*</span></label>
-                <div style="display:flex;">
-                  <span style="padding:0.625rem 0.75rem;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-right:none;border-radius:0.75rem 0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">Rp</span>
-                  <input type="number" class="form-input" id="quickBuyNewSellPrice" placeholder="0" style="border-radius:0 0.75rem 0.75rem 0;padding:0.625rem 0.875rem;font-size:0.875rem;">
+
+              <!-- Mode: Produk Existing -->
+              <div id="beliModeExisting">
+                <div class="form-group beli-search-wrap" style="margin-bottom:0.75rem;">
+                  <label class="form-label" style="font-size:0.8rem;">Cari Produk <span style="color:var(--danger)">*</span></label>
+                  <input type="text" class="form-input" id="beliSearch" placeholder="Ketik nama produk..." autocomplete="off" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
+                  <div class="beli-search-list" id="beliSearchList"></div>
+                  <input type="hidden" id="beliSelectedId">
                 </div>
               </div>
-            </div>
 
-            <!-- Supplier -->
-            <div class="form-group" style="margin-bottom:0.75rem;">
-              <label class="form-label" style="font-size:0.8rem;">Supplier (Opsional)</label>
-              <input type="text" class="form-input" id="quickBuySupplier" placeholder="Nama supplier" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
-            </div>
-
-            <!-- Qty & Harga Beli -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
-              <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label" style="font-size:0.8rem;">Qty <span style="color:var(--danger)">*</span></label>
-                <input type="number" class="form-input" id="quickBuyQty" placeholder="1" min="1" value="1" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
-              </div>
-              <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label" style="font-size:0.8rem;">Harga Beli/pcs <span style="color:var(--danger)">*</span></label>
-                <div style="display:flex;">
-                  <span style="padding:0.625rem 0.75rem;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-right:none;border-radius:0.75rem 0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">Rp</span>
-                  <input type="number" class="form-input" id="quickBuyHarga" placeholder="0" style="border-radius:0 0.75rem 0.75rem 0;padding:0.625rem 0.875rem;font-size:0.875rem;">
+              <!-- Mode: Produk Baru -->
+              <div id="beliModeNew" style="display:none;">
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                  <label class="form-label" style="font-size:0.8rem;">Nama Produk Baru <span style="color:var(--danger)">*</span></label>
+                  <input type="text" class="form-input" id="beliNewName" placeholder="Nama produk baru" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
+                </div>
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                  <label class="form-label" style="font-size:0.8rem;">Harga Jual <span style="color:var(--danger)">*</span></label>
+                  <div style="display:flex;">
+                    <span style="padding:0.625rem 0.75rem;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-right:none;border-radius:0.75rem 0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">Rp</span>
+                    <input type="number" class="form-input" id="beliNewSellPrice" placeholder="0" style="border-radius:0 0.75rem 0.75rem 0;padding:0.625rem 0.875rem;font-size:0.875rem;">
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Total Preview -->
-            <div style="background:var(--bg-secondary);padding:0.75rem 1rem;border-radius:0.75rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:0.85rem;color:var(--text-secondary);font-weight:600;">Total Pembelian:</span>
-              <span id="quickBuyTotalPreview" style="font-size:1.1rem;font-weight:700;color:var(--primary);">Rp 0</span>
-            </div>
+              <!-- Supplier -->
+              <div class="form-group" style="margin-bottom:0.75rem;">
+                <label class="form-label" style="font-size:0.8rem;">Supplier (Opsional)</label>
+                <input type="text" class="form-input" id="beliSupplier" placeholder="Nama supplier" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
+              </div>
 
-            <!-- Action Buttons -->
-            <div style="display:flex;gap:0.75rem;">
-              <button type="button" class="btn btn-primary" onclick="quickBuySave()" style="flex:1;padding:0.75rem;font-size:0.875rem;background:linear-gradient(135deg,#f59e0b,#f97316);border:none;box-shadow:0 4px 14px rgba(245,158,11,0.3);">
-                <i class="fas fa-save"></i> Simpan Pembelian
-              </button>
-              <button type="button" class="btn btn-outline" onclick="quickBuyReset()" style="padding:0.75rem 1rem;font-size:0.875rem;">
-                <i class="fas fa-redo"></i>
-              </button>
-              <button type="button" class="btn btn-secondary" onclick="window.open('page-pembelian.html','_blank')" style="padding:0.75rem 1rem;font-size:0.875rem;white-space:nowrap;">
-                <i class="fas fa-external-link-alt"></i> Full
-              </button>
+              <!-- Qty & Harga Beli -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label" style="font-size:0.8rem;">Qty <span style="color:var(--danger)">*</span></label>
+                  <input type="number" class="form-input" id="beliQty" placeholder="1" min="1" value="1" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label" style="font-size:0.8rem;">Harga Beli/pcs <span style="color:var(--danger)">*</span></label>
+                  <div style="display:flex;">
+                    <span style="padding:0.625rem 0.75rem;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-right:none;border-radius:0.75rem 0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">Rp</span>
+                    <input type="number" class="form-input" id="beliHarga" placeholder="0" style="border-radius:0 0.75rem 0.75rem 0;padding:0.625rem 0.875rem;font-size:0.875rem;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Total Preview -->
+              <div class="beli-total-box">
+                <span>Total Pembelian:</span>
+                <span id="beliTotalPreview">Rp 0</span>
+              </div>
+
+              <!-- Action Buttons -->
+              <div style="display:flex;gap:0.75rem;">
+                <button type="button" class="btn btn-primary" onclick="saveBeliBarang()" style="flex:1;padding:0.75rem;font-size:0.875rem;background:linear-gradient(135deg,#3b82f6,#6366f1);border:none;">
+                  <i class="fas fa-save"></i> Simpan
+                </button>
+                <button type="button" class="btn btn-outline" onclick="resetBeliBarang()" style="padding:0.75rem 1rem;font-size:0.875rem;">
+                  <i class="fas fa-redo"></i>
+                </button>
+              </div>
+
             </div>
           </div>
         </div>
@@ -3269,6 +3334,17 @@ function goToTarik() {
   window.location.href = 'page-kas-tarik.html';
 }
 
+// ⭐ TAMBAHKAN INI (setelah goToTarik)
+function openKasMasuk() {
+  window.location.href = 'page-kas-masuk.html';
+}
+function openKasKeluar() {
+  window.location.href = 'page-kas-keluar.html';
+}
+function openBayarHutang() {
+  window.location.href = 'page-hutang.html';
+}
+
 // Tutup modal saat klik overlay
 manualModal.addEventListener('click', (e) => {
   if (e.target === manualModal) closeManualModal();
@@ -3794,133 +3870,104 @@ async function saveProductQuickEdit() {
     showToast('Gagal simpan: ' + e.message, 'error');
   }
 }
+        // ===== MODAL BELI BARANG =====
+    let beliMode = 'existing';
+    let beliSelectedProduct = null;
 
-        // ===== QUICK BUY (PEMBELIAN CEPAT) =====
-    let quickBuyMode = 'existing';
-    let quickBuySelectedProduct = null;
-
-    function toggleQuickBuy() {
-      const card = document.getElementById('quickBuyCard');
-      card.classList.toggle('collapsed');
+    function openModalBeli() {
+      document.getElementById('modalBeliBarang').classList.add('active');
+      setTimeout(() => document.getElementById('beliSearch')?.focus(), 100);
+    }
+    function closeModalBeli() {
+      document.getElementById('modalBeliBarang').classList.remove('active');
+      resetBeliBarang();
     }
 
-    function toggleBuyMode(mode) {
-      quickBuyMode = mode;
-      const btnExisting = document.getElementById('btnModeExisting');
-      const btnNew = document.getElementById('btnModeNew');
-      const divExisting = document.getElementById('buyModeExisting');
-      const divNew = document.getElementById('buyModeNew');
-      
-      if (mode === 'existing') {
-        btnExisting.style.background = 'linear-gradient(135deg,#059669,#10b981)';
-        btnExisting.style.color = 'white';
-        btnExisting.style.border = 'none';
-        btnExisting.classList.remove('btn-outline');
-        
-        btnNew.style.background = 'transparent';
-        btnNew.style.color = 'var(--text-secondary)';
-        btnNew.classList.add('btn-outline');
-        
-        divExisting.style.display = 'block';
-        divNew.style.display = 'none';
-      } else {
-        btnNew.style.background = 'linear-gradient(135deg,#059669,#10b981)';
-        btnNew.style.color = 'white';
-        btnNew.style.border = 'none';
-        btnNew.classList.remove('btn-outline');
-        
-        btnExisting.style.background = 'transparent';
-        btnExisting.style.color = 'var(--text-secondary)';
-        btnExisting.classList.add('btn-outline');
-        
-        divExisting.style.display = 'none';
-        divNew.style.display = 'block';
-      }
-      quickBuyReset();
+    function setBeliMode(mode) {
+      beliMode = mode;
+      document.getElementById('btnModeExisting').classList.toggle('active', mode === 'existing');
+      document.getElementById('btnModeNew').classList.toggle('active', mode === 'new');
+      document.getElementById('beliModeExisting').style.display = mode === 'existing' ? 'block' : 'none';
+      document.getElementById('beliModeNew').style.display = mode === 'new' ? 'block' : 'none';
+      resetBeliBarang();
     }
 
-    function quickBuyReset() {
-      document.getElementById('quickBuySearch').value = '';
-      document.getElementById('quickBuySelectedId').value = '';
-      document.getElementById('quickBuyNewName').value = '';
-      document.getElementById('quickBuyNewSellPrice').value = '';
-      document.getElementById('quickBuySupplier').value = '';
-      document.getElementById('quickBuyQty').value = '1';
-      document.getElementById('quickBuyHarga').value = '';
-      document.getElementById('quickBuyTotalPreview').textContent = 'Rp 0';
-      document.getElementById('quickBuySearchList').style.display = 'none';
-      quickBuySelectedProduct = null;
+    function resetBeliBarang() {
+      document.getElementById('beliSearch').value = '';
+      document.getElementById('beliSelectedId').value = '';
+      document.getElementById('beliNewName').value = '';
+      document.getElementById('beliNewSellPrice').value = '';
+      document.getElementById('beliSupplier').value = '';
+      document.getElementById('beliQty').value = '1';
+      document.getElementById('beliHarga').value = '';
+      document.getElementById('beliTotalPreview').textContent = 'Rp 0';
+      document.getElementById('beliSearchList').style.display = 'none';
+      document.getElementById('toggleKurangiSaldo').checked = true;
+      beliSelectedProduct = null;
     }
 
-    function quickBuyCalcTotal() {
-      const qty = parseInt(document.getElementById('quickBuyQty').value) || 0;
-      const harga = parseInt(document.getElementById('quickBuyHarga').value) || 0;
-      document.getElementById('quickBuyTotalPreview').textContent = formatRupiah(qty * harga);
+    function updateBeliTotalPreview() {
+      const qty = parseInt(document.getElementById('beliQty').value) || 0;
+      const harga = parseInt(document.getElementById('beliHarga').value) || 0;
+      document.getElementById('beliTotalPreview').textContent = formatRupiah(qty * harga);
     }
 
     // Search produk existing
-    const quickBuySearchInput = document.getElementById('quickBuySearch');
-    const quickBuySearchList = document.getElementById('quickBuySearchList');
+    const beliSearchInput = document.getElementById('beliSearch');
+    const beliSearchList = document.getElementById('beliSearchList');
 
-    if (quickBuySearchInput) {
-      quickBuySearchInput.addEventListener('input', function() {
+    if (beliSearchInput) {
+      beliSearchInput.addEventListener('input', function() {
         const q = this.value.toLowerCase().trim();
-        if (q.length < 1) {
-          quickBuySearchList.style.display = 'none';
-          return;
-        }
+        if (q.length < 1) { beliSearchList.style.display = 'none'; return; }
         const filtered = products.filter(p => p.name.toLowerCase().includes(q));
         if (filtered.length > 0) {
-          quickBuySearchList.innerHTML = filtered.map(p => `
-            <div class="quick-buy-search-item" data-id="${p.id}" data-name="${p.name}" data-cost="${p.costPrice || 0}">
-              <div class="qb-name">${p.name}</div>
-              <div class="qb-info">Stok: ${p.stock || 0} | Harga Beli: ${formatRupiah(p.costPrice || 0)}</div>
+          beliSearchList.innerHTML = filtered.map(p => `
+            <div class="beli-search-item" data-id="${p.id}" data-name="${p.name}" data-cost="${p.costPrice || 0}">
+              <div class="bs-name">${p.name}</div>
+              <div class="bs-info">Stok: ${p.stock || 0} | Beli: ${formatRupiah(p.costPrice || 0)}</div>
             </div>
           `).join('');
-          quickBuySearchList.style.display = 'block';
-          
-          quickBuySearchList.querySelectorAll('.quick-buy-search-item').forEach(item => {
+          beliSearchList.style.display = 'block';
+          beliSearchList.querySelectorAll('.beli-search-item').forEach(item => {
             item.addEventListener('click', function() {
-              quickBuySelectedProduct = {
+              beliSelectedProduct = {
                 id: this.dataset.id,
                 name: this.dataset.name,
                 costPrice: parseInt(this.dataset.cost) || 0
               };
-              quickBuySearchInput.value = this.dataset.name;
-              document.getElementById('quickBuySelectedId').value = this.dataset.id;
-              document.getElementById('quickBuyHarga').value = quickBuySelectedProduct.costPrice;
-              quickBuyCalcTotal();
-              quickBuySearchList.style.display = 'none';
-              document.getElementById('quickBuyQty').focus();
+              beliSearchInput.value = this.dataset.name;
+              document.getElementById('beliSelectedId').value = this.dataset.id;
+              document.getElementById('beliHarga').value = beliSelectedProduct.costPrice;
+              updateBeliTotalPreview();
+              beliSearchList.style.display = 'none';
+              document.getElementById('beliQty').focus();
             });
           });
         } else {
-          quickBuySearchList.innerHTML = '<div class="quick-buy-search-item" style="color:var(--text-muted)">Produk tidak ditemukan</div>';
-          quickBuySearchList.style.display = 'block';
+          beliSearchList.innerHTML = '<div class="beli-search-item" style="color:var(--text-muted)">Produk tidak ditemukan</div>';
+          beliSearchList.style.display = 'block';
         }
       });
 
       document.addEventListener('click', function(e) {
-        if (!e.target.closest('#buyModeExisting')) {
-          quickBuySearchList.style.display = 'none';
-        }
+        if (!e.target.closest('.beli-search-wrap')) beliSearchList.style.display = 'none';
       });
     }
 
-    // Auto calc total
-    document.getElementById('quickBuyQty').addEventListener('input', quickBuyCalcTotal);
-    document.getElementById('quickBuyHarga').addEventListener('input', quickBuyCalcTotal);
+    document.getElementById('beliQty').addEventListener('input', updateBeliTotalPreview);
+    document.getElementById('beliHarga').addEventListener('input', updateBeliTotalPreview);
 
-    async function quickBuySave() {
-      const supplier = document.getElementById('quickBuySupplier').value.trim() || 'Supplier Umum';
-      const qty = parseInt(document.getElementById('quickBuyQty').value) || 0;
-      const hargaBeli = parseInt(document.getElementById('quickBuyHarga').value) || 0;
+    async function saveBeliBarang() {
+      const supplier = document.getElementById('beliSupplier').value.trim() || 'Supplier Umum';
+      const qty = parseInt(document.getElementById('beliQty').value) || 0;
+      const hargaBeli = parseInt(document.getElementById('beliHarga').value) || 0;
+      const kurangiSaldo = document.getElementById('toggleKurangiSaldo').checked;
       
       if (qty < 1 || hargaBeli < 1) {
         showToast('Qty dan harga beli harus lebih dari 0', 'error');
         return;
       }
-
       if (!navigator.onLine) {
         showToast('Pembelian harus dilakukan saat online', 'error');
         return;
@@ -3935,17 +3982,16 @@ async function saveProductQuickEdit() {
         const todayStr = new Date().toISOString().split('T')[0];
         const purchaseId = 'PUR' + timestamp;
         let productId, productName, isNewProduct = false;
+        const totalBeli = qty * hargaBeli;
 
-        if (quickBuyMode === 'existing') {
-          if (!quickBuySelectedProduct) {
+        if (beliMode === 'existing') {
+          if (!beliSelectedProduct) {
             showToast('Pilih produk terlebih dahulu', 'error');
             document.getElementById('loadingOverlay').classList.remove('active');
             return;
           }
-          productId = quickBuySelectedProduct.id;
-          productName = quickBuySelectedProduct.name;
-          
-          // Update stok & costPrice produk existing
+          productId = beliSelectedProduct.id;
+          productName = beliSelectedProduct.name;
           const prodRef = db.ref('products/' + productId);
           const snap = await prodRef.once('value');
           const prod = snap.val();
@@ -3957,10 +4003,8 @@ async function saveProductQuickEdit() {
             });
           }
         } else {
-          // Mode produk baru
-          productName = document.getElementById('quickBuyNewName').value.trim();
-          const hargaJual = parseInt(document.getElementById('quickBuyNewSellPrice').value) || 0;
-          
+          productName = document.getElementById('beliNewName').value.trim();
+          const hargaJual = parseInt(document.getElementById('beliNewSellPrice').value) || 0;
           if (!productName) {
             showToast('Nama produk baru wajib diisi', 'error');
             document.getElementById('loadingOverlay').classList.remove('active');
@@ -3971,7 +4015,6 @@ async function saveProductQuickEdit() {
             document.getElementById('loadingOverlay').classList.remove('active');
             return;
           }
-          
           isNewProduct = true;
           const newRef = db.ref('products').push();
           productId = newRef.key;
@@ -3987,7 +4030,7 @@ async function saveProductQuickEdit() {
           });
         }
 
-        // Simpan ke purchases (sama struktur dengan page-pembelian)
+        // 1. Simpan ke purchases
         const purchaseData = {
           id: purchaseId,
           type: 'pembelian',
@@ -3997,30 +4040,54 @@ async function saveProductQuickEdit() {
             productName: productName,
             qty: qty,
             harga: hargaBeli,
-            total: qty * hargaBeli,
+            total: totalBeli,
             isNewProduct: isNewProduct
           }],
           totalItem: qty,
-          grandTotal: qty * hargaBeli,
-          catatan: 'Input dari halaman Kasir',
+          grandTotal: totalBeli,
+          catatan: 'Input dari Kasir',
           timestamp: timestamp,
           date: todayStr,
           userId: user ? user.uid : 'unknown',
           userName: document.getElementById('userName').textContent,
           status: 'completed'
         };
-
         await db.ref('purchases/' + todayStr + '/' + purchaseId).set(purchaseData);
+
+        // 2. Jika dicentang, simpan juga ke Kas Keluar (kurangi saldo kasir)
+        if (kurangiSaldo) {
+          const kasId = 'KASOUT' + timestamp;
+          // ⚠️ SESUAIKAN path ini dengan struktur kas keluar yang sudah Anda pakai
+          // Contoh path umum:
+          await db.ref('cash_out/' + todayStr + '/' + kasId).set({
+            id: kasId,
+            type: 'out',
+            amount: totalBeli,
+            description: 'Pembelian: ' + productName + ' (' + qty + ' pcs)',
+            category: 'pembelian',
+            relatedPurchaseId: purchaseId,
+            timestamp: timestamp,
+            date: todayStr,
+            userId: user ? user.uid : 'unknown',
+            userName: document.getElementById('userName').textContent
+          });
+          // Jika ada balance kasir, kurangi juga:
+          // await db.ref('kasir_balance').transaction(bal => (bal || 0) - totalBeli);
+        }
 
         // Refresh produk di kasir
         await loadProducts();
 
-        quickBuyReset();
+        closeModalBeli();
         document.getElementById('loadingOverlay').classList.remove('active');
-        showToast(`Pembelian ${productName} (${qty} pcs) berhasil disimpan!`, 'success');
+        
+        const msg = kurangiSaldo 
+          ? `Pembelian ${productName} berhasil! Saldo kasir berkurang ${formatRupiah(totalBeli)}`
+          : `Pembelian ${productName} berhasil! (Tidak mengurangi saldo)`;
+        showToast(msg, 'success');
 
       } catch (err) {
-        console.error('Quick buy error:', err);
+        console.error('Beli barang error:', err);
         document.getElementById('loadingOverlay').classList.remove('active');
         showToast('Gagal menyimpan: ' + err.message, 'error');
       }
