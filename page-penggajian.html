@@ -991,6 +991,22 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
     </div>
   </div>
 
+  <!-- ===== MODAL DETAIL GAJI ===== -->
+  <div class="modal-overlay" id="modalDetailGaji" onclick="if(event.target===this)closeModalDetailGaji()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-file-invoice-dollar"></i> Detail Penggajian</h3>
+        <button class="modal-close" onclick="closeModalDetailGaji()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" id="detailGajiBody">
+        <!-- diisi JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModalDetailGaji()">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="js/firebase-config.js?v=2"></script>
   <script>
@@ -1146,22 +1162,29 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
         });
 
         // 2. Cari gaji BELUM DIBAYAR dari SEMUA BULAN SEBELUMNYA
-        Object.entries(allData).forEach(([dateStr, dayData]) => {
-          if (dateStr.startsWith(targetPrefix)) return;
+        // TAPI hanya tampilkan carry-over di BULAN SAAT INI (real-time)
+        // Kalau user filter bulan lama (Maret, Feb, dll), jangan tampilkan carry-over
+        const now = new Date();
+        const currentRealMonth = String(now.getFullYear()) + '-' + String(now.getMonth() + 1).padStart(2, '0');
+        const isCurrentMonth = (targetPrefix === currentRealMonth);
 
-          Object.entries(dayData).forEach(([gajiId, gaji]) => {
-            const status = gaji.paymentStatus || gaji.status || 'unpaid';
-            // Tampilkan kalau belum dibayar (unpaid) saja
-            // Kalau sudah carryOverPaid, tetap tampilkan tapi dengan badge khusus
-            if (status === 'unpaid' || gaji.carryOverPaid) {
-              allGajiData.push({ 
-                id: gajiId, ...gaji, dateStr: dateStr, 
-                carryOver: true,
-                displayPeriode: (gaji.periodeAwal || '-') + ' s/d ' + (gaji.periodeAkhir || '-')
-              });
-            }
+        if (isCurrentMonth) {
+          Object.entries(allData).forEach(([dateStr, dayData]) => {
+            if (dateStr.startsWith(targetPrefix)) return;
+
+            Object.entries(dayData).forEach(([gajiId, gaji]) => {
+              const status = gaji.paymentStatus || gaji.status || 'unpaid';
+              // Hanya tampilkan yang belum dibayar (unpaid) sebagai carry-over
+              if (status === 'unpaid') {
+                allGajiData.push({ 
+                  id: gajiId, ...gaji, dateStr: dateStr, 
+                  carryOver: true,
+                  displayPeriode: (gaji.periodeAwal || '-') + ' s/d ' + (gaji.periodeAkhir || '-')
+                });
+              }
+            });
           });
-        });
+        }
 
         allGajiData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         updateStats();
@@ -1228,7 +1251,7 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
         }
         const tanggalBayar = g.paidAt ? formatDate(g.paidAt) : '-';
         const periode = g.displayPeriode || ((g.periodeAwal || '-') + ' s/d ' + (g.periodeAkhir || '-'));
-        html += `<tr>
+        html += `<tr onclick="showDetailGaji('${g.id}', '${g.dateStr}')" style="cursor:pointer;" title="Klik untuk lihat detail">
           <td>${idx + 1}</td>
           <td class="td-nama">${escapeHtml(g.namaKaryawan || '-')}</td>
           <td class="td-periode">${periode}</td>
@@ -1238,7 +1261,8 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
           <td class="td-amount ${isPaid ? 'paid' : 'unpaid'}">${formatRupiah(g.totalDiterima || 0)}</td>
           <td><span class="badge ${badgeClass}">${badgeText}${g.carryOver ? ' (Bln Lalu)' : ''}</span></td>
           <td class="td-periode">${tanggalBayar}</td>
-          <td style="text-align:center">
+          <td style="text-align:center" onclick="event.stopPropagation()">
+            <button class="btn-icon" onclick="showDetailGaji('${g.id}', '${g.dateStr}')" title="Detail" style="color:var(--primary)"><i class="fas fa-eye"></i></button>
             ${isPaid
               ? `<button class="btn-icon" onclick="batalkanGaji('${g.id}', '${g.dateStr}')" title="Batalkan" style="color:var(--danger)"><i class="fas fa-undo"></i></button>`
               : `<button class="btn-icon" onclick="bayarGaji('${g.id}', '${g.dateStr}')" title="Bayar" style="color:var(--success)"><i class="fas fa-check"></i></button>`
@@ -1456,6 +1480,97 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
         loadGajiData();
       } catch (err) { showToast('Gagal menghapus', 'error'); }
       Utils.hideLoading();
+    };
+
+    /* ===== DETAIL GAJI MODAL ===== */
+    window.showDetailGaji = function(gajiId, dateStr) {
+      const g = allGajiData.find(x => x.id === gajiId && x.dateStr === dateStr);
+      if (!g) { showToast('Data tidak ditemukan', 'error'); return; }
+
+      const status = g.paymentStatus || g.status || 'unpaid';
+      const isPaid = status === 'paid';
+      const badgeClass = isPaid ? 'badge-paid' : 'badge-unpaid';
+      const badgeText = isPaid ? 'Sudah Dibayar' : 'Belum Dibayar';
+      const tanggalBayar = g.paidAt ? formatDate(g.paidAt) : '-';
+      const tanggalInput = g.timestamp ? formatDate(g.timestamp) : '-';
+      const periode = g.displayPeriode || ((g.periodeAwal || '-') + ' s/d ' + (g.periodeAkhir || '-'));
+
+      // Hutang yang dipotong
+      let hutangHtml = '';
+      if (g.hutangDipotong && g.hutangDipotong.length > 0) {
+        hutangHtml = `<div style="margin-top:.75rem;padding:.75rem;background:rgba(239,68,68,.06);border-radius:8px;border:1px solid rgba(239,68,68,.15);">
+          <div style="font-weight:600;font-size:.85rem;color:var(--danger);margin-bottom:.35rem;"><i class="fas fa-hand-holding-usd"></i> Hutang Dipotong</div>
+          <div style="font-size:.85rem;color:var(--text-secondary);">Jumlah: ${formatRupiah(g.jumlahHutangDipotong || 0)}</div>
+          <div style="font-size:.8rem;color:var(--text-muted);">ID: ${g.hutangDipotong.join(', ')}</div>
+        </div>`;
+      }
+
+      // Gaji lalu yang dibayar via carry-over
+      let laluHtml = '';
+      if (g.gajiLaluDibayar && g.gajiLaluDibayar.length > 0) {
+        laluHtml = `<div style="margin-top:.75rem;padding:.75rem;background:rgba(245,158,11,.06);border-radius:8px;border:1px solid rgba(245,158,11,.15);">
+          <div style="font-weight:600;font-size:.85rem;color:var(--warning);margin-bottom:.35rem;"><i class="fas fa-history"></i> Gaji Bulan Lalu Dibayar</div>
+          <div style="font-size:.85rem;color:var(--text-secondary);">Jumlah: ${formatRupiah(g.jumlahGajiLalu || 0)}</div>
+          <div style="font-size:.8rem;color:var(--text-muted);">${g.gajiLaluDibayar.length} gaji lalu dilunasi</div>
+        </div>`;
+      }
+
+      const body = document.getElementById('detailGajiBody');
+      body.innerHTML = `
+        <div style="text-align:center;margin-bottom:1.25rem;">
+          <div style="width:60px;height:60px;background:linear-gradient(135deg,var(--primary),var(--secondary));border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto .75rem;color:white;font-size:1.5rem;">
+            <i class="fas fa-user"></i>
+          </div>
+          <h2 style="font-size:1.15rem;font-weight:700;color:var(--text-primary);margin-bottom:.25rem;">${escapeHtml(g.namaKaryawan || '-')}</h2>
+          <span class="badge ${badgeClass}">${badgeText}${g.carryOver ? ' (Bln Lalu)' : ''}</span>
+        </div>
+
+        <div class="modal-summary" style="margin-bottom:1rem;">
+          <div class="modal-summary-row"><span><i class="fas fa-calendar-alt" style="color:var(--primary);margin-right:.35rem;"></i>Periode</span><span style="font-weight:600;">${periode}</span></div>
+          <div class="modal-summary-row"><span><i class="fas fa-calendar" style="color:var(--primary);margin-right:.35rem;"></i>Tanggal Input</span><span>${tanggalInput}</span></div>
+          <div class="modal-summary-row"><span><i class="fas fa-check-circle" style="color:var(--success);margin-right:.35rem;"></i>Tanggal Bayar</span><span>${tanggalBayar}</span></div>
+          <div class="modal-summary-row"><span><i class="fas fa-user-shield" style="color:var(--info);margin-right:.35rem;"></i>Input Oleh</span><span>${escapeHtml(g.userName || '-')}</span></div>
+        </div>
+
+        <div style="background:var(--bg-secondary);border-radius:12px;padding:1rem;margin-bottom:1rem;">
+          <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:.75rem;">Rincian Gaji</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px dashed var(--border-color);">
+            <span style="font-size:.9rem;color:var(--text-secondary);">Gaji Pokok</span>
+            <span style="font-weight:600;font-size:.9rem;color:var(--text-primary);">${formatRupiah(g.gajiPokok || 0)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px dashed var(--border-color);">
+            <span style="font-size:.9rem;color:var(--text-secondary);">Bonus / Lembur</span>
+            <span style="font-weight:600;font-size:.9rem;color:var(--success);">+ ${formatRupiah(g.bonus || 0)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px dashed var(--border-color);">
+            <span style="font-size:.9rem;color:var(--text-secondary);">Potongan</span>
+            <span style="font-weight:600;font-size:.9rem;color:var(--danger);">- ${formatRupiah(g.potongan || 0)}</span>
+          </div>
+          ${g.jumlahGajiLalu > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px dashed var(--border-color);"><span style="font-size:.9rem;color:var(--text-secondary);">Gaji Bln Lalu</span><span style="font-weight:600;font-size:.9rem;color:var(--warning);">+ ${formatRupiah(g.jumlahGajiLalu || 0)}</span></div>` : ''}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 0 0;margin-top:.25rem;">
+            <span style="font-weight:700;font-size:1rem;color:var(--text-primary);">Total Diterima</span>
+            <span style="font-weight:800;font-size:1.1rem;color:var(--primary);">${formatRupiah(g.totalDiterima || 0)}</span>
+          </div>
+        </div>
+
+        ${hutangHtml}
+        ${laluHtml}
+
+        <div style="background:rgba(99,102,241,.05);border-radius:12px;padding:1rem;">
+          <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:.5rem;">Info Data</div>
+          <div style="font-size:.8rem;color:var(--text-muted);line-height:1.6;">
+            <div>ID Gaji: <span style="font-family:monospace;">${g.id}</span></div>
+            <div>Tanggal Data: ${g.dateStr}</div>
+            ${g.carryOverPaid ? '<div style="color:var(--warning);margin-top:.35rem;"><i class="fas fa-check-double"></i> Dibayar via carry-over gaji</div>' : ''}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('modalDetailGaji').classList.add('active');
+    };
+
+    window.closeModalDetailGaji = function() {
+      document.getElementById('modalDetailGaji').classList.remove('active');
     };
 
     /* ===== POPULATE DATALIST NAMA KARYAWAN ===== */
