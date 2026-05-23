@@ -631,6 +631,7 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
   <div class="app-container">
@@ -973,6 +974,15 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
             <option value="paid">Sudah Dibayar</option>
           </select>
         </div>
+        <div class="form-group" style="margin-top:1rem;margin-bottom:0;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1.5px dashed #f59e0b;border-radius:12px;padding:.75rem 1rem;">
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.9rem;font-weight:600;color:#92400e;">
+            <input type="checkbox" id="checkBulanLalu" style="width:18px;height:18px;accent-color:#f59e0b;" onchange="toggleInputBulanLalu()">
+            <i class="fas fa-history"></i> Input untuk Gaji Bulan Lalu
+          </label>
+          <small style="color:#a16207;font-size:.75rem;display:block;margin-top:.35rem;margin-left:1.65rem;">
+            Centang ini kalau Anda mau input gaji untuk bulan sebelumnya (backdate). Periode otomatis ke bulan lalu.
+          </small>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="closeModalInputGaji()">Batal</button>
@@ -1136,21 +1146,14 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
         });
 
         // 2. Cari gaji BELUM DIBAYAR dari SEMUA BULAN SEBELUMNYA
-        // yang dicentang untuk carry-over ke bulan ini
         Object.entries(allData).forEach(([dateStr, dayData]) => {
-          // Lewati bulan ini
           if (dateStr.startsWith(targetPrefix)) return;
 
           Object.entries(dayData).forEach(([gajiId, gaji]) => {
             const status = gaji.paymentStatus || gaji.status || 'unpaid';
-            // Tampilkan kalau belum dibayar ATAU sudah dibayar via carry-over
+            // Tampilkan kalau belum dibayar (unpaid) saja
+            // Kalau sudah carryOverPaid, tetap tampilkan tapi dengan badge khusus
             if (status === 'unpaid' || gaji.carryOverPaid) {
-              // Cek apakah periode akhir masih relevan dengan bulan yang dipilih
-              const periodeAkhir = gaji.periodeAkhir || '';
-              const periodeYear = periodeAkhir.split('-')[0] || currentTahun;
-              const periodeMonth = periodeAkhir.split('-')[1] || currentBulan;
-
-              // Selalu tampilkan gaji unpaid bulan lalu (bisa dibayar kapan saja)
               allGajiData.push({ 
                 id: gajiId, ...gaji, dateStr: dateStr, 
                 carryOver: true,
@@ -1172,14 +1175,17 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
 
     /* ===== UPDATE STATS ===== */
     function updateStats() {
-      let sudah = 0, belum = 0, total = 0;
+      let sudah = 0, belum = 0, total = 0, totalLaluUnpaid = 0;
       const uniqueKaryawan = new Set();
       allGajiData.forEach(g => {
         const amount = g.totalDiterima || 0;
         total += amount;
         uniqueKaryawan.add(g.namaKaryawan);
         if ((g.paymentStatus || g.status) === 'paid') sudah += amount;
-        else belum += amount;
+        else {
+          belum += amount;
+          if (g.carryOver) totalLaluUnpaid += amount;
+        }
       });
 
       document.getElementById('statSudahBayar').textContent = formatRupiah(sudah);
@@ -1188,8 +1194,12 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
       document.getElementById('statTotalGaji').textContent = formatRupiah(total);
 
       const pct = total > 0 ? Math.round((sudah / total) * 100) : 0;
+      let progressText = pct + '% terbayar (' + formatRupiah(sudah) + ' dari ' + formatRupiah(total) + ')';
+      if (totalLaluUnpaid > 0) {
+        progressText += ' • ' + formatRupiah(totalLaluUnpaid) + ' tunggakan bln lalu';
+      }
       document.getElementById('progressBar').style.width = pct + '%';
-      document.getElementById('progressText').textContent = pct + '% terbayar (' + formatRupiah(sudah) + ' dari ' + formatRupiah(total) + ')';
+      document.getElementById('progressText').textContent = progressText;
     }
 
     /* ===== RENDER TABLE ===== */
@@ -1208,8 +1218,14 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
       filtered.forEach((g, idx) => {
         const status = g.paymentStatus || g.status || 'unpaid';
         const isPaid = status === 'paid';
-        const badgeClass = isPaid ? 'badge-paid' : 'badge-unpaid';
-        const badgeText = isPaid ? 'Sudah Dibayar' : 'Belum Dibayar';
+        let badgeClass = isPaid ? 'badge-paid' : 'badge-unpaid';
+        let badgeText = isPaid ? 'Sudah Dibayar' : 'Belum Dibayar';
+        if (g.carryOver && g.carryOverPaid) {
+          badgeClass = 'badge-paid';
+          badgeText = 'Sudah Dibayar (via Carry-Over)';
+        } else if (g.carryOver && !isPaid) {
+          badgeText = 'Belum Dibayar (Bln Lalu)';
+        }
         const tanggalBayar = g.paidAt ? formatDate(g.paidAt) : '-';
         const periode = g.displayPeriode || ((g.periodeAwal || '-') + ' s/d ' + (g.periodeAkhir || '-'));
         html += `<tr>
@@ -1245,6 +1261,25 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
       populateDatalistKaryawan(); // ⭐ Isi dropdown nama
       setTimeout(() => document.getElementById('gajiNama').focus(), 100);
     };
+
+    window.toggleInputBulanLalu = function() {
+      const isChecked = document.getElementById('checkBulanLalu').checked;
+      const now = new Date();
+      if (isChecked) {
+        // Set periode ke bulan lalu
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+        document.getElementById('gajiPeriodeAwal').value = formatDateInput(lastMonth);
+        document.getElementById('gajiPeriodeAkhir').value = formatDateInput(lastMonthEnd);
+        showToast('Periode otomatis di-set ke bulan lalu', 'info');
+      } else {
+        // Balik ke bulan ini
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        document.getElementById('gajiPeriodeAwal').value = formatDateInput(firstDay);
+        document.getElementById('gajiPeriodeAkhir').value = formatDateInput(lastDay);
+      }
+    };
     window.closeModalInputGaji = function() {
       document.getElementById('modalInputGaji').classList.remove('active');
       resetForm();
@@ -1253,10 +1288,22 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
       const pokok = parseInt(document.getElementById('gajiPokok').value) || 0;
       const bonus = parseInt(document.getElementById('gajiBonus').value) || 0;
       const potongan = parseInt(document.getElementById('gajiPotongan').value) || 0;
-      const total = pokok + bonus - potongan;
+
+      // Hitung total gaji lalu yang dicentang
+      let totalLalu = 0;
+      gajiBulanLaluList.forEach((g, idx) => {
+        const cb = document.getElementById('gajiLaluChk_' + idx);
+        if (cb && cb.checked) totalLalu += (g.totalDiterima || 0);
+      });
+
+      const total = pokok + bonus - potongan + totalLalu;
       document.getElementById('previewPokok').textContent = formatRupiah(pokok);
       document.getElementById('previewBonus').textContent = formatRupiah(bonus);
-      document.getElementById('previewPotongan').textContent = '- ' + formatRupiah(potongan);
+      if (totalLalu > 0) {
+        document.getElementById('previewPotongan').textContent = '- ' + formatRupiah(potongan) + ' + ' + formatRupiah(totalLalu) + ' (Bln Lalu)';
+      } else {
+        document.getElementById('previewPotongan').textContent = '- ' + formatRupiah(potongan);
+      }
       document.getElementById('previewTotal').textContent = formatRupiah(total);
     };
     window.saveGaji = async function() {
@@ -1267,9 +1314,17 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
       const bonus = parseInt(document.getElementById('gajiBonus').value) || 0;
       const potongan = parseInt(document.getElementById('gajiPotongan').value) || 0;
       const status = document.getElementById('gajiStatus').value;
-      const total = pokok + bonus - potongan;
+
+      // Hitung total gaji lalu yang dicentang
+      let totalLalu = 0;
+      gajiBulanLaluList.forEach((g, idx) => {
+        const cb = document.getElementById('gajiLaluChk_' + idx);
+        if (cb && cb.checked) totalLalu += (g.totalDiterima || 0);
+      });
+
+      const total = pokok + bonus - potongan + totalLalu;
       if (!nama) { showToast('Nama karyawan wajib diisi', 'error'); return; }
-      if (pokok < 1) { showToast('Gaji pokok harus lebih dari 0', 'error'); return; }
+      if (pokok < 1 && totalLalu === 0) { showToast('Gaji pokok harus lebih dari 0', 'error'); return; }
 
       Utils.showLoading();
       try {
@@ -1284,14 +1339,57 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
           timestamp: timestamp, date: todayStr,
           userId: user ? user.uid : 'unknown',
           userName: document.getElementById('userName').textContent,
-          paymentStatus: status, status: status
+          paymentStatus: status, status: status,
+          hutangDipotong: selectedHutangIds.length > 0 ? selectedHutangIds : null,
+          jumlahHutangDipotong: selectedHutangIds.length > 0 ? potongan : 0,
+          gajiLaluDibayar: selectedGajiLaluIds.length > 0 ? selectedGajiLaluIds : null,
+          jumlahGajiLalu: totalLalu
         };
+
+        // ⭐ BAYAR HUTANG VIA POTONGAN GAJI
+        if (selectedHutangIds.length > 0) {
+          for (const hid of selectedHutangIds) {
+            const hutang = hutangKaryawanList.find(h => h.id === hid);
+            if (!hutang) continue;
+            const sisa = hutang.remaining || hutang.amount || 0;
+            await db.ref('debts/' + hid).update({
+              remaining: 0, status: 'paid', paidAt: timestamp, updatedAt: timestamp
+            });
+            await db.ref('debt_payments/' + hid + '/' + timestamp).set({
+              amount: sisa,
+              note: 'Potongan gaji ' + nama + ' (' + periodeAwal + ' s/d ' + periodeAkhir + ')',
+              affectKas: false,
+              viaPotonganGaji: true,
+              gajiId: gajiId,
+              userId: user ? user.uid : 'unknown',
+              userName: document.getElementById('userName').textContent,
+              timestamp: timestamp
+            });
+          }
+        }
+
+        // ⭐ BAYAR GAJI BULAN LALU YANG DICENTANG
+        if (selectedGajiLaluIds.length > 0) {
+          for (const gl of selectedGajiLaluIds) {
+            await db.ref('penggajian/' + gl.dateStr + '/' + gl.id).update({
+              paymentStatus: 'paid',
+              status: 'paid',
+              paidAt: timestamp,
+              carryOverPaid: true,
+              carryOverGajiId: gajiId,
+              carryOverDate: todayStr
+            });
+          }
+        }
+
         if (status === 'paid') {
           data.paidAt = timestamp;
           const kasId = 'KASOUT' + timestamp;
           await db.ref('transactions/' + todayStr + '/' + kasId).set({
             type: 'kas_keluar', status: 'completed', amount: total,
-            description: 'Gaji ' + nama + ' (' + periodeAwal + ' s/d ' + periodeAkhir + ')',
+            description: 'Gaji ' + nama + ' (' + periodeAwal + ' s/d ' + periodeAkhir + ')'
+              + (selectedGajiLaluIds.length > 0 ? ' + ' + selectedGajiLaluIds.length + ' gaji bulan lalu' : '')
+              + (selectedHutangIds.length > 0 ? ' (potong hutang)' : ''),
             category: 'penggajian', relatedGajiId: gajiId,
             timestamp: timestamp, date: todayStr,
             userId: user ? user.uid : 'unknown',
@@ -1510,12 +1608,8 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
           totalLalu += (g.totalDiterima || 0);
         }
       });
-      // Gaji bulan lalu yang dicentang = otomatis tambah ke gaji pokok (carry-over)
-      // Atau bisa juga masuk ke bonus — tergantung kebutuhan
-      // Di sini kita anggap sebagai tambahan yang harus dibayar bulan ini
-      const pokokSaatIni = parseInt(document.getElementById('gajiPokok').value) || 0;
-      // Tidak otomatis ubah gaji pokok, tapi tampilkan info saja
-      // User bisa atur sendiri
+      // Update preview: tambahkan info total gaji lalu yang dicentang
+      updateGajiPreview();
     };
 
     /* ===== HELPERS ===== */
@@ -1533,6 +1627,8 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
       document.getElementById('gajiBonus').value = '';
       document.getElementById('gajiPotongan').value = '';
       document.getElementById('gajiStatus').value = 'unpaid';
+      const cbBulanLalu = document.getElementById('checkBulanLalu');
+      if (cbBulanLalu) cbBulanLalu.checked = false;
       updateGajiPreview();
     }
     function getBulanLabel(bulan) {
@@ -1572,6 +1668,10 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
       container.appendChild(toast);
       setTimeout(() => toast.remove(), 3000);
     }
+
+    /* ===== FIX SCOPE: attach local functions to window ===== */
+    window.loadHutangKaryawan = loadHutangKaryawan;
+    window.toggleInputBulanLalu = toggleInputBulanLalu;
 
     /* ===== INIT ===== */
     loadGajiData();
