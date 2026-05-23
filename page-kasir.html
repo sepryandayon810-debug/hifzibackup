@@ -1355,8 +1355,9 @@ html,body{overflow-x:hidden;max-width:100vw}
 
 /* ===== TOMBOL KAS ACTION BAR (4 TOMBOL SEJAJAR) ===== */
 .kas-action-bar {
-  display: flex;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
   margin-bottom: 1rem;
   overflow-x: auto;
   padding-bottom: 0.25rem;
@@ -1371,10 +1372,10 @@ html,body{overflow-x:hidden;max-width:100vw}
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.6rem 0.5rem;
+  padding: 0.45rem 0.4rem;
   border-radius: 2rem;
   border: none;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -1451,7 +1452,7 @@ html,body{overflow-x:hidden;max-width:100vw}
 .toggle-switch input:checked + .toggle-slider { background-color: #10b981; }
 .toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
 .toggle-label {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -1823,7 +1824,7 @@ html,body{overflow-x:hidden;max-width:100vw}
               <!-- Toggle Kurangi Saldo Kasir -->
               <div class="toggle-group">
                 <label class="toggle-switch">
-                  <input type="checkbox" id="toggleKurangiSaldo" checked onchange="updateBeliTotalPreview()">
+            <input type="checkbox" id="toggleKurangiSaldo" onchange="updateBeliTotalPreview()">
                   <span class="toggle-slider"></span>
                 </label>
                 <span class="toggle-label">Kurangi Saldo Kasir (Kas Keluar)</span>
@@ -4059,9 +4060,9 @@ async function saveProductQuickEdit() {
           const kasId = 'KASOUT' + timestamp;
           // ⚠️ SESUAIKAN path ini dengan struktur kas keluar yang sudah Anda pakai
           // Contoh path umum:
-          await db.ref('cash_out/' + todayStr + '/' + kasId).set({
-            id: kasId,
-            type: 'out',
+          await db.ref('transactions/' + todayStr + '/' + kasId).set({
+  type: 'kas_keluar',
+  status: 'completed'
             amount: totalBeli,
             description: 'Pembelian: ' + productName + ' (' + qty + ' pcs)',
             category: 'pembelian',
