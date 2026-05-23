@@ -4062,7 +4062,7 @@ async function saveProductQuickEdit() {
           // Contoh path umum:
           await db.ref('transactions/' + todayStr + '/' + kasId).set({
   type: 'kas_keluar',
-  status: 'completed'
+  status: 'completed',
             amount: totalBeli,
             description: 'Pembelian: ' + productName + ' (' + qty + ' pcs)',
             category: 'pembelian',
