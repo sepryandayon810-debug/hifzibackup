@@ -494,27 +494,108 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
 [data-theme="dark"] .form-input,[data-theme="dark"] .form-select{background:var(--bg-secondary);color:var(--text-primary)}
 
 /* ===== RESPONSIVE (identik dashboard) ===== */
+/* ===== TABLE MOBILE FIXES ===== */
+.table-container{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
+.table{table-layout:auto;width:100%}
+
 @media(max-width:768px){
   html{font-size:14px}
   :root{--header-height:55px;--bottom-nav-height:55px;--sidebar-width:260px}
   .main-header{padding:0 1rem}
-  .header-title{font-size:1.1rem}
-  .stats-grid{grid-template-columns:repeat(2,1fr);gap:.75rem;margin-bottom:1rem}
-  .stat-card{padding:1.125rem;gap:.875rem;border-radius:1.25rem}
-  .stat-icon{width:44px;height:44px;font-size:1.1rem;border-radius:12px}
-  .stat-value{font-size:1.15rem}
-  .filter-bar{padding:.875rem 1rem;gap:.625rem}
-  .card{border-radius:1.25rem}
-  .card-header{padding:1rem 1.25rem}
-  .table th,.table td{padding:.625rem .75rem;font-size:.8rem}
-  .modal-content{max-width:95%;border-radius:1.25rem}
-  .form-row{grid-template-columns:1fr}
+  .header-title{font-size:1.05rem}
+
+  /* Stats: 2 columns */
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:.625rem;margin-bottom:1rem}
+  .stat-card{padding:.875rem;gap:.625rem;border-radius:1rem}
+  .stat-icon{width:40px;height:40px;font-size:1rem;border-radius:12px}
+  .stat-value{font-size:1.1rem}
+  .stat-label{font-size:.6rem}
+
+  /* Progress bar */
+  .progress-wrap{padding:.875rem}
+  .progress-label{font-size:.8rem}
+  .progress-value{font-size:.75rem}
+
+  /* Filter bar */
+  .filter-bar{padding:.75rem;gap:.5rem}
+  .filter-group{gap:.35rem}
+  .filter-label{font-size:.75rem}
+  .filter-select{padding:.4rem .6rem;font-size:.8rem}
+  .filter-spacer{display:none}
+
+  /* Card */
+  .card{border-radius:1rem}
+  .card-header{padding:.875rem 1rem;gap:.5rem}
+  .card-title{font-size:.95rem}
+
+  /* Table: smaller text, tighter padding */
+  .table-container{border-radius:.75rem}
+  .table{font-size:.78rem}
+  .table th,.table td{padding:.5rem .5rem}
+  .table th{font-size:.7rem;letter-spacing:.02em}
+
+  /* Hide some columns on tablet */
+  .table th:nth-child(3),
+  .table td:nth-child(3),
+  .table th:nth-child(9),
+  .table td:nth-child(9){display:none}
+
+  /* Modal */
+  .modal-content{max-width:95%;border-radius:1rem;margin:.5rem}
+  .modal-header{padding:1rem}
+  .modal-title{font-size:1rem}
+  .modal-body{padding:1rem}
+  .modal-footer{padding:.75rem 1rem}
+  .form-row{grid-template-columns:1fr;gap:.625rem}
+  .form-group{margin-bottom:1rem}
+  .form-label{font-size:.8rem}
+  .form-input,.form-select{padding:.625rem .875rem;font-size:.9rem}
+  .modal-summary{padding:.75rem 1rem}
+  .modal-summary-row{font-size:.85rem}
+  .modal-summary-row.total{font-size:1rem}
+
+  /* Buttons */
+  .btn-sm{padding:.35rem .75rem;font-size:.78rem}
+  .btn-icon{width:32px;height:32px}
 }
-@media(max-width:380px){
+
+@media(max-width:480px){
   html{font-size:13px}
-  .stats-grid{grid-template-columns:repeat(2,1fr);gap:.5rem}
-  .stat-card{padding:1rem}
-  .stat-icon{width:36px;height:36px;font-size:1rem}
+
+  /* Stats: 1 column */
+  .stats-grid{grid-template-columns:1fr;gap:.5rem}
+  .stat-card{padding:.75rem;gap:.5rem}
+  .stat-icon{width:36px;height:36px;font-size:.9rem}
+  .stat-value{font-size:1.05rem}
+
+  /* Filter bar: stack */
+  .filter-bar{flex-direction:column;align-items:stretch;gap:.5rem}
+  .filter-group{width:100%;justify-content:space-between}
+  .filter-select{flex:1;min-width:0;width:auto}
+  .btn-sm{width:100%;justify-content:center;margin-top:.25rem}
+
+  /* Table: even smaller */
+  .table{font-size:.72rem}
+  .table th,.table td{padding:.4rem .4rem}
+  .table th{font-size:.65rem}
+
+  /* Hide bonus & potongan columns on phone */
+  .table th:nth-child(5),
+  .table td:nth-child(5),
+  .table th:nth-child(6),
+  .table td:nth-child(6){display:none}
+
+  /* Modal full screen on phone */
+  .modal-overlay{padding:0;align-items:flex-end}
+  .modal-content{width:100%;max-width:100%;height:85vh;max-height:85vh;border-radius:1rem 1rem 0 0;margin:0;display:flex;flex-direction:column}
+  .modal-body{flex:1;overflow-y:auto}
+}
+
+@media(max-width:360px){
+  .stats-grid{grid-template-columns:1fr}
+  .table{font-size:.68rem}
+  .table th,.table td{padding:.35rem .35rem}
+  .header-title{font-size:.95rem}
 }
 @supports(padding-top:env(safe-area-inset-top)){
   @media(max-width:768px){
@@ -522,7 +603,8 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
     .page-content{padding-top:calc(.875rem + env(safe-area-inset-top))!important}
   }
 }
-  </style>
+  
+</style>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -533,8 +615,7 @@ body{background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 50%, #ffffff 100%);
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js"></script>
-<base target="">
+<base target="_blank">
 </head>
 <body>
   <div class="app-container">
