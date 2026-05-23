@@ -1740,6 +1740,96 @@ html,body{overflow-x:hidden;max-width:100vw}
 </a>
 </div>
 
+                <!-- ===== QUICK BUY CARD (PEMBELIAN CEPAT) ===== -->
+        <div class="card" id="quickBuyCard" style="margin-bottom:1.25rem;">
+          <div class="card-header" style="padding:1rem 1.25rem;background:linear-gradient(135deg,#f59e0b,#f97316);color:white;border-radius:1.25rem 1.25rem 0 0;border:none;cursor:pointer;" onclick="toggleQuickBuy()">
+            <h3 class="card-title" style="color:white;font-size:1rem;margin:0;">
+              <i class="fas fa-cart-plus"></i> Input Pembelian Cepat
+            </h3>
+            <div style="display:flex;align-items:center;gap:0.75rem;">
+              <span style="font-size:0.75rem;opacity:0.9;">Klik untuk buka/tutup</span>
+              <i class="fas fa-chevron-up" id="quickBuyToggleIcon" style="transition:transform 0.3s;"></i>
+            </div>
+          </div>
+          
+          <div class="card-body" id="quickBuyBody" style="padding:1.25rem;">
+            <!-- Mode Toggle: Produk Baru vs Existing -->
+            <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+              <button type="button" class="btn btn-sm" id="btnModeExisting" onclick="toggleBuyMode('existing')" style="flex:1;background:linear-gradient(135deg,#059669,#10b981);color:white;border:none;">
+                <i class="fas fa-box"></i> Produk Ada
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" id="btnModeNew" onclick="toggleBuyMode('new')" style="flex:1;">
+                <i class="fas fa-plus-circle"></i> Produk Baru
+              </button>
+            </div>
+
+            <!-- Mode: Produk Existing (dengan search) -->
+            <div id="buyModeExisting">
+              <div class="form-group" style="margin-bottom:0.75rem;position:relative;">
+                <label class="form-label" style="font-size:0.8rem;">Cari Produk <span style="color:var(--danger)">*</span></label>
+                <input type="text" class="form-input" id="quickBuySearch" placeholder="Ketik nama produk..." autocomplete="off" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
+                <div id="quickBuySearchList" style="position:absolute;top:100%;left:0;right:0;background:var(--bg-card);border:1px solid var(--border-color);border-radius:0 0 0.75rem 0.75rem;box-shadow:var(--shadow-lg);max-height:180px;overflow-y:auto;z-index:100;display:none;"></div>
+                <input type="hidden" id="quickBuySelectedId">
+              </div>
+            </div>
+
+            <!-- Mode: Produk Baru -->
+            <div id="buyModeNew" style="display:none;">
+              <div class="form-group" style="margin-bottom:0.75rem;">
+                <label class="form-label" style="font-size:0.8rem;">Nama Produk Baru <span style="color:var(--danger)">*</span></label>
+                <input type="text" class="form-input" id="quickBuyNewName" placeholder="Masukkan nama produk baru" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
+              </div>
+              <div class="form-group" style="margin-bottom:0.75rem;">
+                <label class="form-label" style="font-size:0.8rem;">Harga Jual <span style="color:var(--danger)">*</span></label>
+                <div style="display:flex;">
+                  <span style="padding:0.625rem 0.75rem;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-right:none;border-radius:0.75rem 0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">Rp</span>
+                  <input type="number" class="form-input" id="quickBuyNewSellPrice" placeholder="0" style="border-radius:0 0.75rem 0.75rem 0;padding:0.625rem 0.875rem;font-size:0.875rem;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Supplier -->
+            <div class="form-group" style="margin-bottom:0.75rem;">
+              <label class="form-label" style="font-size:0.8rem;">Supplier (Opsional)</label>
+              <input type="text" class="form-input" id="quickBuySupplier" placeholder="Nama supplier" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
+            </div>
+
+            <!-- Qty & Harga Beli -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.8rem;">Qty <span style="color:var(--danger)">*</span></label>
+                <input type="number" class="form-input" id="quickBuyQty" placeholder="1" min="1" value="1" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.8rem;">Harga Beli/pcs <span style="color:var(--danger)">*</span></label>
+                <div style="display:flex;">
+                  <span style="padding:0.625rem 0.75rem;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-right:none;border-radius:0.75rem 0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">Rp</span>
+                  <input type="number" class="form-input" id="quickBuyHarga" placeholder="0" style="border-radius:0 0.75rem 0.75rem 0;padding:0.625rem 0.875rem;font-size:0.875rem;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Total Preview -->
+            <div style="background:var(--bg-secondary);padding:0.75rem 1rem;border-radius:0.75rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:0.85rem;color:var(--text-secondary);font-weight:600;">Total Pembelian:</span>
+              <span id="quickBuyTotalPreview" style="font-size:1.1rem;font-weight:700;color:var(--primary);">Rp 0</span>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display:flex;gap:0.75rem;">
+              <button type="button" class="btn btn-primary" onclick="quickBuySave()" style="flex:1;padding:0.75rem;font-size:0.875rem;background:linear-gradient(135deg,#f59e0b,#f97316);border:none;box-shadow:0 4px 14px rgba(245,158,11,0.3);">
+                <i class="fas fa-save"></i> Simpan Pembelian
+              </button>
+              <button type="button" class="btn btn-outline" onclick="quickBuyReset()" style="padding:0.75rem 1rem;font-size:0.875rem;">
+                <i class="fas fa-redo"></i>
+              </button>
+              <button type="button" class="btn btn-secondary" onclick="window.open('page-pembelian.html','_blank')" style="padding:0.75rem 1rem;font-size:0.875rem;white-space:nowrap;">
+                <i class="fas fa-external-link-alt"></i> Full
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Kasir Layout -->
         <div class="kasir-layout">
           <!-- Products Section -->
@@ -3704,6 +3794,237 @@ async function saveProductQuickEdit() {
     showToast('Gagal simpan: ' + e.message, 'error');
   }
 }
+
+        // ===== QUICK BUY (PEMBELIAN CEPAT) =====
+    let quickBuyMode = 'existing';
+    let quickBuySelectedProduct = null;
+
+    function toggleQuickBuy() {
+      const card = document.getElementById('quickBuyCard');
+      card.classList.toggle('collapsed');
+    }
+
+    function toggleBuyMode(mode) {
+      quickBuyMode = mode;
+      const btnExisting = document.getElementById('btnModeExisting');
+      const btnNew = document.getElementById('btnModeNew');
+      const divExisting = document.getElementById('buyModeExisting');
+      const divNew = document.getElementById('buyModeNew');
+      
+      if (mode === 'existing') {
+        btnExisting.style.background = 'linear-gradient(135deg,#059669,#10b981)';
+        btnExisting.style.color = 'white';
+        btnExisting.style.border = 'none';
+        btnExisting.classList.remove('btn-outline');
+        
+        btnNew.style.background = 'transparent';
+        btnNew.style.color = 'var(--text-secondary)';
+        btnNew.classList.add('btn-outline');
+        
+        divExisting.style.display = 'block';
+        divNew.style.display = 'none';
+      } else {
+        btnNew.style.background = 'linear-gradient(135deg,#059669,#10b981)';
+        btnNew.style.color = 'white';
+        btnNew.style.border = 'none';
+        btnNew.classList.remove('btn-outline');
+        
+        btnExisting.style.background = 'transparent';
+        btnExisting.style.color = 'var(--text-secondary)';
+        btnExisting.classList.add('btn-outline');
+        
+        divExisting.style.display = 'none';
+        divNew.style.display = 'block';
+      }
+      quickBuyReset();
+    }
+
+    function quickBuyReset() {
+      document.getElementById('quickBuySearch').value = '';
+      document.getElementById('quickBuySelectedId').value = '';
+      document.getElementById('quickBuyNewName').value = '';
+      document.getElementById('quickBuyNewSellPrice').value = '';
+      document.getElementById('quickBuySupplier').value = '';
+      document.getElementById('quickBuyQty').value = '1';
+      document.getElementById('quickBuyHarga').value = '';
+      document.getElementById('quickBuyTotalPreview').textContent = 'Rp 0';
+      document.getElementById('quickBuySearchList').style.display = 'none';
+      quickBuySelectedProduct = null;
+    }
+
+    function quickBuyCalcTotal() {
+      const qty = parseInt(document.getElementById('quickBuyQty').value) || 0;
+      const harga = parseInt(document.getElementById('quickBuyHarga').value) || 0;
+      document.getElementById('quickBuyTotalPreview').textContent = formatRupiah(qty * harga);
+    }
+
+    // Search produk existing
+    const quickBuySearchInput = document.getElementById('quickBuySearch');
+    const quickBuySearchList = document.getElementById('quickBuySearchList');
+
+    if (quickBuySearchInput) {
+      quickBuySearchInput.addEventListener('input', function() {
+        const q = this.value.toLowerCase().trim();
+        if (q.length < 1) {
+          quickBuySearchList.style.display = 'none';
+          return;
+        }
+        const filtered = products.filter(p => p.name.toLowerCase().includes(q));
+        if (filtered.length > 0) {
+          quickBuySearchList.innerHTML = filtered.map(p => `
+            <div class="quick-buy-search-item" data-id="${p.id}" data-name="${p.name}" data-cost="${p.costPrice || 0}">
+              <div class="qb-name">${p.name}</div>
+              <div class="qb-info">Stok: ${p.stock || 0} | Harga Beli: ${formatRupiah(p.costPrice || 0)}</div>
+            </div>
+          `).join('');
+          quickBuySearchList.style.display = 'block';
+          
+          quickBuySearchList.querySelectorAll('.quick-buy-search-item').forEach(item => {
+            item.addEventListener('click', function() {
+              quickBuySelectedProduct = {
+                id: this.dataset.id,
+                name: this.dataset.name,
+                costPrice: parseInt(this.dataset.cost) || 0
+              };
+              quickBuySearchInput.value = this.dataset.name;
+              document.getElementById('quickBuySelectedId').value = this.dataset.id;
+              document.getElementById('quickBuyHarga').value = quickBuySelectedProduct.costPrice;
+              quickBuyCalcTotal();
+              quickBuySearchList.style.display = 'none';
+              document.getElementById('quickBuyQty').focus();
+            });
+          });
+        } else {
+          quickBuySearchList.innerHTML = '<div class="quick-buy-search-item" style="color:var(--text-muted)">Produk tidak ditemukan</div>';
+          quickBuySearchList.style.display = 'block';
+        }
+      });
+
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('#buyModeExisting')) {
+          quickBuySearchList.style.display = 'none';
+        }
+      });
+    }
+
+    // Auto calc total
+    document.getElementById('quickBuyQty').addEventListener('input', quickBuyCalcTotal);
+    document.getElementById('quickBuyHarga').addEventListener('input', quickBuyCalcTotal);
+
+    async function quickBuySave() {
+      const supplier = document.getElementById('quickBuySupplier').value.trim() || 'Supplier Umum';
+      const qty = parseInt(document.getElementById('quickBuyQty').value) || 0;
+      const hargaBeli = parseInt(document.getElementById('quickBuyHarga').value) || 0;
+      
+      if (qty < 1 || hargaBeli < 1) {
+        showToast('Qty dan harga beli harus lebih dari 0', 'error');
+        return;
+      }
+
+      if (!navigator.onLine) {
+        showToast('Pembelian harus dilakukan saat online', 'error');
+        return;
+      }
+
+      document.getElementById('loadingOverlay').classList.add('active');
+
+      try {
+        const db = firebase.database();
+        const user = firebase.auth().currentUser;
+        const timestamp = Date.now();
+        const todayStr = new Date().toISOString().split('T')[0];
+        const purchaseId = 'PUR' + timestamp;
+        let productId, productName, isNewProduct = false;
+
+        if (quickBuyMode === 'existing') {
+          if (!quickBuySelectedProduct) {
+            showToast('Pilih produk terlebih dahulu', 'error');
+            document.getElementById('loadingOverlay').classList.remove('active');
+            return;
+          }
+          productId = quickBuySelectedProduct.id;
+          productName = quickBuySelectedProduct.name;
+          
+          // Update stok & costPrice produk existing
+          const prodRef = db.ref('products/' + productId);
+          const snap = await prodRef.once('value');
+          const prod = snap.val();
+          if (prod) {
+            await prodRef.update({
+              stock: (prod.stock || 0) + qty,
+              costPrice: hargaBeli,
+              updatedAt: timestamp
+            });
+          }
+        } else {
+          // Mode produk baru
+          productName = document.getElementById('quickBuyNewName').value.trim();
+          const hargaJual = parseInt(document.getElementById('quickBuyNewSellPrice').value) || 0;
+          
+          if (!productName) {
+            showToast('Nama produk baru wajib diisi', 'error');
+            document.getElementById('loadingOverlay').classList.remove('active');
+            return;
+          }
+          if (hargaJual < 1) {
+            showToast('Harga jual produk baru wajib diisi', 'error');
+            document.getElementById('loadingOverlay').classList.remove('active');
+            return;
+          }
+          
+          isNewProduct = true;
+          const newRef = db.ref('products').push();
+          productId = newRef.key;
+          await newRef.set({
+            name: productName,
+            costPrice: hargaBeli,
+            sellingPrice: hargaJual,
+            stock: qty,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            category: 'Uncategorized',
+            status: 'active'
+          });
+        }
+
+        // Simpan ke purchases (sama struktur dengan page-pembelian)
+        const purchaseData = {
+          id: purchaseId,
+          type: 'pembelian',
+          supplier: supplier,
+          items: [{
+            productId: productId,
+            productName: productName,
+            qty: qty,
+            harga: hargaBeli,
+            total: qty * hargaBeli,
+            isNewProduct: isNewProduct
+          }],
+          totalItem: qty,
+          grandTotal: qty * hargaBeli,
+          catatan: 'Input dari halaman Kasir',
+          timestamp: timestamp,
+          date: todayStr,
+          userId: user ? user.uid : 'unknown',
+          userName: document.getElementById('userName').textContent,
+          status: 'completed'
+        };
+
+        await db.ref('purchases/' + todayStr + '/' + purchaseId).set(purchaseData);
+
+        // Refresh produk di kasir
+        await loadProducts();
+
+        quickBuyReset();
+        document.getElementById('loadingOverlay').classList.remove('active');
+        showToast(`Pembelian ${productName} (${qty} pcs) berhasil disimpan!`, 'success');
+
+      } catch (err) {
+        console.error('Quick buy error:', err);
+        document.getElementById('loadingOverlay').classList.remove('active');
+        showToast('Gagal menyimpan: ' + err.message, 'error');
+      }
+    }
     
         // ===== INISIALISASI =====
     function runInit() {
