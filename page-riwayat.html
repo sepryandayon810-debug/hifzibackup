@@ -2001,6 +2001,67 @@ async function deleteTransaction(id) {
       }
     }
 
+    // ===== ESC/POS PENJUALAN (KASIR) =====
+function generateEscPosKasir(tx) {
+  const hdr = loadReceiptHeader();
+  const storeName = hdr.storeName || 'NAMA TOKO';
+  const address = hdr.address || '';
+  const phone = hdr.phone || '';
+  const note = hdr.note || 'Terima kasih';
+  const date = new Date(tx.timestamp).toLocaleDateString('id-ID');
+  const time = new Date(tx.timestamp).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+
+  const ESC = '\x1B';
+  const GS = '\x1D';
+  const INIT = ESC + '\x40';
+  const CENTER = ESC + '\x61\x01';
+  const LEFT = ESC + '\x61\x00';
+  const BOLD_ON = ESC + '\x45\x01';
+  const BOLD_OFF = ESC + '\x45\x00';
+  const SIZE2 = ESC + '\x21\x10';
+  const SIZE1 = ESC + '\x21\x00';
+  const CUT = GS + '\x56\x41\x03';
+  const FEED = '\x0A';
+
+  let c = INIT;
+  c += CENTER + BOLD_ON + SIZE2 + storeName.toUpperCase() + SIZE1 + BOLD_OFF + FEED;
+  if (address) c += CENTER + address + FEED;
+  if (phone) c += CENTER + 'HP: ' + phone + FEED;
+  c += CENTER + '------------------------------' + FEED;
+  c += LEFT;
+  c += 'No   : ' + (tx.id || '-') + FEED;
+  c += 'Tgl  : ' + date + ' ' + time + FEED;
+  c += 'Kasir: ' + (tx.cashierName || '-') + FEED;
+  c += '------------------------------' + FEED;
+
+  const items = tx.items || [];
+  if (items.length > 0) {
+    items.forEach(item => {
+      const name = item.name || item.nama || item.productName || 'Produk';
+      const qty = item.qty || item.quantity || 0;
+      const price = item.price || item.harga || item.buyPrice || 0;
+      const subtotal = item.subtotal || (qty * price) || 0;
+      c += name + FEED;
+      c += '  ' + qty + ' x ' + formatRupiah(price) + ' = ' + formatRupiah(subtotal) + FEED;
+    });
+  }
+
+  c += '------------------------------' + FEED;
+  c += 'Subtotal : ' + formatRupiah(tx.subtotal || tx.total || tx.amount || 0) + FEED;
+  if (tx.discount > 0) c += 'Diskon   : -' + formatRupiah(tx.discount) + FEED;
+  if (tx.tax > 0) c += 'PPN 11%  : ' + formatRupiah(tx.tax) + FEED;
+  c += BOLD_ON + 'TOTAL    : ' + formatRupiah(tx.total || tx.amount || 0) + BOLD_OFF + FEED;
+  c += '------------------------------' + FEED;
+  c += 'Bayar    : ' + formatRupiah(tx.paymentAmount || tx.total || tx.amount || 0) + FEED;
+  c += 'Kembali  : ' + formatRupiah(tx.change || 0) + FEED;
+  c += 'Metode   : ' + (tx.paymentMethod || 'Tunai').toUpperCase() + FEED;
+  c += '==============================';
+  c += FEED + CENTER + note + FEED;
+  c += FEED + FEED + FEED + CUT;
+
+  return c;
+}
+
     // ===== ESC/POS TOP UP =====
 function generateEscPosTopUp(tx) {
   const hdr = loadReceiptHeader();
