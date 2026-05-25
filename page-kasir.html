@@ -3770,42 +3770,60 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function printStrukBluetooth() {
-      if (!lastTransactionData) {
-        showToast('Tidak ada struk untuk dicetak', 'warning');
-        return;
-      }
-      if (!window.bluetoothSerial) {
-        showToast('Bluetooth hanya tersedia di APK Android', 'error');
-        return;
-      }
+  console.log('=== DEBUG PRINT ===');
+  console.log('lastTransactionData:', lastTransactionData);
+  console.log('typeof generateEscPosKasir:', typeof generateEscPosKasir);
+  console.log('typeof window.bluetoothSerial:', typeof window.bluetoothSerial);
+  
+  if (!lastTransactionData) {
+    showToast('Tidak ada struk untuk dicetak', 'warning');
+    return;
+  }
+  if (!window.bluetoothSerial) {
+    showToast('Bluetooth hanya tersedia di APK Android', 'error');
+    return;
+  }
 
-      const mac = localStorage.getItem('webpos_printer_mac');
-      if (!mac) {
-        showToast('Pilih printer dulu di menu Printer & Struk', 'warning');
-        return;
-      }
+  const mac = localStorage.getItem('webpos_printer_mac');
+  if (!mac) {
+    showToast('Pilih printer dulu di menu Printer & Struk', 'warning');
+    return;
+  }
 
-      showToast('Menghubungkan ke printer...', 'info');
+  // ⭐ VALIDASI DATA SEBELUM PRINT
+  if (!lastTransactionData.items || !Array.isArray(lastTransactionData.items)) {
+    showToast('Data transaksi tidak lengkap (items missing)', 'error');
+    console.error('Invalid transaction data:', lastTransactionData);
+    return;
+  }
 
-      try {
-        await new Promise((resolve, reject) => {
-          bluetoothSerial.connect(mac, resolve, reject);
-        });
+  showToast('Menghubungkan ke printer...', 'info');
 
-        const data = generateEscPosKasir(lastTransactionData);
-        await new Promise((resolve, reject) => {
-          bluetoothSerial.write(data, resolve, reject);
-        });
+  try {
+    await new Promise((resolve, reject) => {
+      bluetoothSerial.connect(mac, resolve, reject);
+    });
 
-        await new Promise((resolve) => {
-          bluetoothSerial.disconnect(resolve, resolve);
-        });
-
-        showToast('Struk berhasil dicetak!', 'success');
-      } catch (error) {
-        showToast('Gagal print: ' + error, 'error');
-      }
+    const data = generateEscPosKasir(lastTransactionData);
+    
+    if (!data || data.length === 0) {
+      throw new Error('Data struk kosong');
     }
+
+    await new Promise((resolve, reject) => {
+      bluetoothSerial.write(data, resolve, reject);
+    });
+
+    await new Promise((resolve) => {
+      bluetoothSerial.disconnect(resolve, resolve);
+    });
+
+    showToast('Struk berhasil dicetak!', 'success');
+  } catch (error) {
+    console.error('Print error:', error);
+    showToast('Gagal print: ' + error, 'error');
+  }
+}
 
     // ===== LONG PRESS PRODUCT → QUICK EDIT =====
 let longPressTimer = null;
