@@ -2438,10 +2438,12 @@ function renderStrukPreview(tx) {
       lastTransactionData = null;
     }
 
-    async function printStrukBluetooth() {
-  console.log('=== DEBUG PRINT ===');
+   async function printStrukBluetooth() {
+  console.log('=== DEBUG PRINT RIWAYAT ===');
   console.log('lastTransactionData:', lastTransactionData);
   console.log('typeof generateEscPosKasir:', typeof generateEscPosKasir);
+  console.log('typeof generateEscPosTopUp:', typeof generateEscPosTopUp);
+  console.log('typeof generateEscPosTarik:', typeof generateEscPosTarik);
   console.log('typeof window.bluetoothSerial:', typeof window.bluetoothSerial);
   
   if (!lastTransactionData) {
@@ -2459,11 +2461,13 @@ function renderStrukPreview(tx) {
     return;
   }
 
-  // ⭐ VALIDASI DATA SEBELUM PRINT
-  if (!lastTransactionData.items || !Array.isArray(lastTransactionData.items)) {
-    showToast('Data transaksi tidak lengkap (items missing)', 'error');
-    console.error('Invalid transaction data:', lastTransactionData);
-    return;
+  // ⭐ VALIDASI DATA
+  if (lastTransactionData.type !== 'topup' && lastTransactionData.type !== 'tarik') {
+    if (!lastTransactionData.items || !Array.isArray(lastTransactionData.items)) {
+      showToast('Data transaksi tidak lengkap', 'error');
+      console.error('Invalid transaction:', lastTransactionData);
+      return;
+    }
   }
 
   showToast('Menghubungkan ke printer...', 'info');
@@ -2473,11 +2477,27 @@ function renderStrukPreview(tx) {
       bluetoothSerial.connect(mac, resolve, reject);
     });
 
-    const data = generateEscPosKasir(lastTransactionData);
+    let data = '';
+    const txType = lastTransactionData.type;
+    
+    if (txType === 'topup') {
+      data = generateEscPosTopUp(lastTransactionData);
+    } else if (txType === 'tarik') {
+      data = generateEscPosTarik(lastTransactionData);
+    } else {
+      // ⭐ PASTIKAN generateEscPosKasir ADA
+      if (typeof generateEscPosKasir !== 'function') {
+        throw new Error('Fungsi generateEscPosKasir tidak ditemukan!');
+      }
+      data = generateEscPosKasir(lastTransactionData);
+    }
     
     if (!data || data.length === 0) {
       throw new Error('Data struk kosong');
     }
+
+    console.log('Data ESC/POS length:', data.length);
+    console.log('First 100 chars:', data.substring(0, 100));
 
     await new Promise((resolve, reject) => {
       bluetoothSerial.write(data, resolve, reject);
@@ -2493,7 +2513,7 @@ function renderStrukPreview(tx) {
     showToast('Gagal print: ' + error, 'error');
   }
 }
-
+    
     // ===== MODAL EDIT STRUK =====
 function openEditStrukModal(tx) {
   // Isi default value kalau ada
