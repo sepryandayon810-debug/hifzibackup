@@ -1546,6 +1546,75 @@ html,body{overflow-x:hidden;max-width:100vw}
   #manualModal .modal-footer{padding:0.5rem 1rem!important;gap:0.5rem!important}
   #manualModal .modal-footer .btn{padding:0.625rem 0.75rem!important;font-size:0.8rem!important;flex:1!important}
 }
+
+    /* ==========================================
+   MULTI-ITEM PEMBELIAN
+   ========================================== */
+.beli-items-list {
+  margin-bottom: 1rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.beli-item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+}
+.beli-item-row .bi-name {
+  flex: 1;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.beli-item-row .bi-info {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.beli-item-row .bi-remove {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: rgba(239,68,68,0.1);
+  color: var(--danger);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+.beli-item-row .bi-remove:hover {
+  background: var(--danger);
+  color: white;
+}
+.btn-add-item {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1.5px dashed var(--border-color);
+  background: transparent;
+  border-radius: 0.75rem;
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  transition: all 0.2s;
+}
+.btn-add-item:hover {
+  border-color: var(--primary);
+  background: rgba(5,150,105,0.05);
+}
+.btn-add-item i {
+  margin-right: 0.35rem;
+}
     
 </style>
 </head>
@@ -1845,88 +1914,101 @@ html,body{overflow-x:hidden;max-width:100vw}
             </div>
             <div class="modal-body" style="padding:1.25rem;">
 
-              <!-- Toggle Mode -->
-              <div class="mode-toggle">
-                <button type="button" class="mode-btn active" id="btnModeExisting" onclick="setBeliMode('existing')">
-                  <i class="fas fa-box"></i> Produk Ada
-                </button>
-                <button type="button" class="mode-btn" id="btnModeNew" onclick="setBeliMode('new')">
-                  <i class="fas fa-plus-circle"></i> Produk Baru
-                </button>
-              </div>
+  <!-- Toggle Mode -->
+  <div class="mode-toggle">
+    <button type="button" class="mode-btn active" id="btnModeExisting" onclick="setBeliMode('existing')">
+      <i class="fas fa-box"></i> Produk Ada
+    </button>
+    <button type="button" class="mode-btn" id="btnModeNew" onclick="setBeliMode('new')">
+      <i class="fas fa-plus-circle"></i> Produk Baru
+    </button>
+  </div>
 
-              <!-- Toggle Kurangi Saldo Kasir -->
-              <div class="toggle-group">
-                <label class="toggle-switch">
-            <input type="checkbox" id="toggleKurangiSaldo" onchange="updateBeliTotalPreview()">
-                  <span class="toggle-slider"></span>
-                </label>
-                <span class="toggle-label">Kurangi Saldo Kasir (Kas Keluar)</span>
-              </div>
+  <!-- Toggle Kurangi Saldo Kasir -->
+  <div class="toggle-group">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggleKurangiSaldo" onchange="updateBeliTotalPreview()">
+      <span class="toggle-slider"></span>
+    </label>
+    <span class="toggle-label">Kurangi Saldo Kasir (Kas Keluar)</span>
+  </div>
 
-              <!-- Mode: Produk Existing -->
-              <div id="beliModeExisting">
-                <div class="form-group beli-search-wrap" style="margin-bottom:0.75rem;">
-                  <label class="form-label" style="font-size:0.8rem;">Cari Produk <span style="color:var(--danger)">*</span></label>
-                  <input type="text" class="form-input" id="beliSearch" placeholder="Ketik nama produk..." autocomplete="off" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
-                  <div class="beli-search-list" id="beliSearchList"></div>
-                  <input type="hidden" id="beliSelectedId">
-                </div>
-              </div>
+  <!-- ===== FORM INPUT SATUAN ===== -->
+  <div id="beliFormInput">
+    <!-- Mode: Produk Existing -->
+    <div id="beliModeExisting">
+      <div class="form-group beli-search-wrap" style="margin-bottom:0.75rem;">
+        <label class="form-label" style="font-size:0.8rem;">Cari Produk <span style="color:var(--danger)">*</span></label>
+        <input type="text" class="form-input" id="beliSearch" placeholder="Ketik nama produk..." autocomplete="off" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
+        <div class="beli-search-list" id="beliSearchList"></div>
+        <input type="hidden" id="beliSelectedId">
+      </div>
+    </div>
 
-              <!-- Mode: Produk Baru -->
-              <div id="beliModeNew" style="display:none;">
-                <div class="form-group" style="margin-bottom:0.75rem;">
-                  <label class="form-label" style="font-size:0.8rem;">Nama Produk Baru <span style="color:var(--danger)">*</span></label>
-                  <input type="text" class="form-input" id="beliNewName" placeholder="Nama produk baru" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
-                </div>
-                <div class="form-group" style="margin-bottom:0.75rem;">
-                  <label class="form-label" style="font-size:0.8rem;">Harga Jual <span style="color:var(--danger)">*</span></label>
-                  <div style="display:flex;">
-                    <span style="padding:0.625rem 0.75rem;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-right:none;border-radius:0.75rem 0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">Rp</span>
-                    <input type="number" class="form-input" id="beliNewSellPrice" placeholder="0" style="border-radius:0 0.75rem 0.75rem 0;padding:0.625rem 0.875rem;font-size:0.875rem;">
-                  </div>
-                </div>
-              </div>
+    <!-- Mode: Produk Baru -->
+    <div id="beliModeNew" style="display:none;">
+      <div class="form-group" style="margin-bottom:0.75rem;">
+        <label class="form-label" style="font-size:0.8rem;">Nama Produk Baru <span style="color:var(--danger)">*</span></label>
+        <input type="text" class="form-input" id="beliNewName" placeholder="Nama produk baru" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
+      </div>
+      <div class="form-group" style="margin-bottom:0.75rem;">
+        <label class="form-label" style="font-size:0.8rem;">Harga Jual <span style="color:var(--danger)">*</span></label>
+        <div style="display:flex;">
+          <span style="padding:0.625rem 0.75rem;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-right:none;border-radius:0.75rem 0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">Rp</span>
+          <input type="number" class="form-input" id="beliNewSellPrice" placeholder="0" style="border-radius:0 0.75rem 0.75rem 0;padding:0.625rem 0.875rem;font-size:0.875rem;">
+        </div>
+      </div>
+    </div>
 
-              <!-- Supplier -->
-              <div class="form-group" style="margin-bottom:0.75rem;">
-                <label class="form-label" style="font-size:0.8rem;">Supplier (Opsional)</label>
-                <input type="text" class="form-input" id="beliSupplier" placeholder="Nama supplier" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
-              </div>
+    <!-- Supplier -->
+    <div class="form-group" style="margin-bottom:0.75rem;">
+      <label class="form-label" style="font-size:0.8rem;">Supplier (Opsional)</label>
+      <input type="text" class="form-input" id="beliSupplier" placeholder="Nama supplier" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
+    </div>
 
-              <!-- Qty & Harga Beli -->
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
-                <div class="form-group" style="margin-bottom:0;">
-                  <label class="form-label" style="font-size:0.8rem;">Qty <span style="color:var(--danger)">*</span></label>
-                  <input type="number" class="form-input" id="beliQty" placeholder="1" min="1" value="1" style="padding:0.625rem 0.875rem;font-size:0.875rem;">
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                  <label class="form-label" style="font-size:0.8rem;">Harga Beli/pcs <span style="color:var(--danger)">*</span></label>
-                  <div style="display:flex;">
-                    <span style="padding:0.625rem 0.75rem;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-right:none;border-radius:0.75rem 0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">Rp</span>
-                    <input type="number" class="form-input" id="beliHarga" placeholder="0" style="border-radius:0 0.75rem 0.75rem 0;padding:0.625rem 0.875rem;font-size:0.875rem;">
-                  </div>
-                </div>
-              </div>
+    <!-- Qty & Harga Beli -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label" style="font-size:0.8rem;">Qty <span style="color:var(--danger)">*</span></label>
+        <input type="number" class="form-input" id="beliQty" placeholder="Masukkan qty" min="1" style="padding:0.625rem 0.875rem;font-size:0.875rem;" onfocus="this.select()">
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label" style="font-size:0.8rem;">Harga Beli/pcs <span style="color:var(--danger)">*</span></label>
+        <div style="display:flex;">
+          <span style="padding:0.625rem 0.75rem;background:var(--bg-secondary);border:1.5px solid var(--border-color);border-right:none;border-radius:0.75rem 0 0 0.75rem;color:var(--text-muted);font-size:0.875rem;">Rp</span>
+          <input type="number" class="form-input" id="beliHarga" placeholder="0" style="border-radius:0 0.75rem 0.75rem 0;padding:0.625rem 0.875rem;font-size:0.875rem;">
+        </div>
+      </div>
+    </div>
 
-              <!-- Total Preview -->
-              <div class="beli-total-box">
-                <span>Total Pembelian:</span>
-                <span id="beliTotalPreview">Rp 0</span>
-              </div>
+    <!-- Tombol Tambah Item -->
+    <button type="button" class="btn-add-item" onclick="addBeliItem()">
+      <i class="fas fa-plus"></i> Tambah ke Daftar
+    </button>
+  </div>
 
-              <!-- Action Buttons -->
-              <div style="display:flex;gap:0.75rem;">
-                <button type="button" class="btn btn-primary" onclick="saveBeliBarang()" style="flex:1;padding:0.75rem;font-size:0.875rem;background:linear-gradient(135deg,#3b82f6,#6366f1);border:none;">
-                  <i class="fas fa-save"></i> Simpan
-                </button>
-                <button type="button" class="btn btn-outline" onclick="resetBeliBarang()" style="padding:0.75rem 1rem;font-size:0.875rem;">
-                  <i class="fas fa-redo"></i>
-                </button>
-              </div>
+  <!-- ===== DAFTAR ITEM YANG SUDAH DITAMBAH ===== -->
+  <div class="beli-items-list" id="beliItemsList" style="display:none;">
+    <!-- Diisi via JS -->
+  </div>
 
-            </div>
+  <!-- Total Preview -->
+  <div class="beli-total-box">
+    <span>Total Pembelian:</span>
+    <span id="beliTotalPreview">Rp 0</span>
+  </div>
+
+  <!-- Action Buttons -->
+  <div style="display:flex;gap:0.75rem;">
+    <button type="button" class="btn btn-primary" onclick="saveBeliBarang()" style="flex:1;padding:0.75rem;font-size:0.875rem;background:linear-gradient(135deg,#3b82f6,#6366f1);border:none;">
+      <i class="fas fa-save"></i> Simpan Semua
+    </button>
+    <button type="button" class="btn btn-outline" onclick="resetBeliBarang()" style="padding:0.75rem 1rem;font-size:0.875rem;">
+      <i class="fas fa-redo"></i>
+    </button>
+  </div>
+
+</div>
           </div>
         </div>
 
@@ -2596,7 +2678,7 @@ function renderProducts() {
       stockText = 'Habis';
     } else if (p.stock <= 5) {
       stockClass = 'low';
-      stockText = p.stock + ' sisa';
+      stockText = p.stock + '';
     } else {
       stockClass = '';
       stockText = p.stock;
@@ -3918,228 +4000,299 @@ async function saveProductQuickEdit() {
     showToast('Gagal simpan: ' + e.message, 'error');
   }
 }
-        // ===== MODAL BELI BARANG =====
-    let beliMode = 'existing';
-    let beliSelectedProduct = null;
+       // ===== MODAL BELI BARANG - MULTI ITEM =====
+let beliMode = 'existing';
+let beliSelectedProduct = null;
+let beliItems = []; // ⭐ ARRAY UNTUK MULTI ITEM
 
-    function openModalBeli() {
-      document.getElementById('modalBeliBarang').classList.add('active');
-      setTimeout(() => document.getElementById('beliSearch')?.focus(), 100);
+function openModalBeli() {
+  document.getElementById('modalBeliBarang').classList.add('active');
+  setTimeout(() => document.getElementById('beliSearch')?.focus(), 100);
+}
+function closeModalBeli() {
+  document.getElementById('modalBeliBarang').classList.remove('active');
+  resetBeliBarang();
+}
+
+function setBeliMode(mode) {
+  beliMode = mode;
+  document.getElementById('btnModeExisting').classList.toggle('active', mode === 'existing');
+  document.getElementById('btnModeNew').classList.toggle('active', mode === 'new');
+  document.getElementById('beliModeExisting').style.display = mode === 'existing' ? 'block' : 'none';
+  document.getElementById('beliModeNew').style.display = mode === 'new' ? 'block' : 'none';
+  // Reset form input tapi jangan hapus daftar item
+  document.getElementById('beliSearch').value = '';
+  document.getElementById('beliSelectedId').value = '';
+  document.getElementById('beliNewName').value = '';
+  document.getElementById('beliNewSellPrice').value = '';
+  document.getElementById('beliSupplier').value = '';
+  document.getElementById('beliQty').value = '';
+  document.getElementById('beliHarga').value = '';
+  document.getElementById('beliSearchList').style.display = 'none';
+  beliSelectedProduct = null;
+}
+
+function resetBeliBarang() {
+  beliItems = [];
+  setBeliMode('existing');
+  document.getElementById('toggleKurangiSaldo').checked = true;
+  document.getElementById('beliItemsList').style.display = 'none';
+  document.getElementById('beliItemsList').innerHTML = '';
+  updateBeliTotalPreview();
+}
+
+function updateBeliTotalPreview() {
+  const total = beliItems.reduce((sum, item) => sum + item.total, 0);
+  document.getElementById('beliTotalPreview').textContent = formatRupiah(total);
+}
+
+// ===== TAMBAH ITEM KE DAFTAR =====
+function addBeliItem() {
+  const supplier = document.getElementById('beliSupplier').value.trim() || 'Supplier Umum';
+  const qty = parseInt(document.getElementById('beliQty').value) || 0;
+  const hargaBeli = parseInt(document.getElementById('beliHarga').value) || 0;
+  
+  if (qty < 1 || hargaBeli < 1) {
+    showToast('Qty dan harga beli harus lebih dari 0', 'error');
+    return;
+  }
+
+  let itemData = {
+    id: 'item_' + Date.now(),
+    supplier: supplier,
+    qty: qty,
+    hargaBeli: hargaBeli,
+    total: qty * hargaBeli,
+    mode: beliMode
+  };
+
+  if (beliMode === 'existing') {
+    if (!beliSelectedProduct) {
+      showToast('Pilih produk terlebih dahulu', 'error');
+      return;
     }
-    function closeModalBeli() {
-      document.getElementById('modalBeliBarang').classList.remove('active');
-      resetBeliBarang();
+    itemData.productId = beliSelectedProduct.id;
+    itemData.productName = beliSelectedProduct.name;
+    itemData.isNewProduct = false;
+  } else {
+    const newName = document.getElementById('beliNewName').value.trim();
+    const newSellPrice = parseInt(document.getElementById('beliNewSellPrice').value) || 0;
+    if (!newName) {
+      showToast('Nama produk baru wajib diisi', 'error');
+      return;
     }
-
-    function setBeliMode(mode) {
-      beliMode = mode;
-      document.getElementById('btnModeExisting').classList.toggle('active', mode === 'existing');
-      document.getElementById('btnModeNew').classList.toggle('active', mode === 'new');
-      document.getElementById('beliModeExisting').style.display = mode === 'existing' ? 'block' : 'none';
-      document.getElementById('beliModeNew').style.display = mode === 'new' ? 'block' : 'none';
-      resetBeliBarang();
+    if (newSellPrice < 1) {
+      showToast('Harga jual produk baru wajib diisi', 'error');
+      return;
     }
+    itemData.productName = newName;
+    itemData.sellingPrice = newSellPrice;
+    itemData.isNewProduct = true;
+  }
 
-    function resetBeliBarang() {
-      document.getElementById('beliSearch').value = '';
-      document.getElementById('beliSelectedId').value = '';
-      document.getElementById('beliNewName').value = '';
-      document.getElementById('beliNewSellPrice').value = '';
-      document.getElementById('beliSupplier').value = '';
-      document.getElementById('beliQty').value = '1';
-      document.getElementById('beliHarga').value = '';
-      document.getElementById('beliTotalPreview').textContent = 'Rp 0';
-      document.getElementById('beliSearchList').style.display = 'none';
-      document.getElementById('toggleKurangiSaldo').checked = true;
-      beliSelectedProduct = null;
-    }
+  beliItems.push(itemData);
+  renderBeliItemsList();
+  updateBeliTotalPreview();
+  
+  // Reset form input untuk item berikutnya
+  document.getElementById('beliQty').value = '';
+  document.getElementById('beliHarga').value = '';
+  if (beliMode === 'existing') {
+    document.getElementById('beliSearch').value = '';
+    document.getElementById('beliSelectedId').value = '';
+    beliSelectedProduct = null;
+  } else {
+    document.getElementById('beliNewName').value = '';
+    document.getElementById('beliNewSellPrice').value = '';
+  }
+  
+  showToast(`${itemData.productName} ditambahkan (${qty} pcs)`, 'success');
+}
 
-    function updateBeliTotalPreview() {
-      const qty = parseInt(document.getElementById('beliQty').value) || 0;
-      const harga = parseInt(document.getElementById('beliHarga').value) || 0;
-      document.getElementById('beliTotalPreview').textContent = formatRupiah(qty * harga);
-    }
+function renderBeliItemsList() {
+  const container = document.getElementById('beliItemsList');
+  if (beliItems.length === 0) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+  
+  container.style.display = 'block';
+  container.innerHTML = beliItems.map((item, index) => `
+    <div class="beli-item-row">
+      <span class="bi-name">${item.productName}</span>
+      <span class="bi-info">${item.qty} x ${formatRupiah(item.hargaBeli)}</span>
+      <button class="bi-remove" onclick="removeBeliItem(${index})" title="Hapus">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `).join('');
+}
 
-    // Search produk existing
-    const beliSearchInput = document.getElementById('beliSearch');
-    const beliSearchList = document.getElementById('beliSearchList');
+function removeBeliItem(index) {
+  beliItems.splice(index, 1);
+  renderBeliItemsList();
+  updateBeliTotalPreview();
+}
 
-    if (beliSearchInput) {
-      beliSearchInput.addEventListener('input', function() {
-        const q = this.value.toLowerCase().trim();
-        if (q.length < 1) { beliSearchList.style.display = 'none'; return; }
-        const filtered = products.filter(p => p.name.toLowerCase().includes(q));
-        if (filtered.length > 0) {
-          beliSearchList.innerHTML = filtered.map(p => `
-            <div class="beli-search-item" data-id="${p.id}" data-name="${p.name}" data-cost="${p.costPrice || 0}">
-              <div class="bs-name">${p.name}</div>
-              <div class="bs-info">Stok: ${p.stock || 0} | Beli: ${formatRupiah(p.costPrice || 0)}</div>
-            </div>
-          `).join('');
-          beliSearchList.style.display = 'block';
-          beliSearchList.querySelectorAll('.beli-search-item').forEach(item => {
-            item.addEventListener('click', function() {
-              beliSelectedProduct = {
-                id: this.dataset.id,
-                name: this.dataset.name,
-                costPrice: parseInt(this.dataset.cost) || 0
-              };
-              beliSearchInput.value = this.dataset.name;
-              document.getElementById('beliSelectedId').value = this.dataset.id;
-              document.getElementById('beliHarga').value = beliSelectedProduct.costPrice;
-              updateBeliTotalPreview();
-              beliSearchList.style.display = 'none';
-              document.getElementById('beliQty').focus();
-            });
-          });
-        } else {
-          beliSearchList.innerHTML = '<div class="beli-search-item" style="color:var(--text-muted)">Produk tidak ditemukan</div>';
-          beliSearchList.style.display = 'block';
-        }
+// Search produk existing (tetap sama)
+const beliSearchInput = document.getElementById('beliSearch');
+const beliSearchList = document.getElementById('beliSearchList');
+
+if (beliSearchInput) {
+  beliSearchInput.addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    if (q.length < 1) { beliSearchList.style.display = 'none'; return; }
+    const filtered = products.filter(p => p.name.toLowerCase().includes(q));
+    if (filtered.length > 0) {
+      beliSearchList.innerHTML = filtered.map(p => `
+        <div class="beli-search-item" data-id="${p.id}" data-name="${p.name}" data-cost="${p.costPrice || 0}">
+          <div class="bs-name">${p.name}</div>
+          <div class="bs-info">Stok: ${p.stock || 0} | Beli: ${formatRupiah(p.costPrice || 0)}</div>
+        </div>
+      `).join('');
+      beliSearchList.style.display = 'block';
+      beliSearchList.querySelectorAll('.beli-search-item').forEach(item => {
+        item.addEventListener('click', function() {
+          beliSelectedProduct = {
+            id: this.dataset.id,
+            name: this.dataset.name,
+            costPrice: parseInt(this.dataset.cost) || 0
+          };
+          beliSearchInput.value = this.dataset.name;
+          document.getElementById('beliSelectedId').value = this.dataset.id;
+          document.getElementById('beliHarga').value = beliSelectedProduct.costPrice;
+          beliSearchList.style.display = 'none';
+          document.getElementById('beliQty').focus();
+        });
       });
-
-      document.addEventListener('click', function(e) {
-        if (!e.target.closest('.beli-search-wrap')) beliSearchList.style.display = 'none';
-      });
+    } else {
+      beliSearchList.innerHTML = '<div class="beli-search-item" style="color:var(--text-muted)">Produk tidak ditemukan</div>';
+      beliSearchList.style.display = 'block';
     }
+  });
 
-    document.getElementById('beliQty').addEventListener('input', updateBeliTotalPreview);
-    document.getElementById('beliHarga').addEventListener('input', updateBeliTotalPreview);
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.beli-search-wrap')) beliSearchList.style.display = 'none';
+  });
+}
 
-    async function saveBeliBarang() {
-      const supplier = document.getElementById('beliSupplier').value.trim() || 'Supplier Umum';
-      const qty = parseInt(document.getElementById('beliQty').value) || 0;
-      const hargaBeli = parseInt(document.getElementById('beliHarga').value) || 0;
-      const kurangiSaldo = document.getElementById('toggleKurangiSaldo').checked;
+// ===== SIMPAN SEMUA ITEM =====
+async function saveBeliBarang() {
+  if (beliItems.length === 0) {
+    showToast('Belum ada item yang ditambahkan', 'error');
+    return;
+  }
+  
+  if (!navigator.onLine) {
+    showToast('Pembelian harus dilakukan saat online', 'error');
+    return;
+  }
+
+  document.getElementById('loadingOverlay').classList.add('active');
+
+  try {
+    const db = firebase.database();
+    const user = firebase.auth().currentUser;
+    const timestamp = Date.now();
+    const todayStr = new Date().toISOString().split('T')[0];
+    const purchaseId = 'PUR' + timestamp;
+    const kurangiSaldo = document.getElementById('toggleKurangiSaldo').checked;
+    const grandTotal = beliItems.reduce((sum, item) => sum + item.total, 0);
+
+    // Proses setiap item
+    const savedItems = [];
+    for (const item of beliItems) {
+      let productId;
       
-      if (qty < 1 || hargaBeli < 1) {
-        showToast('Qty dan harga beli harus lebih dari 0', 'error');
-        return;
-      }
-      if (!navigator.onLine) {
-        showToast('Pembelian harus dilakukan saat online', 'error');
-        return;
-      }
-
-      document.getElementById('loadingOverlay').classList.add('active');
-
-      try {
-        const db = firebase.database();
-        const user = firebase.auth().currentUser;
-        const timestamp = Date.now();
-        const todayStr = new Date().toISOString().split('T')[0];
-        const purchaseId = 'PUR' + timestamp;
-        let productId, productName, isNewProduct = false;
-        const totalBeli = qty * hargaBeli;
-
-        if (beliMode === 'existing') {
-          if (!beliSelectedProduct) {
-            showToast('Pilih produk terlebih dahulu', 'error');
-            document.getElementById('loadingOverlay').classList.remove('active');
-            return;
-          }
-          productId = beliSelectedProduct.id;
-          productName = beliSelectedProduct.name;
-          const prodRef = db.ref('products/' + productId);
-          const snap = await prodRef.once('value');
-          const prod = snap.val();
-          if (prod) {
-            await prodRef.update({
-              stock: (prod.stock || 0) + qty,
-              costPrice: hargaBeli,
-              updatedAt: timestamp
-            });
-          }
-        } else {
-          productName = document.getElementById('beliNewName').value.trim();
-          const hargaJual = parseInt(document.getElementById('beliNewSellPrice').value) || 0;
-          if (!productName) {
-            showToast('Nama produk baru wajib diisi', 'error');
-            document.getElementById('loadingOverlay').classList.remove('active');
-            return;
-          }
-          if (hargaJual < 1) {
-            showToast('Harga jual produk baru wajib diisi', 'error');
-            document.getElementById('loadingOverlay').classList.remove('active');
-            return;
-          }
-          isNewProduct = true;
-          const newRef = db.ref('products').push();
-          productId = newRef.key;
-          await newRef.set({
-            name: productName,
-            costPrice: hargaBeli,
-            sellingPrice: hargaJual,
-            stock: qty,
-            createdAt: timestamp,
-            updatedAt: timestamp,
-            category: 'Uncategorized',
-            status: 'active'
+      if (item.mode === 'existing') {
+        productId = item.productId;
+        const prodRef = db.ref('products/' + productId);
+        const snap = await prodRef.once('value');
+        const prod = snap.val();
+        if (prod) {
+          await prodRef.update({
+            stock: (prod.stock || 0) + item.qty,
+            costPrice: item.hargaBeli,
+            updatedAt: timestamp
           });
         }
-
-        // 1. Simpan ke purchases
-        const purchaseData = {
-          id: purchaseId,
-          type: 'pembelian',
-          supplier: supplier,
-          items: [{
-            productId: productId,
-            productName: productName,
-            qty: qty,
-            harga: hargaBeli,
-            total: totalBeli,
-            isNewProduct: isNewProduct
-          }],
-          totalItem: qty,
-          grandTotal: totalBeli,
-          catatan: 'Input dari Kasir',
-          timestamp: timestamp,
-          date: todayStr,
-          userId: user ? user.uid : 'unknown',
-          userName: document.getElementById('userName').textContent,
-          status: 'completed'
-        };
-        await db.ref('purchases/' + todayStr + '/' + purchaseId).set(purchaseData);
-
-        // 2. Jika dicentang, simpan juga ke Kas Keluar (kurangi saldo kasir)
-        if (kurangiSaldo) {
-          const kasId = 'KASOUT' + timestamp;
-          // ⚠️ SESUAIKAN path ini dengan struktur kas keluar yang sudah Anda pakai
-          // Contoh path umum:
-          await db.ref('transactions/' + todayStr + '/' + kasId).set({
-  type: 'kas_keluar',
-  status: 'completed',
-            amount: totalBeli,
-            description: 'Pembelian: ' + productName + ' (' + qty + ' pcs)',
-            category: 'pembelian',
-            relatedPurchaseId: purchaseId,
-            timestamp: timestamp,
-            date: todayStr,
-            userId: user ? user.uid : 'unknown',
-            userName: document.getElementById('userName').textContent
-          });
-          // Jika ada balance kasir, kurangi juga:
-          // await db.ref('kasir_balance').transaction(bal => (bal || 0) - totalBeli);
-        }
-
-        // Refresh produk di kasir
-        await loadProducts();
-
-        closeModalBeli();
-        document.getElementById('loadingOverlay').classList.remove('active');
-        
-        const msg = kurangiSaldo 
-          ? `Pembelian ${productName} berhasil! Saldo kasir berkurang ${formatRupiah(totalBeli)}`
-          : `Pembelian ${productName} berhasil! (Tidak mengurangi saldo)`;
-        showToast(msg, 'success');
-
-      } catch (err) {
-        console.error('Beli barang error:', err);
-        document.getElementById('loadingOverlay').classList.remove('active');
-        showToast('Gagal menyimpan: ' + err.message, 'error');
+      } else {
+        const newRef = db.ref('products').push();
+        productId = newRef.key;
+        await newRef.set({
+          name: item.productName,
+          costPrice: item.hargaBeli,
+          sellingPrice: item.sellingPrice,
+          stock: item.qty,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          category: 'Uncategorized',
+          status: 'active'
+        });
       }
+      
+      savedItems.push({
+        productId: productId,
+        productName: item.productName,
+        qty: item.qty,
+        harga: item.hargaBeli,
+        total: item.total,
+        isNewProduct: item.isNewProduct
+      });
     }
+
+    // 1. Simpan ke purchases
+    const purchaseData = {
+      id: purchaseId,
+      type: 'pembelian',
+      supplier: beliItems[0].supplier,
+      items: savedItems,
+      totalItem: savedItems.reduce((sum, i) => sum + i.qty, 0),
+      grandTotal: grandTotal,
+      catatan: 'Input dari Kasir',
+      timestamp: timestamp,
+      date: todayStr,
+      userId: user ? user.uid : 'unknown',
+      userName: document.getElementById('userName').textContent,
+      status: 'completed'
+    };
+    await db.ref('purchases/' + todayStr + '/' + purchaseId).set(purchaseData);
+
+    // 2. Jika dicentang, simpan juga ke Kas Keluar
+    if (kurangiSaldo) {
+      const kasId = 'KASOUT' + timestamp;
+      await db.ref('transactions/' + todayStr + '/' + kasId).set({
+        type: 'kas_keluar',
+        status: 'completed',
+        amount: grandTotal,
+        description: 'Pembelian: ' + savedItems.map(i => i.productName + ' (' + i.qty + ' pcs)').join(', '),
+        category: 'pembelian',
+        relatedPurchaseId: purchaseId,
+        timestamp: timestamp,
+        date: todayStr,
+        userId: user ? user.uid : 'unknown',
+        userName: document.getElementById('userName').textContent
+      });
+    }
+
+    // Refresh produk di kasir
+    await loadProducts();
+
+    closeModalBeli();
+    document.getElementById('loadingOverlay').classList.remove('active');
+    
+    const msg = kurangiSaldo 
+      ? `${beliItems.length} item berhasil! Saldo kasir berkurang ${formatRupiah(grandTotal)}`
+      : `${beliItems.length} item berhasil! (Tidak mengurangi saldo)`;
+    showToast(msg, 'success');
+
+  } catch (err) {
+    console.error('Beli barang error:', err);
+    document.getElementById('loadingOverlay').classList.remove('active');
+    showToast('Gagal menyimpan: ' + err.message, 'error');
+  }
+}
     
         // ===== INISIALISASI =====
     function runInit() {
